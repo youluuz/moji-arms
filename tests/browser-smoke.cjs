@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
   const res=await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
+  if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
