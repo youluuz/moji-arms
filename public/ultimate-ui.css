@@ -1,0 +1,28 @@
+/* Glyph Strike v7.1: illustrated ultimate picker and safe separated battle HUD */
+.ultimate-widget{--u-gold:#f3d58e;color:#f1f5ff}
+.ultimate-picker-label{display:block;font-weight:850;letter-spacing:.04em;margin:13px 0 7px;color:#f7dfaa}
+.ultimate-picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:8px 0 14px}
+.ultimate-option{min-width:0!important;border:1px solid #607a9d!important;background:#1a2943!important;color:#d3e5fa!important;border-radius:10px;padding:5px!important;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px!important;touch-action:manipulation;cursor:pointer}
+.ultimate-option svg{width:48px;height:48px;max-width:100%;filter:drop-shadow(0 3px 5px #030918)}
+.ultimate-option.chosen{border:2px solid #f2cc8c!important;background:#3a3350!important;box-shadow:0 0 12px #f2cc8c55}
+.ultimate-option span{white-space:nowrap}
+.ultimate-battle{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:85px;z-index:46;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
+.ultimate-battle[hidden],.ultimate-picker[hidden],.ultimate-picker-label[hidden]{display:none!important}
+.ultimate-cast{position:relative!important;width:76px!important;height:76px!important;display:flex!important;flex-direction:column;justify-content:center;align-items:center;gap:0;border:3px solid #988357!important;border-radius:14px!important;background:#141b30ee!important;padding:3px!important;color:#ffdfac!important;pointer-events:auto;touch-action:manipulation;user-select:none;-webkit-user-select:none;box-shadow:0 4px 16px #0008;cursor:pointer}
+.ultimate-cast:disabled{opacity:.66;cursor:default}
+.ultimate-cast.ready{border-color:#ffcf76!important;box-shadow:0 0 17px #e5b56d88;animation:ultimatePulse 1.6s ease-in-out infinite}
+.ultimate-cast.aiming{border-color:#ff866e!important;box-shadow:0 0 18px #ff8868bb;animation:none}
+.ultimate-icon{display:grid;place-items:center;width:52px;height:52px;min-height:0}
+.ultimate-icon svg{width:50px;height:50px}
+.ultimate-left{font-size:10px;line-height:1.15;white-space:nowrap;font-weight:950;color:white;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px black}
+.ultimate-state{max-width:110px;color:#fff2bb;font-size:10px;font-weight:800;text-align:center;text-shadow:0 2px 4px black}
+@keyframes ultimatePulse{50%{box-shadow:0 0 23px #fbd082bc}}
+#gameScreen .arena-shell,#gameArea .game-wrap{position:relative}
+#gameScreen .ultimate-widget>.ultimate-battle{position:fixed;right:max(9px,env(safe-area-inset-right));bottom:84px}
+body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
+.ultimate-aiming-banner{position:absolute;top:13%;left:50%;transform:translateX(-50%);z-index:47;background:#351e25e8;color:#ffe4ae;border:2px solid #ffc383;border-radius:30px;padding:8px 12px;pointer-events:none;font-size:12px;font-weight:900;white-space:nowrap}
+.ultimate-aiming-banner[hidden]{display:none}
+.ultimate-gold-win{background:radial-gradient(circle,#88531f88,transparent 60%),#111522f5!important;border-color:#ffdf87!important;box-shadow:0 0 75px #ffe2a1aa!important}
+.ultimate-gold-win h2{text-shadow:0 0 22px #f9ca64;font-size:clamp(30px,5vw,48px)!important;color:#ffe5a2!important}
+@media(max-width:700px){.ultimate-picker{grid-template-columns:repeat(3,minmax(0,1fr))}.ultimate-option{min-height:76px}.ultimate-battle{bottom:81px}.ultimate-cast{width:65px!important;height:65px!important}.ultimate-icon{width:44px;height:42px}.ultimate-icon svg{width:42px;height:42px}}
+@media(orientation:landscape) and (max-height:510px){.ultimate-battle{bottom:57px!important;right:8px!important}.ultimate-cast{width:57px!important;height:57px!important}.ultimate-icon,.ultimate-icon svg{width:35px;height:34px}.ultimate-left{font-size:8px}}
