@@ -11,11 +11,16 @@ const { chromium } = require('playwright');
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
   await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
+  console.log('EARLY_PAGE_ERRORS',JSON.stringify(errors));
   console.log('LOBBY_STATE',JSON.stringify(await page.evaluate(()=>({
     login:document.getElementById('loginScreen').className,
     lobby:document.getElementById('lobbyScreen').className,
     mode:document.getElementById('modeSelect')?.value,
     kanjiCount:document.querySelectorAll('#lobbyScreen .kanji').length,
+    setupHTML:document.getElementById('setup')?.innerHTML.slice(0,400),
+    nScript:document.scripts.length,
+    gameplayNames:typeof window.MojiStrokeReady,
+    loginDisplay:getComputedStyle(document.getElementById('loginScreen')).display,
     glyph:document.querySelector('#lobbyScreen .kanji')?.getBoundingClientRect().toJSON(),
     ultimate:document.querySelector('#loadoutPanel .ultimate-option')?.getBoundingClientRect().toJSON()
   }))));
