@@ -101,6 +101,11 @@ function boot(){
   if(now<namepuUntil||now<danceUntil){
    c.font='bold 26px sans-serif';c.fillStyle='#ffe49a';c.fillText(now<namepuUntil?'😐':'♪ ♫ ♪',x,y-54+Math.sin(now/135)*6);
    c.font='bold 21px sans-serif';c.fillText('♪',x-30,y-37);c.fillText('♫',x+29,y-32);
+   if(now<danceUntil&&typeof enemy!=='undefined'){
+    const ex=enemy.x-cam.x,ey=enemy.y-cam.y;
+    c.font='bold 25px sans-serif';c.fillText('♪ ♫ ♪',ex,ey-55+Math.sin(now/135)*7);
+    c.font='bold 19px sans-serif';c.fillText('♬',ex-27,ey-36);c.fillText('♪',ex+28,ey-35);
+   }
   }
   if(now<invisibleUntil){c.fillStyle='#8ceeff';c.font='12px sans-serif';c.fillText('透明化中',x,y-47)}
   if(aiming){c.font='bold 20px serif';c.fillStyle='#ffdc9b';c.shadowBlur=16;c.shadowColor='#ffb960';c.fillText(curr().name,x,y-58)}
