@@ -521,7 +521,7 @@ func ultimateCost(id string) int {
 }
 func chooseUltimate(id string) string { if ultimateCost(id)>0 {return id}; return "roman" }
 func ultimateLaunch(room *Room,p *Player,now float64) {
- if p.Ultimate=="roman" {p.UltimateWindupUntil=now+.5;return}
+ if p.Ultimate=="roman" {p.UltimateWindupUntil=now+.4;return}
  if p.Ultimate=="slow" {angle:=p.UltimateAim;room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*610,VY:math.Sin(angle)*610,Damage:60,TTL:2.5,Owner:p.ID,Ch:"鈍化弾",Special:"slow"})}
 }
 func slotCooldown(kind string, n int) float64 {
@@ -867,7 +867,7 @@ func (a *Arena) tick(dt float64) {
 			if p.UltimateAiming && now>=p.UltimateAimUntil {p.UltimateAiming=false;ultimateLaunch(room,p,now)}
 			if p.UltimateWindupUntil>0 && now>=p.UltimateWindupUntil {
 				angle:=p.UltimateAim
-				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*650,VY:math.Sin(angle)*650,Damage:250,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
+				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*650,VY:math.Sin(angle)*650,Damage:420,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
 				p.UltimateWindupUntil=0
 			}
 			dx, dy := 0.0, 0.0
@@ -883,7 +883,7 @@ func (a *Arena) tick(dt float64) {
 			if p.Keys["w"] {
 				dy--
 			}
-			if now<room.DanceUntil || now<p.NamepuUntil {dx=0;dy=0}
+			if now<room.DanceUntil || now<p.NamepuUntil || (p.UltimateWindupUntil>0 && now<p.UltimateWindupUntil) {dx=0;dy=0}
 			mag := math.Hypot(dx, dy)
 			if mag == 0 {
 				mag = 1
