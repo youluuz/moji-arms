@@ -54,6 +54,21 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
      if(!await page.locator('#gameArea .battle-head').isVisible()||!await page.locator('#cards .card.weapon').count())throw Error(mode+': CPU-style battle HUD not rendered');
+     // Check the screenshot-defining structure, not just a decorative header.
+     const parity=await page.evaluate(()=>{
+      const box=q=>document.querySelector(q).getBoundingClientRect();
+      const self=box('#selfBar'),enemy=box('#enemyBar'),hud=box('#gameArea .hud');
+      const arena=box('#gameArea .arena-shell'),cards=box('#cards');
+      return {twinHP:Math.abs(self.top-enemy.top)<5,stacked:hud.bottom<=arena.top+1&&arena.bottom<=cards.top+3,
+        ownName:document.querySelector('#selfName').textContent,
+        enemyName:document.querySelector('#enemyName').textContent,
+        bg:getComputedStyle(document.querySelector('#gameArea .combat-hp.rival .hp-fill')).backgroundImage,
+        cssLoaded:[...document.styleSheets].some(x=>x.href?.includes('online-cpu-parity.css')),
+        announcement:document.getElementById('battleAnnounce')?.textContent};
+     });
+     if(!parity.twinHP||!parity.stacked||!parity.ownName||!parity.enemyName||
+        !parity.cssLoaded||!parity.bg.includes('gradient')||parity.announcement!=='戦闘開始！')
+      throw Error(mode+': match UI does not follow reference CPU screenshot '+JSON.stringify(parity));
      const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
      if(volume!==.10)throw Error(mode+': BGM startup volume '+volume);
      if(!await page.locator('#gameArea .ultimate-cast').isVisible())throw Error(mode+': missing ultimate cast button');
