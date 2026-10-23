@@ -2,10 +2,13 @@
 (function(){
   'use strict';
   const SEG=typeof Intl.Segmenter==='function'?new Intl.Segmenter('ja',{granularity:'grapheme'}):null;
+  const encoder=new TextEncoder();
   const isGlyph=s=>{
     if(!s||/[\u0000-\u001f\u007f-\u009f\s]/u.test(s))return false;
-    if(new TextEncoder().encode(s).length>64)return false;
-    return SEG?Array.from(SEG.segment(s)).length===1:Array.from(s).length===1;
+    const chars=Array.from(s);
+    if(chars.length===1)return true;
+    if(encoder.encode(s).length>64)return false;
+    return SEG?Array.from(SEG.segment(s)).length===1:false;
   };
   const examples=['❤️','☄️','⚔️','🛡️','♨️','☺️','⭐','👨‍🚀','👩‍🚀','👩‍💻','👨‍👩‍👧','🏳️‍🌈','🇯🇵','🇺🇸','🇫🇷','🌸','🔥','😂','💥','🌀','💎','🚀','🍙','🐱','🎯','👑','⚡','🌙','👻'];
   // Character ranges, including less familiar Kanji, Kana, Latin alphabets,
