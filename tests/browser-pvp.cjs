@@ -41,14 +41,20 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const st=await page.evaluate(()=>({id:myId,all:roomState.players.map(p=>({id:p.id,ultimate:p.ultimate,charge:p.ultimateCharge}))}));
      if(!st.all.every(p=>p.ultimate==='roman'&&p.charge===0))throw Error(mode+': ultimate state mismatch '+JSON.stringify(st));
     }
-    const terrain=await host.evaluate(()=>({
-      parts:roomState.obstacles.length,
-      pairs:roomState.obstacles.filter((o,i,all)=>all.some((p,j)=>i!==j && o.expires===p.expires)).length/2,
-      center:roomState.zone
-    }));
-    if(terrain.parts!==20||terrain.pairs!==4||
-       terrain.center.x!==1050||terrain.center.y!==600||terrain.center.r<1200)
-      throw Error(mode+': arena/L-cover mismatch '+JSON.stringify(terrain));
+    const terrain=await host.evaluate(()=>{
+      const groups=new Map();
+      for(const wall of roomState.obstacles){
+        const members=groups.get(wall.expires)||[];
+        members.push(wall);
+        groups.set(wall.expires,members);
+      }
+      const counts=[...groups.values()].reduce((a,v)=>(a[v.length]=(a[v.length]||0)+1,a),{});
+      return {parts:roomState.obstacles.length,groups:groups.size,counts,center:roomState.zone};
+    });
+    if(terrain.parts!==26||terrain.groups!==16||
+       terrain.counts[1]!==8||terrain.counts[2]!==6||terrain.counts[3]!==2||
+       terrain.center.x!==1150||terrain.center.y!==650||terrain.center.r<1350)
+      throw Error(mode+': arena/L-T-U-cover mismatch '+JSON.stringify(terrain));
     // A real tap-cast must accrue automatic stroke units on the server.
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
     await host.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge>0,{timeout:15000});
