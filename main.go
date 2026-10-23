@@ -157,6 +157,7 @@ type Player struct {
 	C                   *Client
 	X, Y, HP, Shield    float64
 	Alive, Ready, Fire  bool
+	CastPending         bool
 	ShieldUntil         float64
 	Slots               []Slot
 	Selected            int
@@ -297,7 +298,7 @@ func validSlots(values []Slot, custom bool) bool {
 		return false
 	}
 	for _, v := range values {
-		if !isKind(v.Kind) || !validCharacter(v.Ch) || (!custom && !validStandardGlyph(v.Ch)) || v.N < 1 || v.N > 40 {
+		if !isKind(v.Kind) || !validCharacter(v.Ch) || v.N < 1 || v.N > 40 {
 			return false
 		}
 		if !custom && strokes(v.Ch) != v.N {
@@ -448,7 +449,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		var ch string
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
-		if !validCharacter(ch) || (room.Mode != "custom" && !validStandardGlyph(ch)) || !validSlots(slots, room.Mode == "custom") {
+		if !validCharacter(ch) || !validSlots(slots, room.Mode == "custom") {
 			if createdRoom {
 				delete(a.rooms, room.Code)
 			}
@@ -494,7 +495,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		var ch string
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
-		if !validSlots(slots, room.Mode == "custom") || !validCharacter(ch) || (room.Mode != "custom" && !validStandardGlyph(ch)) {
+		if !validSlots(slots, room.Mode == "custom") || !validCharacter(ch) {
 			c.message(map[string]string{"type": "error", "message": "装備データが不正です"})
 			return
 		}
@@ -539,8 +540,20 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.ActionSerial = 0
 			pp.LastKind = ""
 			pp.Fire = false
+			pp.CastPending = false
 		}
 		room.broadcast()
+	case "cast":
+		// Reliable one-shot cast: a quick mobile tap is not lost between 50ms input updates.
+		if room.Phase != "playing" || !p.Alive { return }
+		var selected int
+		var castAim float64
+		parseInput(m, "selected", &selected)
+		parseInput(m, "aim", &castAim)
+		if selected < 0 || selected >= len(p.Slots) || math.IsNaN(castAim) || math.IsInf(castAim, 0) { return }
+		p.Selected = selected
+		p.Aim = castAim
+		p.CastPending = true
 	case "input":
 		if room.Phase != "playing" || !p.Alive {
 			return
@@ -697,7 +710,9 @@ func (a *Arena) tick(dt float64) {
 			if dist(p.X, p.Y, W/2, H/2) > radius {
 				hit(p, 32*dt, true, now)
 			}
-			if !p.Alive || !p.Fire || len(p.Slots) != 5 {
+			castNow := p.CastPending
+			p.CastPending = false
+			if !p.Alive || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			slot := p.Slots[p.Selected]
