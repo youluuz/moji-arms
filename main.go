@@ -1314,7 +1314,34 @@ window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('str
 	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:825,y:650")
 	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1475,y:650")
 	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(825,650)||near(1475,650)")
-	return strings.Replace(source, "</head>", additions+"</head>", 1)
+	// The multiplayer battle lives in an iframe inside the CPU lobby. CSS inside
+	// the iframe cannot expand its parent's old lobby-sized frame: expand it at the
+	// parent level while a match is playing, then restore the exact prior styles.
+	const fullscreenBridge = `<script>
+(function(){
+ let active=null;
+ window.addEventListener('message',function(event){
+  if(event.origin!==location.origin||event.data?.type!=='moji:embeddedBattle')return;
+  const frame=Array.from(document.querySelectorAll('iframe')).find(f=>f.contentWindow===event.source && /multiplayer\\.html/.test(f.src));
+  if(!frame)return;
+  if(event.data.active){
+   if(active&&active.frame===frame)return;
+   if(active)return;
+   const ancestors=[];for(let el=frame.parentElement;el&&el!==document.body;el=el.parentElement){ancestors.push([el,el.style.cssText]);
+    el.style.overflow='visible';el.style.transform='none';el.style.filter='none';el.style.contain='none';el.style.clipPath='none';el.style.isolation='auto';}
+   active={frame,css:frame.style.cssText,body:document.body.style.overflow,html:document.documentElement.style.overflow,ancestors};
+   frame.style.cssText+=';position:fixed!important;inset:0!important;top:0!important;left:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;z-index:2147483000!important;border:0!important;border-radius:0!important;display:block!important;background:#091426!important;';
+   document.body.style.overflow='hidden';document.documentElement.style.overflow='hidden';
+  } else if(active&&active.frame===frame){
+   active.frame.style.cssText=active.css;
+   for(const [el,css] of active.ancestors)el.style.cssText=css;
+   document.body.style.overflow=active.body;document.documentElement.style.overflow=active.html;
+   active=null;
+  }
+ });
+})();
+</script>`
+	return strings.Replace(source, "</head>", additions+fullscreenBridge+"</head>", 1)
 }
 func main() {
 	var internet, noBrowser bool
