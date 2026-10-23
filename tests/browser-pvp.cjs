@@ -47,6 +47,30 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const state=await page.evaluate(()=>({waiting:document.body.classList.contains('online-waiting'),entryHidden:getComputedStyle(document.getElementById('joinArea')).display==='none',code:roomState?.code}));
      if(!state.waiting||!state.entryHidden||state.code!==code)throw Error(mode+': did not auto-switch to joined room: '+JSON.stringify(state));
     }
+    // Both phones must be able to edit weapons and ultimate after joining the room.
+    for(const p of pages){
+     if(!await p.locator('#waitArea #roomLoadoutMount #onlineGlyph0').isVisible()||
+        !await p.locator('#waitArea #roomLoadoutMount .ultimate-option').count())
+      throw Error(mode+': equipment or ultimate picker is hidden after room join');
+    }
+    if(mode==='normal'){
+     await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
+     await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ready===false,{timeout:10000});
+     if(await host.locator('#begin').isEnabled())throw Error('host could start while player edits');
+     const ii=await guest.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').inputValue();
+     if(ii!=='2')throw Error('イ must be two strokes; got '+ii);
+     await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('ー');
+     const dash=await guest.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').inputValue();
+     if(dash!=='1')throw Error('ー must be one stroke; got '+dash);
+     await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('火');
+     await guest.locator('#roomLoadoutMount .ultimate-option[data-ultimate=slow]').click();
+     await guest.locator('#saveRoomLoadout').click();
+     await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ultimate==='slow',{timeout:10000});
+     await guest.locator('#roomLoadoutMount .ultimate-option[data-ultimate=roman]').click();
+     await guest.locator('#saveRoomLoadout').click();
+     await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ready===true&&roomState?.players.find(p=>p.id===myId)?.ultimate==='roman',{timeout:10000});
+     if(!await host.locator('#begin').isEnabled())throw Error('host not ready after equipment saved');
+    }
     if(!await host.locator('#begin').isEnabled())throw Error(mode+': host start disabled');
     await host.locator('#begin').click();
     await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing',{timeout:15000})));
@@ -94,6 +118,17 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     await host.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge>0,{timeout:15000});
     const charge=await host.evaluate(()=>roomState.players.find(p=>p.id===myId).ultimateCharge);
     if(charge!== (mode==='custom'?12:4))throw Error(mode+': expected charge mismatch '+charge);
+    // Guest disconnects: host wins, then returns to the SAME room without reconnecting.
+    await guest.evaluate(()=>sock.close());
+    await host.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
+    if(!await host.locator('#onlineRematch').isVisible())throw Error(mode+': missing same-room rematch button');
+    await host.locator('#onlineRematch').click();
+    await host.waitForFunction(()=>roomState?.phase==='lobby',{timeout:15000});
+    const back=await host.evaluate(()=>({code:roomState.code,phase:roomState.phase,players:roomState.players.length,
+      editor:!!document.querySelector('#waitArea #roomLoadoutMount #onlineGlyph0'),
+      outcomeHidden:!document.getElementById('onlineOutcome').classList.contains('show')}));
+    if(back.code!==code||back.players!==1||!back.editor||!back.outcomeHidden)
+     throw Error(mode+': did not retain same room after battle '+JSON.stringify(back));
     if(errors.length)throw Error(errors.join('; '));
     console.log('PVP live room '+mode+' passed: two mobile browsers, joined room '+code+', manual start, 5 slots, six-skill UI, server charge='+charge);
    }finally{await Promise.all(contexts.map(c=>c.close()))}
