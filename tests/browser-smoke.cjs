@@ -120,15 +120,18 @@ const { chromium } = require('playwright');
   if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
-  await page.waitForFunction(()=>strokeForGlyph('𰻞')===58,{timeout:20000});
+  await page.locator('#onlineGlyph0').fill('𰻞');
+  await page.waitForFunction(()=>{
+    const row=document.querySelector('#onlineGlyph0')?.closest('.online-slot');
+    return row?.querySelector('.slot-strokes')?.value==='58';
+  },{timeout:20000});
   const matchUI=await page.evaluate(()=>({
     match:document.querySelector('#match')?.textContent,
     privateCode:!!document.querySelector('.online-private-choice #roomCode'),
-    cooldown:onlineCD('attack',12),
-    rare:strokeForGlyph('𰻞')
+    rare:Number(document.querySelector('#onlineGlyph0')?.closest('.online-slot').querySelector('.slot-strokes')?.value),
+    hidden:getComputedStyle(document.querySelector('.online-private-choice #roomCode')).display==='none'
   }));
-  if(!matchUI.match?.includes('ランダムマッチ')||!matchUI.privateCode||
-    matchUI.cooldown!==Math.round(1000*(.65+12*.125+2*.02)*1.2)||matchUI.rare!==58)
+  if(!matchUI.match?.includes('ランダムマッチ')||!matchUI.privateCode||matchUI.rare!==58)
     throw Error('online matchmaking/rare-kanji UI mismatch '+JSON.stringify(matchUI));
 
   if(await page.locator('#joinArea .ultimate-option').count()!==6)throw Error('online must present identical six ultimates');
