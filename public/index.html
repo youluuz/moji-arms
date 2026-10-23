@@ -312,8 +312,8 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
  <article><b>✚ 回復</b><p>自分のHPを回復。最大HP600を超えて回復できない。</p><small>回復：画数×4</small></article>
  <article><b>➤ 貫通</b><p>壁・相手の防御を無視して飛ぶ直進弾。遮蔽物への対抗策。</p><small>威力：画数×6 ／ CT短縮</small></article>
  <article><b>◎ ホーミング</b><p>敵を追う弾。壁をある程度避けるが、必中ではない。</p><small>威力：画数×6</small></article>
-</div><p class="subtle">クールタイムは文字の画数に応じて変化し、5スロットそれぞれ独立して回復します。</p></details><div class="loadout-stats" aria-label="対戦時の能力値"><div><span class="subtle">プレイヤー最大HP / MAX HP</span><div class="hp-token" id="lobbyHP">♥ 600 / 600</div></div><div class="stats-copy">各文字の<strong>威力・効果量・クールタイム</strong>を表示します。<br>文字・役割を変更するとすぐ反映。画数が増えるほど効果も増加。</div></div><div class="slots" id="setup"></div><div class="loadout-random-inline" aria-label="ランダム装備の設定"><button id="shuffleLoadout" type="button" class="outline">🎲 5枠ランダム</button><label class="random-auto"><input id="randomAtStart" type="checkbox"><span>毎試合ランダムにする</span></label><span id="randomNotice" role="status" class="subtle random-notice">5つの文字と役割をまとめて再抽選（任意）</span></div><div id="validation" role="alert"></div><div class="start-actions"><button id="start" class="primary">⚔ 試合開始　→</button><span class="subtle">開始すると戦闘画面へ自動切替。<br>マルチはPython不要のゲームサーバーから起動。勝利時 +1コイン。</span></div><div class="quick-room" aria-label="オンライン対戦をすぐに始める">
- <div><strong>友達とオンライン対戦</strong><small>5つのスロットをすべて入力してからルームを作成します。未入力では試合に進めません。</small></div>
+</div><p class="subtle">クールタイムは文字の画数に応じて変化し、5スロットそれぞれ独立して回復します。</p></details><div class="loadout-stats" aria-label="対戦時の能力値"><div><span class="subtle">プレイヤー最大HP / MAX HP</span><div class="hp-token" id="lobbyHP">♥ 600 / 600</div></div><div class="stats-copy">各文字の<strong>威力・効果量・クールタイム</strong>を表示します。<br>文字・役割を変更するとすぐ反映。画数が増えるほど効果も増加。</div></div><div class="slots" id="setup"></div><div class="loadout-random-inline" aria-label="ランダム装備の設定"><button id="shuffleLoadout" type="button" class="outline">🎲 全種類ランダム（漢字・かな・英字・記号・絵文字）</button><label class="random-auto"><input id="randomAtStart" type="checkbox"><span>毎試合ランダムにする</span></label><span id="randomNotice" role="status" class="subtle random-notice">5つの文字と役割をまとめて再抽選（任意）</span></div><div id="validation" role="alert"></div><div class="start-actions"><button id="start" class="primary">⚔ 試合開始　→</button><span class="subtle">開始すると戦闘画面へ自動切替。<br>マルチはPython不要のゲームサーバーから起動。勝利時 +1コイン。</span></div><div class="quick-room" aria-label="オンライン対戦をすぐに始める">
+ <div><strong>🌐 ロビーからオンライン対戦</strong><small>ランダムマッチ・ルーム作成・コード参加を選べます。5枠の武装を設定してから開始します。</small></div>
  <button id="createRoomNow" type="button" class="quick-room-button">🔗 ルームを作成</button><div class="quick-room-extra"><button id="findRandomNow" type="button">🌐 ランダムマッチ</button><input id="joinRoomCode" aria-label="参加するルームコード" maxlength="6" placeholder="ルームコード"><button id="joinRoomNow" type="button">コードで参加</button></div>
 </div></section>
 <div class="lobby-shortcuts"><button id="gachaShortcut" type="button" class="outline">✦ ガチャを開く <span>所持コインで装飾を召喚</span></button><button id="collectionShortcut" type="button" class="outline">◇ エフェクト図鑑 <span>所持品を確認・装備</span></button></div>
@@ -413,7 +413,7 @@ function refreshLobbyStats(){
 
 
 // Random arsenal: characters AND slot roles change. Includes letters, symbols and emoji.
-const RANDOM_GLYPHS=window.MojiRandom.all();
+// Random Unicode pool is generated lazily on first use, not during guest login.
 const RANDOM_ROLES=['attack','defense','heal','pierce','homing'];
 function randomChoice(list){return list[Math.floor(Math.random()*list.length)]}
 function shuffleLoadout(reason='manual'){
@@ -459,7 +459,7 @@ setup.addEventListener('change',refreshLobbyStats);
 setup.addEventListener('change',e=>{if(e.target?.classList.contains('kind')){const guide=document.getElementById('abilityGuide');guide.open=true;}});
 document.querySelectorAll('input[name="matchMode"]').forEach(r=>r.addEventListener('change',updateMode));
 const modeCompact=document.getElementById('modeSelect');
-const modeHints={normal:['SOLO','CPUと通常ルールで対戦。漢字の画数／その他の換算画数は自動で決定。'],custom:['SOLO + CUSTOM','CPU戦で文字・画数・エリア収縮を自由設定。'],multi:['ONLINE','ルームを作成・参加して通常ルールで対人戦。'],multiCustom:['ONLINE + CUSTOM','ルーム制対人戦。文字・画数・収縮速度をカスタム。']};
+const modeHints={normal:['SOLO','CPUと通常ルールで対戦。漢字の画数／その他の換算画数は自動で決定。'],custom:['SOLO + CUSTOM','CPU戦で文字・画数・エリア収縮を自由設定。'],multi:['ONLINE','同じロビーからルーム作成・ランダム対戦・コード参加を選べる。'],multiCustom:['ONLINE + CUSTOM','同じロビーからカスタム対人戦へ。文字・画数・収縮速度を設定。']};
 function refreshModeHelp(){
  const [badge,hint]=modeHints[matchMode];
  document.getElementById('modeBadge').textContent=badge;
