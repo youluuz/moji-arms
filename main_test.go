@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 	"time"
@@ -76,5 +77,77 @@ func TestObstacleSpawnSafety(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestNormalSlotsRequireKanji(t *testing.T) {
+	slots := []Slot{
+		{Ch: "火", Kind: "attack", N: strokes("火")},
+		{Ch: "水", Kind: "defense", N: strokes("水")},
+		{Ch: "木", Kind: "heal", N: strokes("木")},
+		{Ch: "風", Kind: "pierce", N: strokes("風")},
+		{Ch: "雷", Kind: "homing", N: strokes("雷")},
+	}
+	if !validSlots(slots, false) {
+		t.Fatal("normal loadout must accept five kanji")
+	}
+	slots[0] = Slot{Ch: "A", Kind: "attack", N: 3}
+	if validSlots(slots, false) {
+		t.Fatal("normal match accepted non-kanji")
+	}
+	if !validSlots(slots, true) {
+		t.Fatal("custom match should still accept arbitrary single glyphs")
+	}
+}
+
+func TestPublicMatchWaitsForHostStart(t *testing.T) {
+	a := &Arena{rooms: map[string]*Room{}}
+	slots := []Slot{
+		{Ch: "火", Kind: "attack", N: strokes("火")},
+		{Ch: "水", Kind: "defense", N: strokes("水")},
+		{Ch: "木", Kind: "heal", N: strokes("木")},
+		{Ch: "風", Kind: "pierce", N: strokes("風")},
+		{Ch: "雷", Kind: "homing", N: strokes("雷")},
+	}
+	message, err := json.Marshal(map[string]any{
+		"type": "match", "name": "挑戦者", "mode": "normal", "theme": "random",
+		"shrink": "normal", "ch": "火", "slots": slots,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := &Client{send: make(chan []byte, 32)}
+	a.handle(first, message)
+	if first.room == nil || !first.room.Public || first.room.Phase != "lobby" {
+		t.Fatal("random matchmaking must create a public lobby")
+	}
+	if len(a.rooms) != 1 {
+		t.Fatal("unexpected public lobby count")
+	}
+	second := &Client{send: make(chan []byte, 32)}
+	a.handle(second, message)
+	room := first.room
+	if second.room != room || len(room.Players) != 2 {
+		t.Fatal("second random player must join the existing lobby")
+	}
+	if room.Phase != "lobby" {
+		t.Fatal("match automatically started on second player's arrival")
+	}
+	// A malformed player must not destroy another player's existing public lobby.
+	bad := &Client{send: make(chan []byte, 32)}
+	badPayload, _ := json.Marshal(map[string]any{
+		"type": "match", "mode": "normal", "ch": "A", "slots": slots,
+	})
+	a.handle(bad, badPayload)
+	if bad.room != nil || len(a.rooms) != 1 || len(room.Players) != 2 {
+		t.Fatal("invalid random match request damaged the waiting lobby")
+	}
+	a.handle(second, []byte(`{"type":"start"}`))
+	if room.Phase != "lobby" {
+		t.Fatal("non-host was allowed to start a public match")
+	}
+	a.handle(first, []byte(`{"type":"start"}`))
+	if room.Phase != "playing" {
+		t.Fatal("host could not manually start the public match")
 	}
 }
