@@ -24,16 +24,16 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      if(i===0)await page.locator('#create').click();
     }
     const host=pages[0],guest=pages[1];
-    await host.waitForFunction(()=>!!window.roomState && roomState.phase==='lobby',{timeout:15000});
+    await host.waitForFunction(()=>!!roomState && roomState.phase==='lobby',{timeout:15000});
     const code=await host.locator('#code').innerText();
     if(!/^[A-Z0-9]{6}$/.test(code))throw Error(mode+': bad invite code '+code);
     await guest.locator('#roomCode').fill(code);
     await guest.locator('#join').click();
-    await host.waitForFunction(()=>window.roomState?.players?.length===2,{timeout:15000});
-    await guest.waitForFunction(()=>window.roomState?.players?.length===2,{timeout:15000});
+    await host.waitForFunction(()=>roomState?.players?.length===2,{timeout:15000});
+    await guest.waitForFunction(()=>roomState?.players?.length===2,{timeout:15000});
     if(!await host.locator('#begin').isEnabled())throw Error(mode+': host start disabled');
     await host.locator('#begin').click();
-    await Promise.all(pages.map(p=>p.waitForFunction(()=>window.roomState?.phase==='playing',{timeout:15000})));
+    await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing',{timeout:15000})));
     for(let i=0;i<2;i++){
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
