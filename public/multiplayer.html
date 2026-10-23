@@ -97,7 +97,14 @@ const $=id=>document.getElementById(id), safeSessionGet=key=>{try{return session
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initialName=safeSessionGet('moji_player_name');if(initialName)document.getElementById('name').value=initialName;
 const setup=data||{mode:'normal',ch:'',slots:[],theme:'random',shrink:'normal'};
-const embeddedMode=new URLSearchParams(location.search).get('embedded')==='1';if(embeddedMode)document.body.classList.add('embedded-online');
+const embeddedMode=new URLSearchParams(location.search).get('embedded')==='1';
+if(embeddedMode)document.body.classList.add('embedded-online');
+else{
+ const loginUrl=new URL('index.html',location.href);
+ const invited=new URLSearchParams(location.search).get('room');
+ if(invited&&/^[A-Z0-9]{6}$/i.test(invited))loginUrl.searchParams.set('room',invited.toUpperCase());
+ location.replace(loginUrl.href);
+}
 const incomingRoom=new URLSearchParams(location.search).get('room');if(incomingRoom){$('roomCode').value=incomingRoom.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)}
 $('modeText').textContent=setup.mode==='custom'?'カスタムマルチ':'通常マルチ';$('match').style.display=setup.mode==='custom'?'none':'';// All combat math comes from the same rules as the CPU and server.
 const ONLINE_HP=600;
@@ -252,7 +259,7 @@ async function connect(action){
  if(sock&&sock.readyState===1)sock.close();
  let protocol=location.protocol==='https:'?'wss':'ws';let host=location.host;
  sock=new WebSocket(`${protocol}://${host}/ws`);
- sock.onopen=()=>{isConnecting=false;send({type:action,mode:setup.mode,theme:setup.theme,shrink:setup.shrink,name:$('name').value||'挑戦者',code:$('roomCode').value.trim().toUpperCase(),ch:activeSetup.ch,slots:activeSetup.slots})};sock.onerror=()=>{isConnecting=false;$('error').textContent='通信サーバーに接続できません。公開URLなら少し時間を置いて再試行してください。ローカルの場合はWindows起動アプリを確認してください。';};sock.onclose=()=>{isConnecting=false;if(!roomState||roomState.phase!=='ended'){$('waitError').textContent='サーバーとの接続が切れました。ページを再読込し、ルームへ入り直してください。';$('error').textContent='接続が切れました。公開サーバーの休止や再起動の場合は再読込してください。';}stopInput();};sock.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='error'){$('error').textContent=m.message+'。リンクが古い場合はホストに招待し直してもらってください。';$('waitError').textContent=m.message;return}if(m.type==='joined'){myId=m.id;$('joinArea').style.display='none';$('waitArea').style.display='block';$('code').textContent=m.code;const invite=new URL(location.href);invite.searchParams.delete('auto');invite.searchParams.set('room',m.code);$('inviteUrl').value=invite.href;
+ sock.onopen=()=>{isConnecting=false;send({type:action,mode:setup.mode,theme:setup.theme,shrink:setup.shrink,name:$('name').value||'挑戦者',code:$('roomCode').value.trim().toUpperCase(),ch:activeSetup.ch,slots:activeSetup.slots})};sock.onerror=()=>{isConnecting=false;$('error').textContent='通信サーバーに接続できません。公開URLなら少し時間を置いて再試行してください。ローカルの場合はWindows起動アプリを確認してください。';};sock.onclose=()=>{isConnecting=false;if(!roomState||roomState.phase!=='ended'){$('waitError').textContent='サーバーとの接続が切れました。ページを再読込し、ルームへ入り直してください。';$('error').textContent='接続が切れました。公開サーバーの休止や再起動の場合は再読込してください。';}stopInput();};sock.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='error'){$('error').textContent=m.message+'。リンクが古い場合はホストに招待し直してもらってください。';$('waitError').textContent=m.message;return}if(m.type==='joined'){myId=m.id;$('joinArea').style.display='none';$('waitArea').style.display='block';$('code').textContent=m.code;const invite=new URL('index.html',location.href);invite.searchParams.set('room',m.code);$('inviteUrl').value=invite.href;
  if(['localhost','127.0.0.1'].includes(invite.hostname)){
   $('copyInvite').disabled=true;$('copyInvite').textContent='招待リンクを準備中…';
   fetch('/lan').then(r=>r.json()).then(info=>{
