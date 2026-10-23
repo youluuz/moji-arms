@@ -44,3 +44,10 @@
   body.in-match #cpuMoveZone {width:112px !important;height:112px !important;}
   body.in-match #weapons .weapon {min-height:46px;}
 }
+
+/* v7.2 - Hybrid desktop touchscreens do not receive the mobile-only hit zones. */
+body.in-match #cpuMoveZone, body.in-match #cpuTapHint, #touchControls {display:none !important;}
+body.mobile-touch-input.in-match #cpuMoveZone,
+body.mobile-touch-input.in-match #cpuTapHint,
+body.mobile-touch-input.online-battle #touchControls {display:block !important;}
+body.in-match:not(.mobile-touch-input) #mobileAction {display:none !important;}

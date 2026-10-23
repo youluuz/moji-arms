@@ -3,6 +3,14 @@
    Pointerdown fires immediately, before delayed touch click synthesis. */
 (() => {
   'use strict';
+  // Touch-capable desktop computers must keep PC controls, even with coarse pointers.
+  const ua = navigator.userAgent || '';
+  const coarse = matchMedia('(hover:none) and (pointer:coarse)').matches;
+  const mobile = navigator.userAgentData?.mobile === true ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
+    (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) ||
+    (Math.min(screen.width, screen.height) <= 680 && navigator.maxTouchPoints > 0);
+  document.body.classList.toggle('mobile-touch-input', Boolean(coarse && mobile));
   function onSlotPointerDown(event) {
     if (event.pointerType === 'mouse' || !document.body.classList.contains('in-match')) return;
     if (!(event.target instanceof Element)) return;

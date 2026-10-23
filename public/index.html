@@ -951,7 +951,7 @@ function fitArena(){
  const shell=document.querySelector('#gameScreen .arena-shell');
  if(!shell||!shell.clientWidth||!shell.clientHeight)return;
  const aspect=shell.clientWidth/shell.clientHeight;
- cpuView.w=aspect<1?600:1040;
+ cpuView.w=aspect<1?670:1130;
  cpuView.h=Math.min(WORLD_H,Math.max(aspect<1?520:300,Math.round(cpuView.w/aspect)));
  const scale=Math.min(shell.clientWidth/cpuView.w,shell.clientHeight/cpuView.h);
  c.style.width=Math.floor(cpuView.w*scale)+'px';

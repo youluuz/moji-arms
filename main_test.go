@@ -219,19 +219,20 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	cpu, err := gameFiles.ReadFile("public/mobile-input-v70.css")
 	if err != nil { t.Fatal("CPU thumbstick CSS missing:", err) }
 	cpuText := string(cpu)
-	if !strings.Contains(cpuText, "clip-path:circle") ||
+	if !strings.Contains(cpuText, "mobile-touch-input") || !strings.Contains(cpuText, "clip-path:circle") ||
 		!strings.Contains(cpuText, "width:144px") ||
 		!strings.Contains(cpuText, "touch-action:none") {
 		t.Fatal("CPU joystick must only intercept the small circular movement area")
 	}
 	selection, err := gameFiles.ReadFile("public/mobile-input-v70.js")
 	if err != nil { t.Fatal("CPU slot-select JS missing:", err) }
-	if !strings.Contains(string(selection), "pointerdown") || !strings.Contains(string(selection), "slot.click()") {
+	if !strings.Contains(string(selection), "mobile-touch-input") || !strings.Contains(string(selection), "pointerdown") || !strings.Contains(string(selection), "slot.click()") {
 		t.Fatal("CPU selection must work on touch-down independently of movement")
 	}
 	online, err := gameFiles.ReadFile("public/multiplayer.html")
 	if err != nil { t.Fatal(err) }
 	html := string(online)
+	if !strings.Contains(html, "mobile-input-v70.css") || !strings.Contains(html, "mobile-input-v70.js") { t.Fatal("online mobile control gate missing") }
 	if strings.Contains(html, "left:0;top:0;bottom:0;width:35%") {
 		t.Fatal("the old PvP movement overlay still covers left-side aiming")
 	}
@@ -241,6 +242,7 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
+	if !strings.Contains(served, "cpuView.w=aspect<1?670:1130") || !strings.Contains(html, "view.w=aspect<1?670:1130") { t.Fatal("battle cameras must use the wider view in all modes") }
 	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
@@ -270,6 +272,11 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  if q.InvincibleUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("invulnerability not activated")}
  hp:=q.HP;hit(q,999,true,float64(time.Now().UnixNano())/1e9)
  if q.HP!=hp {t.Fatal("invincible should also block penetrating and area damage")}
+ // Invincibility protects HP, but must not lock ordinary attacks.
+ q.Slots=[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}
+ a.handle(c2,[]byte("{\"type\":\"cast\",\"selected\":0,\"aim\":3.14}"))
+ a.tick(.01)
+ if q.Casts!=1 || q.LastKind!="attack" {t.Fatal("invincibility blocked an ordinary weapon cast")}
  // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
  p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=220
  a.handle(c1,[]byte(`{"type":"ultimate"}`))

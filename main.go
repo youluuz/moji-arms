@@ -688,7 +688,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		// Reliable one-shot cast: a quick mobile tap is not lost between 50ms input updates.
 		if room.Phase != "playing" || !p.Alive { return }
 		now:=float64(time.Now().UnixNano())/1e9
-		if p.UltimateAiming || now<p.NamepuUntil || now<p.InvincibleUntil || now<room.DanceUntil {return}
+		if p.UltimateAiming || now<p.NamepuUntil || now<room.DanceUntil {return}
 		var selected int
 		var castAim float64
 		parseInput(m, "selected", &selected)
@@ -871,7 +871,7 @@ func (a *Arena) tick(dt float64) {
 			if castNow {
 				castSelected, castAim = p.PendingSelected, p.PendingAim
 			}
-			if !p.Alive || now<p.NamepuUntil || now<p.InvincibleUntil || now<room.DanceUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
+			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			if castSelected < 0 || castSelected >= len(p.Slots) {

@@ -25,7 +25,7 @@ function boot(){
  });
  function locked(){
   const p=roomState?.players?.find(p=>p.id===myId);
-  return Boolean(p&&(p.ultimateAiming||p.namepuLeft>0||p.invincibleLeft>0||p.danceLeft>0));
+  return Boolean(p&&(p.ultimateAiming||p.namepuLeft>0||p.danceLeft>0));
  }
  function onFieldPointer(e){
   const p=roomState?.players?.find(p=>p.id===myId);

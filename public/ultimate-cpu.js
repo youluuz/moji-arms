@@ -23,7 +23,7 @@ function boot(){
   lastActive=true;banner.hidden=true;prevEnemyHP=600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5}
- function canAct(){return !aiming && performance.now()>=namepuUntil && performance.now()>=danceUntil && performance.now()>=immortalUntil}
+ function canAct(){return !aiming && performance.now()>=namepuUntil && performance.now()>=danceUntil }
  // Wrap the actual successful-cast accounting; spamming a cooling slot earns no charge.
  if(typeof recordCast==='function'){
   const oldRecord=recordCast;
@@ -31,7 +31,7 @@ function boot(){
  }
  if(typeof act==='function'){
   const oldAct=act;
-  act=function(...args){if(!canAct())return;const t=oldAct.apply(this,args);if(invisibleUntil>performance.now())invisibleUntil=0;return t};
+  act=function(...args){if(!canAct())return;const ready=Array.isArray(slots)&&slots[selected]&&Number.isFinite(args[0])&&args[0]>=slots[selected].ready;const t=oldAct.apply(this,args);if(ready&&invisibleUntil>performance.now())invisibleUntil=0;return t};
  }
  if(typeof damage==='function'){
   const oldDamage=damage;
