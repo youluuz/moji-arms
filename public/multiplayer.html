@@ -120,9 +120,26 @@ const loadoutRoles=['attack','defense','heal','pierce','homing'];
 const savedLoadout=Array.isArray(setup.slots)&&setup.slots.length===5&&setup.slots.every(s=>typeof s?.ch==='string'&&splitGlyphs(s.ch).length===1);
 $('onlineSlots').innerHTML=loadoutRoles.map((role,i)=>{
  const s=savedLoadout?setup.slots[i]:{ch:'',kind:role,n:''};
- return `<div class="online-slot"><label for="onlineGlyph${i}">枠 ${i+1}</label><input id="onlineGlyph${i}" class="online-glyph-input" value="${escapeHtml(s.ch||'')}" maxlength="24" placeholder="🔥・漢字" aria-label="武装文字・絵文字${i+1}"><select class="online-kind" aria-label="枠${i+1}の能力">${loadoutRoles.map(k=>`<option value="${k}" ${s.kind===k?'selected':''}>${onlineNames[k]}</option>`).join('')}</select><button type="button" class="slot-random" data-random-slot="${i}" aria-label="枠${i+1}の文字をランダム">🎲 全種類ランダム</button><label>画数（カスタム）</label><input class="slot-strokes" type="number" min="1" max="84" value="${Number.isInteger(s.n)?s.n:''}" aria-label="枠${i+1}のカスタム画数"></div>`;
+ return `<div class="online-slot"><label for="onlineGlyph${i}">枠 ${i+1}</label><input id="onlineGlyph${i}" class="online-glyph-input" value="${escapeHtml(s.ch||'')}" maxlength="24" placeholder="🔥・漢字" aria-label="武装文字・絵文字${i+1}"><select class="online-kind" aria-label="枠${i+1}の能力">${loadoutRoles.map(k=>`<option value="${k}" ${s.kind===k?'selected':''}>${onlineNames[k]}</option>`).join('')}</select><button type="button" class="slot-random" data-random-slot="${i}" aria-label="枠${i+1}の文字をランダム">🎲 全種類ランダム</button><label>${setup.mode==='custom'?'画数（カスタム）':'画数（自動）'}</label><input class="slot-strokes" type="number" min="1" max="84" ${setup.mode==='custom'?'':'readonly'} value="${Number.isInteger(s.n)?s.n:''}" aria-label="枠${i+1}のカスタム画数"></div>`;
 }).join('');
-let strokeData={};const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{strokeData=x;if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData}).catch(()=>{});
+let strokeData={};
+function syncOnlineStrokeDisplay(input){
+ if(!input||!input.classList.contains('online-glyph-input'))return;
+ const field=input.closest('.online-slot')?.querySelector('.slot-strokes');
+ if(!field)return;
+ if(setup.mode!=='custom'||!field.value.trim()){
+  const characters=splitGlyphs(input.value);
+  const n=characters.length===1?strokeForGlyph(characters[0]):null;
+  field.value=Number.isInteger(n)?String(n):'';
+ }
+}
+const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{
+ strokeData=x;if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData;
+ document.querySelectorAll('.online-glyph-input').forEach(syncOnlineStrokeDisplay);
+}).catch(()=>{});
+$('onlineSlots').addEventListener('input',e=>{
+ if(e.target.matches('.online-glyph-input'))syncOnlineStrokeDisplay(e.target);
+});
 function randomKanjiPool(){return window.MojiRandom.all()}
 function randomEmojiPool(){return ['🔥','⚡','🌸','🛡️','👻','🐉','💥','🌊','❄️','🌙','⭐','💫','🌈','🦊','⚔️','💎','🍀','🎯','🚀','🌀','💖','☄️']}
 function rollOnlineGlyph(i,pool,used){
@@ -180,7 +197,12 @@ function collectOnlineSlots(){
   const raw=slot.querySelector('.slot-strokes').value;
   const n=Number(raw);
   if(raw.trim()&&( !Number.isInteger(n)||n<1||n>84)){$('error').textContent=`枠${i+1}：画数は1〜84の整数で入力してください。`;return null}
-  out.push({ch:glyphs[0],kind,n:setup.mode==='custom'&&raw.trim()?n:strokeForGlyph(glyphs[0])});
+  const finalN=setup.mode==='custom'&&raw.trim()?n:strokeForGlyph(glyphs[0]);
+  if(!Number.isInteger(finalN)||finalN<1||finalN>84){
+   $('error').textContent='枠'+(i+1)+'：画数データがない文字です。別の文字を選ぶかカスタム画数を設定してください。';
+   input.focus();return null;
+  }
+  out.push({ch:glyphs[0],kind,n:finalN});
  }
  return out;
 }
