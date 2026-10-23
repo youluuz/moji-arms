@@ -340,3 +340,41 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
   }
  }
 }
+
+func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
+ // All four modes use this exact piecewise curve; other skill cooldowns remain untouched.
+ for _,tc:=range []struct{n int; seconds float64}{
+  {1,.775},{10,1.9},{12,2.19},{20,3.35},{30,4.8},{40,6.25},
+ } {
+  if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
+   t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
+  }
+ }
+ if slotCooldown("attack",10)>=slotCooldown("attack",20)||slotCooldown("attack",20)>=slotCooldown("attack",40) {
+  t.Fatal("high stroke attacks should fire more slowly")
+ }
+ index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
+ served:=mobilePatchedIndex(string(index))
+ if !strings.Contains(served,"attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)") {
+  t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
+ }
+ online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
+ for _,expected:=range []string{
+  "attack:.65+n*.125+Math.max(0,n-10)*.02",
+  "attack:Math.max(.65,.65+slot.n*.125+Math.max(0,slot.n-10)*.02)",
+ } {
+  if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
+ }
+ for _,kind:=range []string{"defense","heal","pierce","homing"} {
+  if slotCooldown(kind,15)<=0 {t.Fatal("other cooldown unexpectedly invalid: "+kind)}
+ }
+}
+func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
+ js,e:=gameFiles.ReadFile("public/ultimate-core.js");if e!=nil{t.Fatal(e)}
+ content:=string(js)
+ for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","guide.hidden=expanded","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'鈍化弾'","M65 17","M38 23h28"} {
+  if !strings.Contains(content,part){t.Errorf("missing ultimate help control or new icon artwork: %s",part)}
+ }
+ css,e:=gameFiles.ReadFile("public/ultimate-ui.css");if e!=nil{t.Fatal(e)}
+ if !strings.Contains(string(css),".ultimate-guide-toggle[hidden]") {t.Fatal("ability description button must hide during battle")}
+}
