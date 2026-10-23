@@ -1,4 +1,4 @@
-// 文字武装 GLYPH STRIKE v6.4: Python-free standalone HTTP/WebSocket arena server.
+// 文字武装 GLYPH STRIKE v6.5: Python-free standalone HTTP/WebSocket arena server.
 // No third-party Go modules are needed; go build works offline.
 package main
 
@@ -418,6 +418,20 @@ func (a *Arena) handle(c *Client, raw []byte) {
 				return
 			}
 		}
+		// A room can only be created or joined with a complete, valid five-slot loadout.
+		// Validate here, not only in the separate legacy setup event, so direct
+		// WebSocket clients cannot enter the waiting room with empty equipment.
+		var slots []Slot
+		var ch string
+		parseInput(m, "slots", &slots)
+		parseInput(m, "ch", &ch)
+		if !validCharacter(ch) || !validSlots(slots, room.Mode == "custom") {
+			if typ == "create" {
+				delete(a.rooms, room.Code)
+			}
+			c.message(map[string]string{"type": "error", "message": "5枠の武装文字をすべて設定してください"})
+			return
+		}
 		var name string
 		parseInput(m, "name", &name)
 		name = strings.TrimSpace(name)
@@ -429,7 +443,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			name = string(rs[:16])
 		}
 		pid := randomCode(12)
-		p := &Player{ID: pid, C: c, Name: name, Ch: "武", X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1}
+		p := &Player{ID: pid, C: c, Name: name, Ch: ch, Slots: slots, Ready: true, X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1}
 		c.room = room
 		c.pid = pid
 		room.Players = append(room.Players, p)
@@ -993,7 +1007,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "6.4", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "6.5", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1013,7 +1027,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v6.4 / Python不要")
+	fmt.Println("  文字武装 v6.5 / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")

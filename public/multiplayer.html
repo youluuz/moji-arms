@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | ONLINE v6.4</title><style>
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | ONLINE v6.5</title><style>
 :root{color-scheme:dark;font-family:system-ui,'Noto Sans JP',sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#293854,#081321 65%);color:#f2f5ff}header{padding:18px max(20px,calc((100vw - 1150px)/2));border-bottom:1px solid #50617766;display:flex;justify-content:space-between;align-items:center}h1{margin:0;font-size:24px;color:#f8dda7}h2{font-size:18px}.wrap{max-width:1080px;margin:28px auto;padding:0 20px}.panel{background:#122038ed;border:1px solid #4b627e;border-radius:19px;padding:22px;margin-bottom:20px;box-shadow:0 10px 35px #0005}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.buttons{display:flex;gap:10px;flex-wrap:wrap}button,input,select{border:1px solid #6d83a1;border-radius:9px;padding:10px 14px;color:#fff;background:#1e314e;font:inherit}button{cursor:pointer;font-weight:700}button.primary{background:linear-gradient(120deg,#aa7839,#e5c377);color:#1d1820;border-color:#f1d99e}button:disabled{opacity:.45;cursor:not-allowed}input{width:100%}small,.muted{color:#b3c0d6}#gameArea{display:none}canvas{display:block;width:100%;max-width:900px;aspect-ratio:900/470;border:2px solid #93b0bd;border-radius:11px;touch-action:none;background:#16253a;cursor:crosshair}.game-wrap{position:relative;max-width:900px;margin:auto}.bar{height:10px;background:#263148;border-radius:10px;overflow:hidden}.bar>div{height:100%;background:linear-gradient(90deg,#42b3de,#72e2c6)}.hud{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:0 0 13px}.cards{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.card{background:#253957;border:1px solid #647995;border-radius:10px;padding:8px 13px;min-width:110px}.card.active{border-color:#ffdd92;background:#3e3c52}.coin{color:#ffe09b}.error{color:#ffaab7;min-height:25px}#roster{line-height:2}#battleResult{font-size:25px;color:#ffe3a1;text-align:center;margin-top:10px}#controls{font-size:13px;color:#b1c4d6;margin-top:10px}.pill{padding:6px 12px;border:1px solid #c59b51;border-radius:40px;color:#ffe6b3;background:#483623}@media(max-width:700px){.grid,.hud{grid-template-columns:1fr}}
 
 body.online-battle{overflow:hidden}
@@ -33,20 +33,73 @@ body.online-battle #gameArea button{padding:5px 10px;font-size:11px}
 .online-invite{margin:18px 0;padding:14px;border:1px solid #526f8a;background:#1a2b43;border-radius:12px;display:flex;gap:12px;align-items:end}
 .online-invite>div{flex:1;min-width:0}.online-invite small{display:block;margin-top:7px;font-size:11px}.online-invite button{flex-shrink:0}
 @media(max-width:640px){.online-invite{flex-direction:column;align-items:stretch}}
-</style></head><body><header><h1><span class="online-glyph">文</span> 文字武装 <small>GLYPH STRIKE // ONLINE</small></h1><a href="index.html" style="color:#eed18e">← ロビー</a></header><div class="wrap"><section id="joinArea" class="panel"><div class="online-eyebrow">MOJI ARMS // PVP LOBBY</div><h2>友達と対戦しよう</h2><p class="muted">ルーム作成後は待機画面に自動で移動。招待リンクを送るだけで友達が参加できる。インターネット公開モードなら別Wi-Fiからも参加可能。</p><div class="grid"><div><label>プレイヤー名</label><input id="name" maxlength="16" value="挑戦者"><p><span id="modeText" class="pill">通常マルチ</span></p><p class="muted" id="settingsText"></p><p class="muted" id="onlineJoinTip">ロビーで設定した装備を使用します。招待リンクから直接来た場合は基本装備で参加します。</p></div><div><label>ルームコード（手動参加の場合）</label><input id="roomCode" maxlength="6" placeholder="ABC123"><div class="buttons" style="margin-top:12px"><button class="primary" id="create">新しいルームを作る</button><button id="join">コードで参加</button></div></div></div><p id="error" class="error"></p><details class="online-guide"><summary>⚙ 「ページに到達できない」と表示されたら</summary><p>「文字武装_起動_Windows.exe」をダブルクリックして起動してください。Pythonは不要です。起動用の黒い画面は閉じないでください。ブラウザが開かないときは、黒い画面に出る <b>http://127.0.0.1:ポート番号</b> を開いてください。友達はこのアドレスでなく、招待リンクを開きます。</p><p>別の家の相手との対戦には外部公開されたサーバーが必要です（このZIPだけでインターネットへの公開はされません）。</p></details></section><section class="panel" id="waitArea" style="display:none"><h2>ルーム完成！ <span id="code" class="pill"></span></h2><p style="color:#bcebd8;font-weight:750">✔ サーバー接続中 ・友達を招待できます</p><p id="roster"></p><p class="muted">① 招待リンクをコピーして友達に送る → ② 友達が開けば自動参加 → ③ 2人そろったら「試合開始」。</p><div class="buttons"><button id="begin" class="primary" disabled>試合開始（ホスト）</button><button id="leave">退出</button></div><div class="online-invite"><div><label for="inviteUrl">友達に送る招待リンク</label><input id="inviteUrl" type="text" readonly value="" aria-label="招待リンク"><small>インターネット対戦モードなら公開HTTPSリンクを共有できます。ローカル対戦では同じWi-Fiからのみ利用できます。</small></div><button id="copyInvite" type="button" class="primary">🔗 招待リンクをコピー</button></div><p id="waitError" class="error"></p><details class="online-guide"><summary>？ 各能力の使い方</summary><p>⚔ 攻撃：直進弾 ／ 🛡 防御：1.8秒間軽減 ／ ✚ 回復：HP回復 ／ ➤ 貫通：壁・防御無視 ／ ◎ ホーミング：追尾するが必中ではない。効果量は文字の画数に比例し、各スロットのクールタイムは独立。</p></details></section><section id="gameArea"><div class="panel"><div class="hud"><div><b>PLAYER <span id="selfHP">600</span> / 600</b><div class="bar"><div id="selfBar" style="width:100%"></div></div></div><div><b>安全エリア <span id="zoneSize"></span></b><div id="mapName" class="muted"></div></div></div><div class="game-wrap"><canvas id="arena" width="900" height="470"></canvas><div id="onlineZoneWarning" class="zone-warning">⚠ エリア外！ HP減少中</div></div><div id="cards" class="cards"></div><p id="controls">移動：WASD / 矢印キー ｜ マウスで照準 ｜ クリックで攻撃・防御・回復 ｜ 1〜5で切替。エリア外はHPが減る。</p><div id="battleResult"></div><div class="buttons" style="margin-top:15px"><button id="return">ロビーに戻る</button></div></div></section></div><div id="onlineOutcome" class="online-outcome" role="dialog" aria-modal="true" aria-label="オンライン対戦結果"><div class="online-outcome-card"><div class="online-overline">MATCH COMPLETED // MOJI ARMS</div><div id="onlineOutcomeBadge" class="online-badge">👑</div><div id="onlineOutcomeEnglish" class="online-eng">VICTORY</div><h2 id="onlineOutcomeTitle">対戦勝利！</h2><div id="onlineOutcomeMeta" class="online-meta"></div><div id="onlineOutcomeReward" class="online-reward">🪙 +1 COIN</div><button id="onlineBack" class="primary">← 武装ロビーへ戻る</button></div></div><audio id="onlineMusic" preload="none" loop></audio><audio id="onlineVictory" preload="none" src="kanji_arms_victory_fanfare.mp3"></audio><script>
+
+/* v6.5: selectable abilities, editable invite loadouts, touch controls and constrained canvas. */
+.online-loadout{margin:16px 0 0;padding:14px;border:1px solid #54728c;border-radius:12px;background:#0e2037}
+.online-loadout h3{font-size:14px;margin:0 0 10px;color:#ffe3a7}
+.online-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.online-slot{min-width:0;background:#1b304b;border:1px solid #496382;border-radius:9px;padding:8px}
+.online-slot label{display:block;font-size:11px;color:#c8d9e9}
+.online-slot input{font-size:22px;min-width:0;width:100%;text-align:center;padding:8px 2px;margin:5px 0}
+.online-slot select,.online-slot input.slot-strokes{font-size:12px;padding:6px 2px;margin:3px 0;width:100%;min-width:0}
+.online-slot .slot-strokes{font-variant-numeric:tabular-nums}
+body.online-battle .card{cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;color:#f2f8ff;font:inherit}
+body.online-battle .card.active{border:2px solid #ffda7d;box-shadow:inset 0 0 0 1px #ffda7d44,0 0 13px #ffda7d55;background:#3d435d}
+body.online-battle .game-wrap{max-width:100%;}
+#touchControls{display:none;position:absolute;inset:0;pointer-events:none;z-index:10}
+#movePad{position:absolute;bottom:13px;left:12px;width:114px;height:114px;border-radius:50%;border:2px solid #b8e1f699;background:#0b294578;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center}
+#moveThumb{display:block;width:49px;height:49px;border:2px solid #d1f5ff;background:#53bcf3aa;border-radius:50%;box-shadow:0 0 12px #71d8ff77;pointer-events:none}
+.pad-label{position:absolute;bottom:4px;font-size:9px;color:#fff9;pointer-events:none}
+#mobileFire{position:absolute;right:15px;bottom:24px;width:80px;height:80px;border:2px solid #ffddb0;border-radius:50%;background:linear-gradient(145deg,#bb6a43,#77345b);box-shadow:0 0 14px #ffbd7a88;font-weight:900;color:#fff;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileFire:active{transform:scale(.94);filter:brightness(1.2)}
+@media(pointer:coarse){#touchControls{display:block}body.online-battle .card{min-height:60px}body.online-battle #controls{font-size:10px}}
+@media(max-width:640px){.online-slots{gap:4px}.online-slot{padding:5px 3px}.online-slot select{font-size:10px}.online-slot input{font-size:19px}body.online-battle .wrap{padding:3px}body.online-battle #gameArea>.panel{padding:4px}body.online-battle .cards{gap:3px}body.online-battle .card{font-size:10px}}
+@media(max-width:360px){#movePad{width:89px;height:89px}#mobileFire{width:65px;height:65px}body.online-battle .card small{display:block}}
+@media(max-height:520px) and (pointer:coarse){body.online-battle #controls{display:none}body.online-battle .card{height:56px}#movePad{width:88px;height:88px}#mobileFire{width:68px;height:68px}}
+</style></head><body><header><h1><span class="online-glyph">文</span> 文字武装 <small>GLYPH STRIKE // ONLINE</small></h1><a href="index.html" style="color:#eed18e">← ロビー</a></header><div class="wrap"><section id="joinArea" class="panel"><div class="online-eyebrow">MOJI ARMS // PVP LOBBY</div><h2>友達と対戦しよう</h2><p class="muted">ルーム作成後は待機画面に自動で移動。招待リンクを送るだけで友達が参加できる。インターネット公開モードなら別Wi-Fiからも参加可能。</p><div class="grid"><div><label>プレイヤー名</label><input id="name" maxlength="16" value="挑戦者"><p><span id="modeText" class="pill">通常マルチ</span></p><p class="muted" id="settingsText"></p><p class="muted" id="onlineJoinTip">5つの武装文字を入力してから参加してください。空欄のままでは入室できません。</p></div><div><label>ルームコード（手動参加の場合）</label><input id="roomCode" maxlength="6" placeholder="ABC123"><div class="buttons" style="margin-top:12px"><button class="primary" id="create">新しいルームを作る</button><button id="join">コードで参加</button></div></div></div><div class="online-loadout"><h3>武装する文字（5枠必須）</h3><div id="onlineSlots" class="online-slots"></div><p class="muted">各枠に1文字と能力を選択。通常対戦の画数は自動計算。カスタム対戦は画数を変更できます。</p></div><p id="error" class="error" role="alert"></p><details class="online-guide"><summary>⚙ 「ページに到達できない」と表示されたら</summary><p>公開URLへアクセスし、サーバーの起動が完了してから再読み込みしてください。Render無料版は休止状態からの再開に時間がかかる場合があります。</p><p>別の家の相手との対戦には外部公開されたサーバーが必要です（このZIPだけでインターネットへの公開はされません）。</p></details></section><section class="panel" id="waitArea" style="display:none"><h2>ルーム完成！ <span id="code" class="pill"></span></h2><p style="color:#bcebd8;font-weight:750">✔ サーバー接続中 ・友達を招待できます</p><p id="roster"></p><p class="muted">① 招待リンクをコピーして友達に送る → ② 友達が開けば自動参加 → ③ 2人そろったら「試合開始」。</p><div class="buttons"><button id="begin" class="primary" disabled>試合開始（ホスト）</button><button id="leave">退出</button></div><div class="online-invite"><div><label for="inviteUrl">友達に送る招待リンク</label><input id="inviteUrl" type="text" readonly value="" aria-label="招待リンク"><small>インターネット対戦モードなら公開HTTPSリンクを共有できます。ローカル対戦では同じWi-Fiからのみ利用できます。</small></div><button id="copyInvite" type="button" class="primary">🔗 招待リンクをコピー</button></div><p id="waitError" class="error"></p><details class="online-guide"><summary>？ 各能力の使い方</summary><p>⚔ 攻撃：直進弾 ／ 🛡 防御：1.8秒間軽減 ／ ✚ 回復：HP回復 ／ ➤ 貫通：壁・防御無視 ／ ◎ ホーミング：追尾するが必中ではない。効果量は文字の画数に比例し、各スロットのクールタイムは独立。</p></details></section><section id="gameArea"><div class="panel"><div class="hud"><div><b>PLAYER <span id="selfHP">600</span> / 600</b><div class="bar"><div id="selfBar" style="width:100%"></div></div></div><div><b>安全エリア <span id="zoneSize"></span></b><div id="mapName" class="muted"></div></div></div><div class="game-wrap"><canvas id="arena" width="900" height="470"></canvas><div id="onlineZoneWarning" class="zone-warning">⚠ エリア外！ HP減少中</div><div id="touchControls" aria-label="スマホ用操作"><div id="movePad" role="group" aria-label="移動パッド"><span id="moveThumb"></span><span class="pad-label">移動</span></div><button id="mobileFire" type="button" aria-label="選択した武装を発動">発動</button></div></div><div id="cards" class="cards"></div><p id="controls">PC：WASDで移動／マウスで照準／クリックで発動／1〜5または下のスロットで切替。スマホ：左パッドで移動／画面をタップして照準／右の発動ボタン／スロットをタップして切替。</p><div id="battleResult"></div><div class="buttons" style="margin-top:15px"><button id="return">ロビーに戻る</button></div></div></section></div><div id="onlineOutcome" class="online-outcome" role="dialog" aria-modal="true" aria-label="オンライン対戦結果"><div class="online-outcome-card"><div class="online-overline">MATCH COMPLETED // MOJI ARMS</div><div id="onlineOutcomeBadge" class="online-badge">👑</div><div id="onlineOutcomeEnglish" class="online-eng">VICTORY</div><h2 id="onlineOutcomeTitle">対戦勝利！</h2><div id="onlineOutcomeMeta" class="online-meta"></div><div id="onlineOutcomeReward" class="online-reward">🪙 +1 COIN</div><button id="onlineBack" class="primary">← 武装ロビーへ戻る</button></div></div><audio id="onlineMusic" preload="none" loop></audio><audio id="onlineVictory" preload="none" src="kanji_arms_victory_fanfare.mp3"></audio><script>
 const $=id=>document.getElementById(id), safeSessionGet=key=>{try{return sessionStorage.getItem(key)}catch(e){return null}}, data=(()=>{try{return JSON.parse(safeSessionGet('kanji_v5_multi_setup')||'null')}catch(e){return null}})();
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initialName=safeSessionGet('moji_player_name');if(initialName)document.getElementById('name').value=initialName;
-const setup=data||{mode:'normal',ch:'武',slots:[{ch:'火',kind:'attack',n:4},{ch:'雷',kind:'attack',n:13},{ch:'盾',kind:'defense',n:9},{ch:'水',kind:'heal',n:4},{ch:'龍',kind:'homing',n:16}],theme:'random',shrink:'normal'};
+const setup=data||{mode:'normal',ch:'',slots:[],theme:'random',shrink:'normal'};
 const incomingRoom=new URLSearchParams(location.search).get('room');if(incomingRoom){$('roomCode').value=incomingRoom.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)}
 $('modeText').textContent=setup.mode==='custom'?'カスタムマルチ':'通常マルチ';// All combat math comes from the same rules as the CPU and server.
 const ONLINE_HP=600;
 const onlineCD=(kind,n)=>Math.round(1000*({attack:.65+n*.125,defense:9+n*.4,heal:13+n*.55,pierce:7+n*.45,homing:4.5+n*.42}[kind]));
 const onlineNames={attack:'攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'追尾'};
-$('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+setup.slots.map(s=>{
+$('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+(setup.slots||[]).map(s=>{
  const effect=s.kind==='heal'?`回復${s.n*4}`:s.kind==='defense'?`軽減${s.n*6}`:`火力${s.n*6}`;
  return `${s.ch}・${onlineNames[s.kind]||s.kind} ${effect} CT${(onlineCD(s.kind,s.n)/1000).toFixed(1)}秒`;
 }).join(' / ')+' ｜ 収縮：'+setup.shrink;
+// Loadout editor: guests joining with an invite must deliberately equip five glyphs.
+const loadoutRoles=['attack','defense','heal','pierce','homing'];
+const savedLoadout=Array.isArray(setup.slots)&&setup.slots.length===5&&setup.slots.every(s=>typeof s?.ch==='string'&&s.ch.trim());
+$('onlineSlots').innerHTML=loadoutRoles.map((role,i)=>{
+ const s=savedLoadout?setup.slots[i]:{ch:'',kind:role,n:''};
+ return `<div class="online-slot"><label for="onlineGlyph${i}">枠 ${i+1}</label><input id="onlineGlyph${i}" class="online-glyph-input" value="${escapeHtml(s.ch||'')}" maxlength="24" placeholder="文字" aria-label="武装文字${i+1}"><select class="online-kind" aria-label="枠${i+1}の能力">${loadoutRoles.map(k=>`<option value="${k}" ${s.kind===k?'selected':''}>${onlineNames[k]}</option>`).join('')}</select><label>画数（カスタム）</label><input class="slot-strokes" type="number" min="1" max="40" value="${Number.isInteger(s.n)?s.n:''}" aria-label="枠${i+1}のカスタム画数"></div>`;
+}).join('');
+let strokeData={};const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{strokeData=x}).catch(()=>{});
+function splitGlyphs(s){s=String(s||'').trim();return typeof Intl.Segmenter==='function'?[...new Intl.Segmenter('ja',{granularity:'grapheme'}).segment(s)].map(x=>x.segment):Array.from(s)}
+function strokeForGlyph(ch){
+ if(Object.prototype.hasOwnProperty.call(strokeData,ch))return strokeData[ch];
+ if(/\p{Script=Han}/u.test(ch))return 12;
+ if(/[\uFE0F\u200D\u{1F300}-\u{10FFFF}]/u.test(ch))return 5;
+ if(/[\p{L}\p{N}]/u.test(ch))return 3;
+ return 2;
+}
+let activeSetup=null,isConnecting=false;
+function collectOnlineSlots(){
+ const out=[];
+ for(let i=0;i<5;i++){
+  const input=$(`onlineGlyph${i}`),glyphs=splitGlyphs(input.value);
+  if(glyphs.length!==1||!glyphs[0].trim()||glyphs[0].length>16){$('error').textContent=`枠${i+1}：武装文字を1つ入力してください。5つすべて必要です。`;input.focus();return null}
+  const slot=input.closest('.online-slot'),kind=slot.querySelector('.online-kind').value;
+  const raw=slot.querySelector('.slot-strokes').value;
+  const n=Number(raw);
+  if(raw.trim()&&( !Number.isInteger(n)||n<1||n>40)){$('error').textContent=`枠${i+1}：画数は1〜40の整数で入力してください。`;return null}
+  out.push({ch:glyphs[0],kind,n:setup.mode==='custom'&&raw.trim()?n:strokeForGlyph(glyphs[0])});
+ }
+ return out;
+}
 let onlineMusicStarted=false;function playOnlineMusic(theme){if(onlineMusicStarted)return;onlineMusicStarted=true;const a=$('onlineMusic');a.src=({shrine:'kanji_arms_shrine_bgm.mp3',sakura:'kanji_arms_sakura_bgm.mp3',night:'kanji_arms_night_bgm.mp3'})[theme];a.volume=.22;a.play().catch(()=>{});}
 let sock=null,myId='',roomState=null,selected=0,keys={},aim=0,down=false,drawHandle=null,inputTimer=null,wonPaid=false;
 let zoneAudioCtx=null,lastZoneAudioTime=-Infinity,finished=false;const heardActions=new Map();
@@ -92,15 +145,32 @@ function updateZoneWarning(me,m){
 }
 function fitOnlineArena(){
  const shell=document.querySelector('#gameArea .game-wrap');if(!shell||!shell.clientWidth||!shell.clientHeight)return;
- const scale=Math.min(shell.clientWidth/900,shell.clientHeight/470);
+ const scale=Math.min(shell.clientWidth/900,shell.clientHeight/470,.96);
  cv.style.width=Math.max(1,Math.floor(scale*900))+'px';cv.style.height=Math.max(1,Math.floor(scale*470))+'px';
+ const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
+ if(cv.width!==Math.round(900*dpr)||cv.height!==Math.round(470*dpr)){
+  cv.width=Math.round(900*dpr);cv.height=Math.round(470*dpr);
+  cx.setTransform(dpr,0,0,dpr,0,0);
+ }
 }
 window.addEventListener('resize',fitOnlineArena);
 if(window.ResizeObserver)new ResizeObserver(fitOnlineArena).observe(document.querySelector('#gameArea .game-wrap'));
 
 const cv=$('arena'),cx=cv.getContext('2d');let cam={x:0,y:0};
 function send(msg){if(sock&&sock.readyState===1)sock.send(JSON.stringify(msg))}
-function connect(action){$('error').textContent='';$('waitError').textContent='';if(location.protocol==='file:'){$('error').textContent='Windows用exeを起動して、開いたページからアクセスしてください。';return;}if(sock&&sock.readyState===1)sock.close();let protocol=location.protocol==='https:'?'wss':'ws';let host=location.host; sock=new WebSocket(`${protocol}://${host}/ws`);sock.onopen=()=>send({type:action,mode:setup.mode,theme:setup.theme,shrink:setup.shrink,name:$('name').value||'挑戦者',code:$('roomCode').value.trim().toUpperCase()});sock.onerror=()=>{$('error').textContent='通信サーバーに接続できません。公開URLなら少し時間を置いて再試行してください。ローカルの場合はWindows起動アプリを確認してください。';};sock.onclose=()=>{if(!roomState||roomState.phase!=='ended'){$('waitError').textContent='サーバーとの接続が切れました。ページを再読込し、ルームへ入り直してください。';$('error').textContent='接続が切れました。公開サーバーの休止や再起動の場合は再読込してください。';}stopInput();};sock.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='error'){$('error').textContent=m.message+'。リンクが古い場合はホストに招待し直してもらってください。';$('waitError').textContent=m.message;return}if(m.type==='joined'){myId=m.id;send({type:'setup',ch:setup.ch,slots:setup.slots});$('joinArea').style.display='none';$('waitArea').style.display='block';$('code').textContent=m.code;const invite=new URL(location.href);invite.searchParams.delete('auto');invite.searchParams.set('room',m.code);$('inviteUrl').value=invite.href;
+async function connect(action){
+ if(isConnecting)return;
+ $('error').textContent='';$('waitError').textContent='';
+ if(location.protocol==='file:'){$('error').textContent='公開ゲームのURLからアクセスしてください。';return;}
+ isConnecting=true;await strokesReady;
+ const slots=collectOnlineSlots();if(!slots){isConnecting=false;return;}
+ activeSetup={...setup,ch:(splitGlyphs(setup.ch).length===1?setup.ch:slots[0].ch),slots};
+ $('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+slots.map(t=>`${t.ch}・${onlineNames[t.kind]} ${t.n}画`).join(' / ');
+ try{sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(activeSetup))}catch(e){}
+ if(sock&&sock.readyState===1)sock.close();
+ let protocol=location.protocol==='https:'?'wss':'ws';let host=location.host;
+ sock=new WebSocket(`${protocol}://${host}/ws`);
+ sock.onopen=()=>{isConnecting=false;send({type:action,mode:setup.mode,theme:setup.theme,shrink:setup.shrink,name:$('name').value||'挑戦者',code:$('roomCode').value.trim().toUpperCase(),ch:activeSetup.ch,slots:activeSetup.slots})};sock.onerror=()=>{isConnecting=false;$('error').textContent='通信サーバーに接続できません。公開URLなら少し時間を置いて再試行してください。ローカルの場合はWindows起動アプリを確認してください。';};sock.onclose=()=>{isConnecting=false;if(!roomState||roomState.phase!=='ended'){$('waitError').textContent='サーバーとの接続が切れました。ページを再読込し、ルームへ入り直してください。';$('error').textContent='接続が切れました。公開サーバーの休止や再起動の場合は再読込してください。';}stopInput();};sock.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='error'){$('error').textContent=m.message+'。リンクが古い場合はホストに招待し直してもらってください。';$('waitError').textContent=m.message;return}if(m.type==='joined'){myId=m.id;$('joinArea').style.display='none';$('waitArea').style.display='block';$('code').textContent=m.code;const invite=new URL(location.href);invite.searchParams.delete('auto');invite.searchParams.set('room',m.code);$('inviteUrl').value=invite.href;
  if(['localhost','127.0.0.1'].includes(invite.hostname)){
   $('copyInvite').disabled=true;$('copyInvite').textContent='招待リンクを準備中…';
   fetch('/lan').then(r=>r.json()).then(info=>{
@@ -127,12 +197,12 @@ function showGame(m){
  if(self){$('selfHP').textContent=Math.ceil(self.hp);$('selfBar').style.width=Math.max(0,self.hp/600*100)+'%';}
  $('mapName').textContent=({shrine:'黄金の神殿',sakura:'桜舞う庭園',night:'蒼月の城塞'})[m.theme]+' ｜ '+m.players.length+'人対戦';
  $('zoneSize').textContent=Math.round(m.zone.r);
- $('cards').innerHTML=setup.slots.map((s,i)=>{
+ $('cards').innerHTML=activeSetup.slots.map((s,i)=>{
   const remaining=self?.cooldowns?.[i]||0;
   const duration={attack:Math.max(.65,.65+s.n*.125),defense:9+s.n*.4,heal:13+s.n*.55,pierce:7+s.n*.45,homing:4.5+s.n*.42}[s.kind];
   const percent=Math.max(0,100-Math.min(100,remaining/duration*100));
   const guard=s.kind==='defense'&&self?.guardSlot===i&&self?.shieldLeft>0;
-  return `<div class="card ${i===selected?'active':''}">${i+1}｜${escapeHtml(s.ch)} <small>${({attack:'攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'追尾'})[s.kind]}</small><div class="card-cooldown">${remaining?remaining.toFixed(1)+'s':'準備OK'}</div><div class="card-track"><div style="width:${percent}%"></div></div>${s.kind==='defense'?`<div class="card-track guard-track"><div style="width:${guard?Math.min(100,self.shieldLeft/1.8*100):0}%"></div></div>`:''}</div>`;
+  return `<button type="button" data-slot="${i}" aria-pressed="${i===selected}" class="card ${i===selected?'active':''}">${i+1}｜${escapeHtml(s.ch)} <small>${({attack:'攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'追尾'})[s.kind]}</small><div class="card-cooldown">${remaining?remaining.toFixed(1)+'s':'準備OK'}</div><div class="card-track"><div style="width:${percent}%"></div></div>${s.kind==='defense'?`<div class="card-track guard-track"><div style="width:${guard?Math.min(100,self.shieldLeft/1.8*100):0}%"></div></div>`:''}</button>`;
  }).join('');
  // Server-announced events sound only on successful casts, not on every mouse click.
  for(const fighter of m.players){const serial=fighter.actionSerial||0;const prev=heardActions.get(fighter.id)||0;if(serial>prev&&m.phase==='playing'&&fighter.lastKind)playAbilitySound(fighter.lastKind,fighter.id===myId?.85:.22);heardActions.set(fighter.id,serial)}
@@ -194,7 +264,55 @@ $('onlineBack').onclick=()=>{sock?.close();location.href='index.html'};
 $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inviteUrl').value);$('copyInvite').textContent='コピーしました！'}catch(e){$('inviteUrl').select();if(document.execCommand('copy'))$('copyInvite').textContent='コピーしました！';else $('copyInvite').textContent='URL欄を長押ししてコピー'}};
 $('create').onclick=()=>connect('create');$('join').onclick=()=>connect('join');
 // Direct route from the main lobby creates a room; invite links join in one click.
-if(incomingRoom){$('joinArea').querySelector('h2').textContent='招待ルームに参加中…';setTimeout(()=>connect('join'),80);}
-else if(new URLSearchParams(location.search).get('auto')==='create'){$('joinArea').querySelector('h2').textContent='ルームを作成中…';setTimeout(()=>connect('create'),80);}
-$('begin').onclick=()=>send({type:'start'});$('leave').onclick=$('return').onclick=()=>{$('onlineMusic').pause();sock?.close();location.href='index.html'};cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect(),me=roomState?.players.find(p=>p.id===myId);if(!me)return;const x=(e.clientX-r.left)*900/r.width+cam.x,y=(e.clientY-r.top)*470/r.height+cam.y;aim=Math.atan2(y-me.y,x-me.x)});cv.addEventListener('mousedown',e=>{if(e.button===0)down=true});window.addEventListener('mouseup',()=>down=false);window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['w','a','s','d'].includes(k))keys[k]=true;if(e.key.startsWith('Arrow'))keys[({ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'})[e.key]]=true;if(/^[1-5]$/.test(e.key))selected=+e.key-1;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key===' ')down=true});window.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(['w','a','s','d'].includes(k))keys[k]=false;if(e.key.startsWith('Arrow'))keys[({ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'})[e.key]]=false;if(e.key===' ')down=false});
+if(incomingRoom){$('joinArea').querySelector('h2').textContent='招待ルームへ参加';$('join').textContent='装備を確認して参加';if(savedLoadout)setTimeout(()=>connect('join'),80);}
+else if(new URLSearchParams(location.search).get('auto')==='create'){$('joinArea').querySelector('h2').textContent='ルームを作成';if(savedLoadout)setTimeout(()=>connect('create'),80);else $('error').textContent='先に5枠すべての文字を入力してください。';}
+$('begin').onclick=()=>send({type:'start'});$('leave').onclick=$('return').onclick=()=>{$('onlineMusic').pause();sock?.close();location.href='index.html'};// Slot selection uses event delegation because the server refreshes the cards every tick.
+$('cards').addEventListener('click',e=>{
+ const card=e.target.closest('button[data-slot]');if(!card)return;
+ selected=Math.max(0,Math.min(4,Number(card.dataset.slot)));
+ $('cards').querySelectorAll('.card').forEach((el,i)=>{el.classList.toggle('active',i===selected);el.setAttribute('aria-pressed',String(i===selected))});
+});
+let touchAimManual=false;
+function setAimFromPointer(e){
+ const r=cv.getBoundingClientRect(),me=roomState?.players.find(p=>p.id===myId);
+ if(!me||!r.width||!r.height)return;
+ const x=(e.clientX-r.left)*900/r.width+cam.x,y=(e.clientY-r.top)*470/r.height+cam.y;
+ aim=Math.atan2(y-me.y,x-me.x);touchAimManual=true;
+}
+function aimAtNearestEnemy(){
+ const me=roomState?.players.find(p=>p.id===myId);if(!me)return;
+ const targets=roomState.players.filter(p=>p.id!==myId&&p.alive).sort((a,b)=>(a.x-me.x)**2+(a.y-me.y)**2-((b.x-me.x)**2+(b.y-me.y)**2));
+ if(targets[0])aim=Math.atan2(targets[0].y-me.y,targets[0].x-me.x);
+}
+cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)setAimFromPointer(e)});
+cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;setAimFromPointer(e);if(e.pointerType==='mouse'){down=true}else{e.preventDefault();cv.setPointerCapture(e.pointerId)}});
+const cancelFire=()=>{down=false};
+cv.addEventListener('pointerup',cancelFire);cv.addEventListener('pointercancel',cancelFire);
+window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')cancelFire()});
+// Virtual stick works with both touch and pen; never uses the mouse aiming channel.
+const movePad=$('movePad'),moveThumb=$('moveThumb');let padPointer=null;
+function moveStick(e){
+ const r=movePad.getBoundingClientRect();const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+ const radius=r.width*.35,dist=Math.hypot(dx,dy),factor=dist?Math.min(1,radius/dist):0;
+ const x=dx*factor,y=dy*factor;
+ moveThumb.style.transform=`translate(${x}px,${y}px)`;
+ keys.a=x<-radius*.22;keys.d=x>radius*.22;keys.w=y<-radius*.22;keys.s=y>radius*.22;
+}
+function releaseStick(e){if(padPointer!==null&&(!e||e.pointerId===padPointer)){padPointer=null;moveThumb.style.transform='';for(const k of ['w','a','s','d'])keys[k]=false}}
+movePad.addEventListener('pointerdown',e=>{e.preventDefault();padPointer=e.pointerId;movePad.setPointerCapture(e.pointerId);moveStick(e)});
+movePad.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();moveStick(e)}});
+movePad.addEventListener('pointerup',releaseStick);movePad.addEventListener('pointercancel',releaseStick);
+const fireButton=$('mobileFire');let firePointer=null;
+fireButton.addEventListener('pointerdown',e=>{e.preventDefault();firePointer=e.pointerId;fireButton.setPointerCapture(e.pointerId);if(!touchAimManual)aimAtNearestEnemy();down=true});
+function releaseMobileFire(e){if(firePointer===e.pointerId){firePointer=null;down=false}}
+fireButton.addEventListener('pointerup',releaseMobileFire);fireButton.addEventListener('pointercancel',releaseMobileFire);
+window.addEventListener('blur',()=>{down=false;releaseStick();keys={}});
+window.addEventListener('keydown',e=>{
+ if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+ let k=e.key.toLowerCase();if(['w','a','s','d'].includes(k))keys[k]=true;
+ if(e.key.startsWith('Arrow'))keys[({ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'})[e.key]]=true;
+ if(/^[1-5]$/.test(e.key)){selected=+e.key-1;$('cards').querySelectorAll('.card').forEach((el,i)=>el.classList.toggle('active',i===selected))}
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key===' ')down=true;
+});
+window.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(['w','a','s','d'].includes(k))keys[k]=false;if(e.key.startsWith('Arrow'))keys[({ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'})[e.key]]=false;if(e.key===' ')down=false});
 </script></body></html>
