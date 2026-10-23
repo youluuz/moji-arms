@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | MOJI ARMS v6.8</title>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | MOJI ARMS v6.9</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1220;--panel:#131e32;--panel2:#182740;--edge:#314663;--line:#263a55;--ink:#f0f5ff;--muted:#a9bed7;--gold:#f4cb7c;--ice:#84d9ff;--good:#6bdfab}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -10%,#233d60 0,transparent 43%),linear-gradient(180deg,#0b1526,#0a1020);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:var(--ink);font-size:15px}
@@ -266,6 +266,24 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 .quick-room .quick-room-extra{display:flex;flex-direction:row;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}.quick-room{flex-wrap:wrap}.quick-room>div:first-child{flex:1;min-width:220px}
 .quick-room-extra input{width:min(150px,100%);padding:9px}
 .quick-room-extra button{padding:8px 12px}
+/* v6.9: one consistent start lobby and responsive solo arena */
+.mode-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:10px 0 16px}
+.mode-tiles button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;min-height:99px;background:linear-gradient(145deg,#1a2c48,#122237);border:1px solid #617999;border-radius:13px;color:#e7f2ff;font-size:22px;padding:12px 7px}
+.mode-tiles button b{font-size:14px;color:#f4e0b4}.mode-tiles button small{font-size:10px;color:#bad0e5;text-align:center}
+.mode-tiles button[aria-pressed="true"]{border:2px solid #f3c87f;box-shadow:0 0 16px #f3c87f55;background:linear-gradient(145deg,#51402f,#253653)}
+.one-slot-random{display:block;width:100%;padding:6px 3px;margin:6px 0;font-size:11px;background:#2a415f;border:1px solid #627ea3;border-radius:7px;color:#e7e2bc}
+#cpuTapReticle{position:absolute;z-index:20;pointer-events:none;width:42px;height:42px;border:2px solid #ffe3a3;border-radius:50%;transform:translate(-50%,-50%);opacity:0;box-shadow:0 0 15px #e8c27b}
+#cpuTapReticle.active{animation:cpuTapFlash .32s ease-out both}
+@keyframes cpuTapFlash{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
+@media(max-width:740px){.mode-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.mode-tiles button{min-height:82px;padding:9px 4px}}
+@media(any-pointer:coarse){body.in-match .game-hint{display:none}body.in-match #cpuTapHint{display:block}}
+@media(orientation:portrait) and (max-width:660px){
+ body.in-match #gameScreen{height:100dvh;min-height:0;overflow:hidden}
+ body.in-match #gameScreen .game-panel{height:calc(100dvh - 45px);min-height:0;overflow:hidden;display:flex;flex-direction:column}
+ body.in-match #gameScreen .arena-shell{min-height:0;flex:1}
+ body.in-match #gameScreen .weaponrow{flex:0 0 auto}
+ body.in-match #gameScreen .weapon{height:61px}
+}
 </style></head><body>
 <header class="topbar"><div class="brand"><span class="brand-icon">文<span class="logo-slash">／</span></span><div><div class="brand-name">文字武装 <small>GLYPH STRIKE</small></div><div class="brand-sub">MOJI // ARMS · ARENA 6.0</div></div></div><div class="top-actions"><span id="currentPlayer" class="player-pill">GUEST</span><button id="openGacha" type="button" class="nav-gacha">✦ ガチャへ</button><div class="stat-pill">🏆 <span id="winCounter">0</span> WIN</div><div class="stat-pill">✧ <span id="ownedCounter">0</span> / 54</div><div class="coin-pill">🪙 <span id="coinCounter">0</span> COIN</div></div></header>
 <nav id="appTabs" class="app-tabs hidden" aria-label="ゲーム画面を切り替え">
@@ -287,7 +305,13 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 
 <section class="panel" id="loadoutPanel"><div class="section-head"><h2>01 <span class="head-slash">/</span> 武装ロビー</h2><span class="subtle">LOADOUT · MATCH SETUP</span></div><div class="avatar-zone"><div class="avatar-display"><canvas id="cosPreview" width="180" height="180" aria-label="装備プレビュー"></canvas><small>ICON PREVIEW</small></div><div><label class="label" for="avatarInput">アイコンの文字</label><div class="avatar-setting"><input id="avatarInput" value="" placeholder="好きな1文字（任意）" aria-label="アイコンの文字"><div class="subtle">アイコンは好きな1文字で設定。<br>空欄ならスロット1の文字を使用。</div></div><div id="avatarPreview" class="hidden">?</div><div class="subtle" id="equipSummary" style="margin-top:9px"></div></div></div>
 <div class="battle-settings" id="battleSettings">
-<div class="section-head compact-head"><h2>対戦設定</h2><span class="subtle">モードとマップを選ぶだけで開始できる</span></div>
+<div class="section-head compact-head"><h2>モードを選択して出撃</h2><span class="subtle">CPUもオンラインもこのロビーから開始</span></div>
+<div id="modeTiles" class="mode-tiles" aria-label="4つの対戦モード">
+<button type="button" data-mode-tile="normal" aria-pressed="true">🤖 <b>CPU戦</b><small>通常ルールで1人プレイ</small></button>
+<button type="button" data-mode-tile="custom" aria-pressed="false">⚙ <b>CPUカスタム</b><small>画数・エリアを調整</small></button>
+<button type="button" data-mode-tile="multi" aria-pressed="false">🌐 <b>オンライン対戦</b><small>ランダムマッチ・招待</small></button>
+<button type="button" data-mode-tile="multiCustom" aria-pressed="false">⚔ <b>カスタムマルチ</b><small>友達とルーム対戦</small></button>
+</div>
 <div class="mode-quickrow">
  <div class="setting"><label class="label" for="modeSelect">対戦モード</label><select id="modeSelect"><option value="normal">CPU（通常）</option><option value="custom">CPUカスタム</option><option value="multi">通常マルチ</option><option value="multiCustom">カスタムマルチ</option></select></div>
  <div class="setting"><label class="label" for="mapTheme">バトルマップ</label><select id="mapTheme"><option value="random">ランダム</option><option value="shrine">黄金の神殿</option><option value="sakura">桜舞う庭園</option><option value="night">蒼月の城塞</option></select></div>
@@ -349,7 +373,7 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 <div class="gacha-to-collection"><span>引いたアイテムはエフェクト図鑑から確認・装備できるよ。</span><button id="fromGachaCollection" type="button" class="outline">✦ 図鑑で装備する →</button></div>
 </section></div>
 <div id="gameScreen"><div class="battle-head"><div><div class="battle-label">LIVE MATCH / MOJI ARMS</div><div class="battle-title">⚔ 文字闘技場</div><div class="subtle" id="gameMapName">黄金の神殿</div></div><button id="retreat" class="outline">← ロビーへ撤退</button></div>
-<div class="game-panel"><div class="hud"><div><div class="hud-line"><span>● <span id="battlePlayerName">PLAYER</span></span><span class="hp-number"><span id="php">600</span> / 600</span></div><div class="hp-bar"><div id="pbar" class="hp-fill"></div></div></div><div><div class="hud-line"><span>◆ CPU</span><span class="hp-number"><span id="ehp">600</span> / 600</span></div><div class="hp-bar"><div id="ebar" class="hp-fill enemy"></div></div></div></div><div id="status">装備を決めて試合開始！</div><div id="zoneInfo" class="subtle" style="padding:2px 12px 9px;font-size:12px">安全エリア：通常</div><div class="arena-shell"><canvas id="field" width="900" height="470"></canvas><div id="cpuMoveZone" aria-label="左側をドラッグして移動"><div id="cpuThumb"><span id="cpuThumbDot"></span></div></div><div id="cpuTapHint">🎯 右側タップで発動</div><div id="zoneWarning" class="zone-warning" aria-live="off">⚠ エリア外！ HP減少中</div></div><div class="weaponrow" id="weapons"></div><div class="battle-bottom"><div class="game-hint">移動：WASD / 矢印キー　・　照準：マウス　・　攻撃：左クリック　・　切替：1〜5<br>防御スロット下段の水色ゲージが<strong>防御効果の残り時間</strong>を示します。</div><button id="mobileAction" class="outline">⚔ 攻撃 / 防御</button></div></div></div>
+<div class="game-panel"><div class="hud"><div><div class="hud-line"><span>● <span id="battlePlayerName">PLAYER</span></span><span class="hp-number"><span id="php">600</span> / 600</span></div><div class="hp-bar"><div id="pbar" class="hp-fill"></div></div></div><div><div class="hud-line"><span>◆ CPU</span><span class="hp-number"><span id="ehp">600</span> / 600</span></div><div class="hp-bar"><div id="ebar" class="hp-fill enemy"></div></div></div></div><div id="status">装備を決めて試合開始！</div><div id="zoneInfo" class="subtle" style="padding:2px 12px 9px;font-size:12px">安全エリア：通常</div><div class="arena-shell"><canvas id="field" width="900" height="470"></canvas><div id="cpuMoveZone" aria-label="左側をドラッグして移動"><div id="cpuThumb"><span id="cpuThumbDot"></span></div></div><div id="cpuTapHint">🎯 右側タップで発動</div><div id="cpuTapReticle" aria-hidden="true"></div><div id="zoneWarning" class="zone-warning" aria-live="off">⚠ エリア外！ HP減少中</div></div><div class="weaponrow" id="weapons"></div><div class="battle-bottom"><div class="game-hint">移動：WASD / 矢印キー　・　照準：マウス　・　攻撃：左クリック　・　切替：1〜5<br>防御スロット下段の水色ゲージが<strong>防御効果の残り時間</strong>を示します。</div><button id="mobileAction" class="outline">⚔ 攻撃 / 防御</button></div></div></div>
 <section id="onlineScreen" aria-label="オンライン対戦"><div class="online-shell-head"><strong>🌐 文字武装 マルチプレイ</strong><button type="button" id="closeOnline">← 共通ロビーへ戻る</button></div><iframe id="onlineFrame" title="オンライン対戦" allow="fullscreen"></iframe></section>
 </main>
 <div id="result" role="dialog" aria-modal="true" aria-label="対戦結果"><canvas id="resultCanvas"></canvas><div class="result-inner"><div class="result-eyebrow">MATCH FINISHED <span class="result-serial">// MOJI ARMS</span></div><div class="result-hero"><div class="result-laurel"><span class="laurel-mark">✦</span><div class="crown" id="resultCrown">👑</div><div class="winner-char" id="resultChar">武</div></div><div class="result-message"><div id="resultRank" class="rank-word">VICTORY</div><h2 id="resultTitle">完全勝利</h2><div id="resultSubtitle">戦場を制したのは君だ！</div></div></div><div class="result-stats" id="resultStats"><div><small>試合時間</small><b id="resultTime">0:00</b></div><div><small>与ダメージ</small><b id="resultDamage">0</b></div><div><small>残りHP</small><b id="resultHP">600</b></div></div><div class="result-reward" id="resultReward">🪙 +1 COIN</div><div id="resultLoadout" class="result-loadout"></div><div class="result-actions"><button id="again" class="primary">⚔ もう一度戦う</button><button id="lobby" class="outline">← ロビーに戻る</button></div></div></div>
@@ -361,7 +385,7 @@ Object.assign(dict,{'人':2,'口':3,'川':3,'日':4,'月':4,'田':5,'目':5,'白
 Object.assign(dict,{'薔':16,'薇':16,'超':12,'薫':16,'薙':16,'薩':17,'薯':16,'藍':18,'藻':19,'蘭':19,'藤':18,'葛':11,'蓮':13,'蓬':14,'菊':11,'華':10,'茜':9,'葵':12,'蒼':13,'蒸':13,'蔵':15,'艶':19,'麗':19,'凛':15,'凜':15,'翔':12,'煌':13,'耀':20,'輝':15,'迅':6,'瞬':18,'刹':8,'那':7,'羅':19,'修':10,'紅':9,'緋':14,'碧':14,'翠':14,'瑠':14,'璃':15,'瑛':12,'珠':10,'瑪':14,'珀':9,'琥':12,'晶':12,'璧':18,'禍':13,'福':13,'祝':9,'祈':8,'祓':9,'祀':8,'祭':11,'祠':9,'宮':10,'殿':13,'寺':6,'塔':12,'楼':13,'閣':14,'門':8,'扉':12,'鍵':17,'鎖':18,'錠':16,'鍛':17,'錬':16,'錆':16,'鉱':13,'鉛':13,'鉢':13,'鉤':13,'針':10,'釣':11,'釜':10,'釘':10,'釦':11,'鍋':17,'鏡':19,'鐘':20,'鎌':18,'鎚':17,'槌':14,'杖':7,'棒':12,'棍':12,'鞭':18,'矛':5,'戈':4,'戟':12,'弾':12,'砲':10,'弩':8,'弦':8,'弧':9,'張':11,'引':4,'放':8,'射':10,'狙':8,'捕':10,'縛':16,'封':9,'禁':13,'解':13,'崩':11,'裂':12,'断':11,'切':4,'砕':9,'粉':10,'塵':14,'砂':9,'岩':8,'崖':11,'峰':10,'岳':8,'嶺':17,'峡':9,'谷':7,'島':10,'浜':10,'港':12,'湾':12,'潮':15,'渦':12,'滝':13,'瀧':19,'泉':9,'池':6,'沼':8,'泥':8,'深':11,'浅':9,'流':10,'泳':8,'潜':15,'沈':7,'浮':10,'泡':8,'滴':14,'露':21,'霜':17,'雹':13,'霰':20,'霞':17,'曇':16,'晴':12,'曙':17,'暁':12,'昼':9,'晩':12,'宵':10,'暦':14,'時':10,'刻':8,'秒':9,'分':4,'間':12,'距':12,'近':7,'遠':13,'速':10,'遅':12,'進':11,'退':9,'避':16,'逃':9,'追':9,'迫':8,'届':8,'越':12,'跨':13,'跳':13,'躍':21,'蹴':19,'踏':15,'転':11,'倒':10,'起':10,'立':5,'座':10,'伏':6,'隠':14,'現':11,'姿':9,'形':7,'幻':4,'虚':11,'実':8,'惑':12,'魅':15,'呪':8,'詠':12,'唱':11,'唄':10,'響':20,'鼓':13,'笛':11,'琴':12,'奏':9,'楽':13,'舞':15,'踊':14,'演':14,'劇':15,'幕':13,'終':11,'始':8,'初':7,'極':12,'頂':11,'底':8,'最':12,'限':9,'無':12,'全':6,'半':5,'双':4,'対':7,'独':9,'孤':9,'群':13,'隊':12,'団':6,'陣':10,'列':6,'衆':12,'民':5,'友':4,'敵':15,'味':8,'方':4,'盟':13,'誓':14,'契':9,'約':9,'絆':11,'縁':15,'結':12,'紡':10,'糸':6,'網':14,'縄':15,'鎧':18,'盾':9,'兜':11,'冠':9,'装':12,'備':12,'甲':5,'衣':6,'服':8,'布':5,'皮':5,'革':9,'骨':10,'肉':6,'筋':12,'脈':10,'臓':19,'肺':9,'胃':9,'肝':7,'脳':11,'眼':11,'瞳':17,'耳':6,'鼻':14,'舌':6,'歯':12,'爪':4,'指':9,'腕':12,'肩':8,'胸':10,'背':9,'腹':13,'腰':13,'膝':15,'踵':16,'踝':15,'尾':7,'角':7,'牙':4,'鱗':20,'鰭':21,'鯨':19,'鮫':17,'鮭':17,'鯉':18,'鯛':19,'鯖':19,'鰐':20,'鷹':24,'鶴':21,'鴉':15,'鴨':16,'鳩':13,'鷲':23,'鳳':14,'凰':11,'雀':11,'鶏':19,'鵬':19,'狐':8,'狸':10,'熊':14,'猿':13,'鹿':11,'麒':19,'麟':24,'獅':13,'豹':10,'象':12,'亀':11,'兎':7,'牛':4,'羊':6,'猪':11,'鼠':13,'蟻':19,'蜂':13,'蝶':15,'蛾':13,'蛙':12,'蜘':14,'蛛':12,'蠍':19,'蛍':11,'螢':16,'蛸':13,'蟹':19,'貝':7,'貴':12,'宝':8,'財':10,'富':12,'貧':11,'幸':8,'不':4,'安':6,'危':6,'恐':10,'怖':8,'怒':9,'哀':9,'喜':12,'笑':10,'涙':10,'泣':8,'憎':14,'恨':9,'悔':9,'悩':10,'憂':15,'愁':13,'情':11,'想':13,'思':9,'念':8,'意':13,'志':7,'願':19,'望':11,'希':7,'絶':12,'信':9,'疑':14,'謎':17,'秘':10,'密':11,'隙':13,'罠':10,'策':12,'計':9,'略':11,'謀':16,'知':8,'識':19,'智':12,'賢':16,'愚':13,'学':8,'習':11,'教':11,'師':10,'弟':7,'兄':5,'姉':8,'妹':8,'父':4,'母':5,'子':3,'親':16,'族':11,'家':10,'村':7,'町':7,'市':5,'街':12,'道':12,'路':13,'橋':16,'船':11,'車':7,'輪':15,'軌':9,'鉄':13,'駅':14,'線':15,'旅':10,'宿':11,'客':9,'店':8,'商':11,'売':7,'買':12,'貨':11,'価':8,'費':12,'得':11,'損':13,'利':7,'益':10,'資':13,'源':13,'素':10,'材':7,'物':8,'品':9,'質':15,'量':12,'数':13,'式':6,'理':11,'科':9,'研':9,'究':7,'験':18,'試':13,'証':12,'認':14,'判':7,'決':7,'裁':12,'罪':13,'罰':14,'法':8,'律':9,'規':11,'則':9,'憲':16,'政':9,'治':8,'議':20,'会':6,'院':10,'府':8,'省':9,'庁':5,'官':8,'公':4,'私':7,'共':6,'平':5,'和':8,'争':6,'乱':7,'機':16,'定':8,'難':18,'易':8,'簡':18,'複':14,'雑':14,'純':10,'清':11,'汚':6,'浄':9,'濁':16,'明':8,'暗':13,'陰':11,'陽':12,'彩':11,'色':6,'白':5,'黒':11,'灰':6,'銀':14,'金':8,'銅':14,'青':8,'紺':11,'緑':14,'赤':7,'朱':6,'桃':10,'橙':16,'黄':11,'紫':12,'菫':11,'茶':9});
 const defaults=Array.from({length:5},()=>['','attack']);
 const setup=document.getElementById('setup');
-defaults.forEach(([ch,type],i)=>setup.insertAdjacentHTML('beforeend',`<div class="slot"><b>${i+1} / 文字を入力</b><input  class="kanji" value="" placeholder="＋" title="クリックして好きな文字を1つ入力" aria-label="枠${i+1}に好きな文字1つを入力"><select class="kind"><option value="attack" ${type==='attack'?'selected':''}>攻撃</option><option value="defense" ${type==='defense'?'selected':''}>防御</option><option value="heal">回復</option><option value="pierce">防御貫通</option><option value="homing">ホーミング</option></select><small>画数 <input class="strokes" type="number" min="1" max="40" value="" style="font-size:13px;padding:4px"></small><div class="slot-stat empty" aria-live="polite">文字を入力すると<br>能力値を表示</div></div>`));
+defaults.forEach(([ch,type],i)=>setup.insertAdjacentHTML('beforeend',`<div class="slot"><b>${i+1} / 文字を入力</b><input  class="kanji" value="" placeholder="＋" title="クリックして好きな文字を1つ入力" aria-label="枠${i+1}に好きな文字1つを入力"><button class="one-slot-random" type="button" title="全種類から1文字ランダム" aria-label="枠${i+1}をランダム">🎲 1文字ランダム</button><select class="kind"><option value="attack" ${type==='attack'?'selected':''}>攻撃</option><option value="defense" ${type==='defense'?'selected':''}>防御</option><option value="heal">回復</option><option value="pierce">防御貫通</option><option value="homing">ホーミング</option></select><small>画数 <input class="strokes" type="number" min="1" max="40" value="" style="font-size:13px;padding:4px"></small><div class="slot-stat empty" aria-live="polite">文字を入力すると<br>能力値を表示</div></div>`));
 const rows=[...document.querySelectorAll('.slot')];
 let matchMode='normal';
 // One player-visible character (Unicode grapheme) may contain multiple codepoints (e.g. ♨️, 👩‍🚀).
@@ -1259,6 +1283,9 @@ c.addEventListener('pointerdown',e=>{
  if(e.pointerType==='mouse'||!running)return;
  e.preventDefault();const aimPoint=point(e);
  mouse={x:aimPoint.x+cam.x,y:aimPoint.y+cam.y};
+ const visual=document.getElementById('cpuTapReticle'),rect=document.querySelector('#gameScreen .arena-shell').getBoundingClientRect();
+ visual.style.left=e.clientX-rect.left+'px';visual.style.top=e.clientY-rect.top+'px';
+ visual.classList.remove('active');void visual.offsetWidth;visual.classList.add('active');
  act(performance.now());
 });
 window.addEventListener('blur',cpuStickRelease);
@@ -1410,5 +1437,27 @@ document.getElementById('createRoomNow').addEventListener('click',()=>{
  try{sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(settings))}
  catch(e){error.textContent='ブラウザの設定保存が許可されていません。';return;}
  openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());
+});
+
+// Unified mode tiles and fast individual random equipment.
+document.querySelectorAll('[data-mode-tile]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  const select=document.getElementById('modeSelect');select.value=button.dataset.modeTile;
+  select.dispatchEvent(new Event('change',{bubbles:true}));
+  document.getElementById('setup').scrollIntoView({block:'nearest',behavior:'smooth'});
+ });
+});
+document.getElementById('modeSelect').addEventListener('change',()=>{
+ const value=document.getElementById('modeSelect').value;
+ document.querySelectorAll('[data-mode-tile]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modeTile===value)));
+});
+document.getElementById('setup').addEventListener('click',e=>{
+ const button=e.target.closest('.one-slot-random');if(!button)return;
+ const slot=button.closest('.slot'),other=new Set(Array.from(document.querySelectorAll('#setup .slot')).filter(r=>r!==slot).map(r=>r.querySelector('.kanji').value));
+ const glyph=window.MojiRandom.roll(other);
+ slot.querySelector('.kanji').value=glyph;
+ slot.querySelector('.strokes').value=getStrokeCount(glyph);
+ refreshLobbyStats();
+ document.getElementById('randomNotice').textContent='🎲 '+glyph+' を全種類から抽選したで！';
 });
 </script></body></html>
