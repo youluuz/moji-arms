@@ -1333,7 +1333,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.4", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.6", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
