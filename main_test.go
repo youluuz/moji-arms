@@ -21,15 +21,15 @@ func TestGraphemes(t *testing.T) {
 	}
 }
 func TestStrokesAndCooldown(t *testing.T) {
-	for s, n := range map[string]int{"薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
+	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
 		if got := strokes(s); got != n {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
 	}
-	if math.Abs(slotCooldown("homing", 1)-4.92) > .001 {
+	if math.Abs(slotCooldown("homing", 1)-6.888) > .001 {
 		t.Fatal("homing cooldown regression")
 	}
-	if math.Abs(slotCooldown("pierce", 1)-7.45) > .001 {
+	if math.Abs(slotCooldown("pierce", 1)-10.43) > .001 {
 		t.Fatal("pierce cooldown regression")
 	}
 }
@@ -437,9 +437,9 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
 }
 
 func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
- // All four modes use this exact piecewise curve; other skill cooldowns remain untouched.
+ // All four modes use the same 1.2x basic and 1.4x other weapon cooldowns.
  for _,tc:=range []struct{n int; seconds float64}{
-  {1,.775},{10,1.9},{12,2.19},{20,3.35},{30,4.8},{40,6.25},
+  {1,.93},{10,2.28},{12,2.628},{20,4.02},{30,5.76},{40,7.5},
  } {
   if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
    t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
@@ -450,18 +450,20 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
  }
  index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)") {
+ if !strings.Contains(served,"attack:1.2*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)") {
   t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
  }
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  for _,expected:=range []string{
-  "attack:.65+n*.125+Math.max(0,n-10)*.02",
-  "attack:Math.max(.65,.65+slot.n*.125+Math.max(0,slot.n-10)*.02)",
+  "attack:1.2*(.65+n*.125+Math.max(0,n-10)*.02)",
+  "const duration=onlineCD(slot.kind,slot.n)/1000",
  } {
   if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
  }
  for _,kind:=range []string{"defense","heal","pierce","homing"} {
   if slotCooldown(kind,15)<=0 {t.Fatal("other cooldown unexpectedly invalid: "+kind)}
+  base:=map[string]float64{"defense":15,"heal":21.25,"pierce":13.75,"homing":10.8}[kind]
+  if math.Abs(slotCooldown(kind,15)-base*1.4)>.000001 {t.Fatalf("%s cooldown should be multiplied by 1.4",kind)}
  }
 }
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
@@ -472,4 +474,24 @@ func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
  }
  css,e:=gameFiles.ReadFile("public/ultimate-ui.css");if e!=nil{t.Fatal(e)}
  if !strings.Contains(string(css),".ultimate-guide-toggle[hidden]") {t.Fatal("ability description button must hide during battle")}
+}
+
+func TestRareHanAndUIAndRandomAccess(t *testing.T){
+ for ch,want:=range map[string]int{"𰻞":58,"𰻝":43,"龘":48,"𪚥":64,"䨻":52} {
+  if got:=strokes(ch);got!=want {t.Errorf("strokes %q = %d want %d",ch,got,want)}
+ }
+ slots:=[]Slot{{Ch:"𰻞",Kind:"attack",N:58},{Ch:"𰻝",Kind:"defense",N:43},{Ch:"龘",Kind:"heal",N:48},{Ch:"𪚥",Kind:"pierce",N:64},{Ch:"䨻",Kind:"homing",N:52}}
+ if !validSlots(slots,false)||!validSlots(slots,true) {t.Fatal("rare ideographs must be permitted in all modes")}
+ slots[0].N=12
+ if validSlots(slots,false){t.Fatal("rare Han must not silently use twelve strokes")}
+ ui,e:=gameFiles.ReadFile("public/ui-polish-v74.css");if e!=nil||!strings.Contains(string(ui),"#findRandomNow")||!strings.Contains(string(ui),".weaponrow") {t.Fatal("shared UI stylesheet missing")}
+ servedBase,_:=gameFiles.ReadFile("public/index.html")
+ served:=mobilePatchedIndex(string(servedBase))
+ for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:1.2*Math.max","defense:1.4*(9+n*.4)"} {
+  if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
+ }
+ online,_:=gameFiles.ReadFile("public/multiplayer.html")
+ for _,marker:=range []string{"auto==='match'","code:action==='join'?","online-waiting","ui-polish-v74.css","a.volume=.10","onlineCD(slot.kind,slot.n)/1000"} {
+  if !strings.Contains(string(online),marker){t.Errorf("online side missing %q",marker)}
+ }
 }
