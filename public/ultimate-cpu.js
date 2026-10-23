@@ -1,0 +1,143 @@
+/* Glyph Strike v7.1: solo and solo-custom use the same six ultimate rules. */
+(function(){
+'use strict';
+function boot(){
+ if(!window.MojiUlt||!document.getElementById('weapons')||!document.getElementById('field'))return;
+ const U=window.MojiUlt, lobby=document.getElementById('loadoutPanel'),shell=document.querySelector('#gameScreen .arena-shell');
+ const pick=U.attachUI(lobby),battle=U.attachUI(shell);battle.showBattle(true);
+ let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
+ if(!U.byId[chosen])chosen='roman';
+ let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
+ let immortalUntil=0,invisibleUntil=0,slowUntil=0,namepuUntil=0,danceUntil=0;
+ let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
+ let specialBullets=new Set();
+ const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;shell.append(banner);
+ const fx=document.createElement('canvas');fx.className='ultimate-solo-overlay';Object.assign(fx.style,{position:'absolute',pointerEvents:'none',zIndex:11});shell.append(fx);
+ function curr(){return U.byId[chosen]}
+ function choose(id){if(!U.byId[id])return;chosen=id;localStorage.setItem('moji_ultimate_choice',id);pick.show(chosen);battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-performance.now())/1000))}
+ pick.picker.addEventListener('click',e=>{const b=e.target.closest('[data-ultimate]');if(b)choose(b.dataset.ultimate)});
+ choose(chosen);
+ function reset(){
+  charge=0;spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
+  immortalUntil=invisibleUntil=slowUntil=namepuUntil=danceUntil=0;specialBullets.clear();
+  lastActive=true;banner.hidden=true;prevEnemyHP=600;
+ }
+ function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5}
+ function canAct(){return !aiming && performance.now()>=namepuUntil && performance.now()>=danceUntil && performance.now()>=immortalUntil}
+ // Wrap the actual successful-cast accounting; spamming a cooling slot earns no charge.
+ if(typeof recordCast==='function'){
+  const oldRecord=recordCast;
+  recordCast=function(...args){const n=Array.isArray(slots)?Number(slots[selected]?.n)||0:0;const r=oldRecord.apply(this,args);if(isReady())charge=Math.min(curr().cost,charge+n);return r};
+ }
+ if(typeof act==='function'){
+  const oldAct=act;
+  act=function(...args){if(!canAct())return;const t=oldAct.apply(this,args);if(invisibleUntil>performance.now())invisibleUntil=0;return t};
+ }
+ if(typeof damage==='function'){
+  const oldDamage=damage;
+  damage=function(actor,amount,now,...rest){
+   const t=performance.now();
+   if(t<danceUntil || (actor===player && t<immortalUntil))return;
+   return oldDamage.call(this,actor,amount,now,...rest);
+  };
+ }
+ if(typeof moveActor==='function'){
+  const oldMove=moveActor;
+  moveActor=function(actor,...rest){if(performance.now()<danceUntil || (actor===player&&performance.now()<namepuUntil))return;return oldMove.call(this,actor,...rest)};
+ }
+ function fire(id,angle){
+  if(!isReady())return;
+  const now=performance.now();
+  const launch=()=>{
+   if(!isReady())return;
+   const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?650:610),vy:Math.sin(angle)*(id==='roman'?650:610),
+    n:(id==='roman'?250:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
+   bullets.push(bullet);specialBullets.add(bullet);
+   if(id==='roman')battleShots++;
+  };
+  if(id==='roman')windupUntil=now+500, setTimeout(()=>{if(performance.now()>=windupUntil)launch();},500);
+  else launch();
+ }
+ function chooseUltimate(){
+  if(!isReady()||spent||charge<curr().cost||performance.now()<danceUntil)return;
+  spent=true;ultimateUsed=chosen;const now=performance.now();U.play(chosen);
+  if(curr().target){
+   aiming=true;aimUntil=now+5000;
+   aimAngle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+  }else switch(chosen){
+   case 'invincible':immortalUntil=now+1800;break;
+   case 'dance':danceUntil=now+2000;break;
+   case 'invisible':invisibleUntil=now+3000;break;
+   case 'namepu':namepuUntil=now+5000;usedNamepu=true;break;
+  }
+ }
+ battle.cast.addEventListener('click',e=>{e.preventDefault();chooseUltimate()});
+ // Native canvas handling uses pointerdown. Capture the next targeting tap before ordinary attacks.
+ const field=document.getElementById('field');
+ field.addEventListener('pointerdown',e=>{
+  if(!aiming||!isReady())return;
+  e.preventDefault();e.stopImmediatePropagation();
+  const r=field.getBoundingClientRect();
+  const x=(e.clientX-r.left)*cpuView.w/r.width+cam.x,y=(e.clientY-r.top)*cpuView.h/r.height+cam.y;
+  aimAngle=Math.atan2(y-player.y,x-player.x);
+  aiming=false;fire(chosen,aimAngle);
+ },true);
+ document.getElementById('weapons').addEventListener('pointerdown',e=>{if(aiming){e.stopImmediatePropagation();e.preventDefault()}},true);
+ // Also protect regular equipment while in aimed-ultimate mode, including keyboard shortcuts.
+ document.getElementById('weapons').addEventListener('click',e=>{if(aiming){e.stopImmediatePropagation();e.preventDefault()}},true);
+ function graphics(now){
+  const size=field.getBoundingClientRect(),area=shell.getBoundingClientRect();
+  fx.style.left=(size.left-area.left)+'px';fx.style.top=(size.top-area.top)+'px';fx.style.width=size.width+'px';fx.style.height=size.height+'px';
+  const dpr=Math.min(2,devicePixelRatio||1),w=Math.round(size.width*dpr),h=Math.round(size.height*dpr);
+  if(fx.width!==w||fx.height!==h){fx.width=w;fx.height=h}
+  const c=fx.getContext('2d');c.clearRect(0,0,w,h);c.setTransform(dpr*size.width/cpuView.w,0,0,dpr*size.height/cpuView.h,0,0);
+  if(!isReady())return;
+  const x=player.x-cam.x,y=player.y-cam.y;
+  c.save();c.textAlign='center';
+  if(now<immortalUntil){
+   c.font='900 18px Georgia,serif';c.fillStyle='#ffe7a1';c.shadowColor='#ffeeb7';c.shadowBlur=14;
+   for(let i=0;i<3;i++){let a=now/420+i*Math.PI*2/3;c.fillText('無敵',x+46*Math.cos(a),y+29*Math.sin(a))}
+  }
+  if(now<namepuUntil||now<danceUntil){
+   c.font='bold 26px sans-serif';c.fillStyle='#ffe49a';c.fillText(now<namepuUntil?'😐':'♪ ♫ ♪',x,y-54+Math.sin(now/135)*6);
+   c.font='bold 21px sans-serif';c.fillText('♪',x-30,y-37);c.fillText('♫',x+29,y-32);
+  }
+  if(now<invisibleUntil){c.fillStyle='#8ceeff';c.font='12px sans-serif';c.fillText('透明化中',x,y-47)}
+  if(aiming){c.font='bold 20px serif';c.fillStyle='#ffdc9b';c.shadowBlur=16;c.shadowColor='#ffb960';c.fillText(curr().name,x,y-58)}
+  for(const b of specialBullets){if(!bullets.includes(b))continue;
+   c.font=b.ultimate==='roman'?'900 31px Georgia,serif':'bold 21px serif';c.fillStyle=b.ultimate==='roman'?'#ffe4a1':'#bdd5ff';c.shadowColor=b.ultimate==='roman'?'#ff9c35':'#7aaeff';c.shadowBlur=22;
+   c.fillText(b.ch,b.x-cam.x,b.y-cam.y-13);
+  }
+  c.restore();
+ }
+ function tick(){
+  const now=performance.now(),active=isReady();
+  if(active&&!lastActive)reset();
+  if(active&&typeof matchToken==='number'&&matchId!==matchToken){matchId=matchToken;reset()}
+  if(!active&&lastActive)lastActive=false;
+  if(active){
+   if(aiming&&now>=aimUntil){aiming=false;fire(chosen,aimAngle)}
+   if(slowUntil&&now>=slowUntil){enemy.speed=135;slowUntil=0}
+   // The existing projectile hit pipeline removes bullets; detect confirmed enemy hits.
+   for(const b of [...specialBullets]){
+    if(bullets.includes(b))continue;
+    if(b.ultimate==='slow'&&typeof enemy!=='undefined'&&Math.hypot(b.x-enemy.x,b.y-enemy.y)<enemy.r+36){
+     slowUntil=now+3000;enemy.speed=135*.65;
+    }
+    specialBullets.delete(b);
+   }
+  }
+  battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-now)/1000));
+  banner.hidden=!active||!aiming;if(!banner.hidden)banner.textContent=curr().name+' 照準中・残り'+Math.ceil(Math.max(0,aimUntil-now)/1000)+'秒';
+  const result=document.getElementById('result');
+  if(usedNamepu&&result.classList.contains('show')&&typeof player!=='undefined'&&player.hp>0){
+   result.classList.add('ultimate-namepu-victory');
+   const title=document.getElementById('resultTitle');
+   if(!result.dataset.ultimateNamepu){result.dataset.ultimateNamepu='1';title.textContent=U.victoryPhrase()}
+  }else if(!result.classList.contains('show')){result.classList.remove('ultimate-namepu-victory');delete result.dataset.ultimateNamepu}
+  graphics(now);requestAnimationFrame(tick);
+ }
+ requestAnimationFrame(tick);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
