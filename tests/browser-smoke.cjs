@@ -79,6 +79,7 @@ const { chromium } = require('playwright');
     picker.querySelectorAll('.ultimate-option').length===6);
   });
   if(!onlinePosition)throw Error('online ultimate picker must appear just below five-character selection section');
+  if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='namepu')throw Error('solo/online ultimate choice not shared');
   const onlineGuide=page.locator('#joinArea .ultimate-guide');
   if(!await onlineGuide.isVisible())throw Error('online ability guide is missing');
   await page.locator('#joinArea .ultimate-option[data-ultimate=invincible]').click();
@@ -89,7 +90,7 @@ const { chromium } = require('playwright');
   if(!await page.locator('#gameArea .ultimate-guide').isHidden())throw Error('online battle HUD must not display lobby-only guide');
   const onlineGuideFits=await onlineGuide.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2&&el.getBoundingClientRect().left>=-2);
   if(!onlineGuideFits)throw Error('online mobile guide overflows viewport');
-  if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='namepu')throw Error('solo/online ultimate choice not shared');
+  
   await page.locator('#joinArea [data-ultimate=roman]').click();
   if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='roman')throw Error('online picker failed');
   if(errors.length)throw Error('PvP page JS error: '+errors.join('; '));
