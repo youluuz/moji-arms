@@ -344,13 +344,13 @@ func TestExpandedArenaCPUAndOnlineAssets(t *testing.T) {
 }
 
 func TestSixUltimatesChargeAndServerRules(t *testing.T) {
- specs:=map[string]int{"roman":360,"slow":320,"invincible":340,"dance":340,"invisible":300,"namepu":220}
+ specs:=map[string]int{"roman":320,"slow":280,"invincible":300,"dance":300,"invisible":260,"namepu":180}
  for id,want:=range specs {if got:=ultimateCost(id);got!=want {t.Fatalf("ultimate %s: got %d want %d",id,got,want)}}
  if ultimateCost("unknown")!=0 || chooseUltimate("unknown")!="roman" {t.Fatal("invalid ultimate must default safely")}
  c1:=&Client{send:make(chan []byte,64),pid:"a"}
  c2:=&Client{send:make(chan []byte,64),pid:"b"}
- p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:360,Keys:map[string]bool{}}
- q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:340,Keys:map[string]bool{}}
+ p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:320,Keys:map[string]bool{}}
+ q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:300,Keys:map[string]bool{}}
  room:=&Room{Code:"ULT",Phase:"playing",Mode:"normal",Theme:"shrine",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,q}}
  c1.room=room;c2.room=room
  a:=&Arena{rooms:map[string]*Room{"ULT":room}}
@@ -359,10 +359,10 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  if p.UltimateSerial!=1 {t.Fatal("second ultimate illegally activated")}
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
- if p.UltimateAiming || p.UltimateWindupUntil<=0 {t.Fatal("roman target should start 0.5s windup")}
+ if p.UltimateAiming || p.UltimateWindupUntil<=0 {t.Fatal("roman target should start 0.4s windup")}
  p.UltimateWindupUntil=float64(time.Now().UnixNano())/1e9-.01
  a.tick(.01)
- if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=250 {t.Fatal("roman cannon not emitted at expected power")}
+ if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=420 {t.Fatal("roman cannon not emitted at expected power")}
  a.handle(c2,[]byte(`{"type":"ultimate"}`))
  if q.InvincibleUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("invulnerability not activated")}
  hp:=q.HP;hit(q,999,true,float64(time.Now().UnixNano())/1e9)
@@ -373,12 +373,12 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  a.tick(.01)
  if q.Casts!=1 || q.LastKind!="attack" {t.Fatal("invincibility blocked an ordinary weapon cast")}
  // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
- p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=220
+ p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=180
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  if p.NamepuUntil<=float64(time.Now().UnixNano())/1e9 || !p.NamepuUsed {t.Fatal("namepu 5-second self-dance was not enabled")}
  hp=p.HP;hit(p,10,true,float64(time.Now().UnixNano())/1e9)
  if p.HP!=hp-10 {t.Fatal("namepu must not grant damage resistance")}
- p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=320;p.NamepuUntil=0
+ p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=280;p.NamepuUntil=0
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
  if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" {t.Fatal("slow ultimate should fire targeted projectile")}
@@ -499,7 +499,7 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
  ui,e:=gameFiles.ReadFile("public/ui-polish-v74.css");if e!=nil||!strings.Contains(string(ui),"#findRandomNow")||!strings.Contains(string(ui),".weaponrow") {t.Fatal("shared UI stylesheet missing")}
  servedBase,_:=gameFiles.ReadFile("public/index.html")
  served:=mobilePatchedIndex(string(servedBase))
- for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:1.2*Math.max","defense:1.4*(9+n*.4)"} {
+ for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:1.3*Math.max","defense:1.4*(9+n*.4)"} {
   if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
  }
  online,_:=gameFiles.ReadFile("public/multiplayer.html")
