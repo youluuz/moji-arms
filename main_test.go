@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"math"
+	"strings"
 	"testing"
 	"time"
 )
@@ -163,4 +164,27 @@ func TestPublicMatchWaitsForHostStart(t *testing.T) {
 	if math.Abs(room.Players[0].Aim-1.25) > 0.00001 {
 		t.Fatal("one-shot cast used the wrong target angle")
 	}
+}
+
+func TestUnifiedLobbyMobileAndUnicodeAssets(t *testing.T) {
+	check := func(path string, expected ...string) {
+		t.Helper()
+		body, err := gameFiles.ReadFile(path)
+		if err != nil { t.Fatalf("missing embedded asset %s: %v", path, err) }
+		text := string(body)
+		for _, needle := range expected {
+			if !strings.Contains(text, needle) {
+				t.Errorf("%s is missing integration marker %q", path, needle)
+			}
+		}
+	}
+	check("public/index.html",
+		"id=\"loginScreen\"", "id=\"lobbyScreen\"", "id=\"onlineScreen\"",
+		"id=\"cpuMoveZone\"", "cpuStickUpdate", "cpuView.w",
+		"openEmbeddedMultiplayer", "findRandomNow", "joinRoomNow",
+		"window.MojiRandom.roll")
+	check("public/multiplayer.html",
+		"embeddedMode", "onlineReturnToLobby", "connect('match')",
+		"window.MojiRandom.roll", "data-sample")
+	check("public/glyph_random.js", "categories", "function roll", "1faff")
 }
