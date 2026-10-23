@@ -133,8 +133,11 @@ function syncOnlineStrokeDisplay(input){
   field.value=Number.isInteger(n)?String(n):'';
  }
 }
-const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{
- strokeData={...x,'イ':2,'ー':1};if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData;
+const strokesReady=Promise.all([
+ fetch('strokes.json').then(r=>r.ok?r.json():{}),
+ fetch('kana-strokes.json').then(r=>r.ok?r.json():{'イ':2,'ー':1})
+]).then(([han,kana])=>{
+ strokeData={...han,...kana};if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData;
  document.querySelectorAll('.online-glyph-input').forEach(syncOnlineStrokeDisplay);
 }).catch(()=>{});
 $('onlineSlots').addEventListener('input',e=>{
