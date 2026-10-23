@@ -809,8 +809,12 @@ func (a *Arena) tick(dt float64) {
 			}
 		}
 		for _, p := range room.Players {
-			if !p.Alive {
-				continue
+			if !p.Alive {continue}
+			if p.UltimateAiming && now>=p.UltimateAimUntil {p.UltimateAiming=false;ultimateLaunch(room,p,now)}
+			if p.UltimateWindupUntil>0 && now>=p.UltimateWindupUntil {
+				angle:=p.UltimateAim
+				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*650,VY:math.Sin(angle)*650,Damage:250,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
+				p.UltimateWindupUntil=0
 			}
 			dx, dy := 0.0, 0.0
 			if p.Keys["d"] {
@@ -825,11 +829,14 @@ func (a *Arena) tick(dt float64) {
 			if p.Keys["w"] {
 				dy--
 			}
+			if now<room.DanceUntil || now<p.NamepuUntil {dx=0;dy=0}
 			mag := math.Hypot(dx, dy)
 			if mag == 0 {
 				mag = 1
 			}
-			nx := bound(p.X+dx/mag*215*dt, 22, W-22)
+			speed:=215.0
+			if now<p.SlowedUntil {speed*=.65}
+			nx := bound(p.X+dx/mag*speed*dt, 22, W-22)
 			collide := false
 			for _, o := range obs {
 				if circleRect(nx, p.Y, 20, o) {
@@ -840,7 +847,7 @@ func (a *Arena) tick(dt float64) {
 			if !collide {
 				p.X = nx
 			}
-			ny := bound(p.Y+dy/mag*215*dt, 22, H-22)
+			ny := bound(p.Y+dy/mag*speed*dt, 22, H-22)
 			collide = false
 			for _, o := range obs {
 				if circleRect(p.X, ny, 20, o) {
@@ -851,7 +858,7 @@ func (a *Arena) tick(dt float64) {
 			if !collide {
 				p.Y = ny
 			}
-			if dist(p.X, p.Y, W/2, H/2) > radius {
+			if now>=room.DanceUntil && dist(p.X, p.Y, W/2, H/2) > radius {
 				hit(p, 32*dt, true, now)
 			}
 			// Keep a one-shot tap for the final 400ms of cooldown.
@@ -864,7 +871,7 @@ func (a *Arena) tick(dt float64) {
 			if castNow {
 				castSelected, castAim = p.PendingSelected, p.PendingAim
 			}
-			if !p.Alive || (!p.Fire && !castNow) || len(p.Slots) != 5 {
+			if !p.Alive || now<p.NamepuUntil || now<p.InvincibleUntil || now<room.DanceUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			if castSelected < 0 || castSelected >= len(p.Slots) {
@@ -902,6 +909,8 @@ func (a *Arena) tick(dt float64) {
 			}
 			p.Last[castSelected] = now + slotCooldown(kind, n)
 			p.Casts++
+			p.UltimateCharge=math.Min(float64(ultimateCost(p.Ultimate)),p.UltimateCharge+float64(n))
+			if now<p.InvisibleUntil {p.InvisibleUntil=0}
 			p.ActionSerial++
 			p.LastKind = kind
 		}
@@ -911,7 +920,7 @@ func (a *Arena) tick(dt float64) {
 				var target *Player
 				best := math.MaxFloat64
 				for _, p := range room.Players {
-					if p.ID == b.Owner || !p.Alive {
+					if p.ID == b.Owner || !p.Alive || now<p.InvisibleUntil {
 						continue
 					}
 					d := (p.X-b.X)*(p.X-b.X) + (p.Y-b.Y)*(p.Y-b.Y)
@@ -950,7 +959,8 @@ func (a *Arena) tick(dt float64) {
 			struck := false
 			for _, p := range room.Players {
 				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < 30 {
-					hit(p, b.Damage, b.Pierce, now)
+					if now>=room.DanceUntil {hit(p, b.Damage, b.Pierce, now)}
+					if b.Special=="slow" && now>=p.InvincibleUntil && now>=room.DanceUntil {p.SlowedUntil=now+3}
 					struck = true
 					break
 				}
