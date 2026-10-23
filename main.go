@@ -160,6 +160,7 @@ type Player struct {
 	CastPending         bool
 	PendingSelected     int
 	PendingAim          float64
+	PendingUntil        float64
 	ShieldUntil         float64
 	Slots               []Slot
 	Selected            int
@@ -539,6 +540,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.LastKind = ""
 			pp.Fire = false
 			pp.CastPending = false
+			pp.PendingUntil = 0
 		}
 		room.broadcast()
 	case "cast":
@@ -552,6 +554,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		p.PendingSelected = selected
 		p.PendingAim = castAim
 		p.CastPending = true
+		p.PendingUntil = float64(time.Now().UnixNano())/1e9 + 0.4
 	case "input":
 		if room.Phase != "playing" || !p.Alive {
 			return
@@ -708,17 +711,32 @@ func (a *Arena) tick(dt float64) {
 			if dist(p.X, p.Y, W/2, H/2) > radius {
 				hit(p, 32*dt, true, now)
 			}
-			castNow := p.CastPending
-			p.CastPending = false
-			if castNow { p.Selected = p.PendingSelected; p.Aim = p.PendingAim }
+			// Keep a one-shot tap for the final 400ms of cooldown.
+			// Input packets must not overwrite its slot or aim.
+			castNow := p.CastPending && now <= p.PendingUntil
+			if p.CastPending && !castNow {
+				p.CastPending = false
+			}
+			castSelected, castAim := p.Selected, p.Aim
+			if castNow {
+				castSelected, castAim = p.PendingSelected, p.PendingAim
+			}
 			if !p.Alive || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
-			slot := p.Slots[p.Selected]
-			kind, n := slot.Kind, slot.N
-			if now < p.Last[p.Selected] {
+			if castSelected < 0 || castSelected >= len(p.Slots) {
+				p.CastPending = false
 				continue
 			}
+			if now < p.Last[castSelected] {
+				continue
+			}
+			if castNow {
+				p.Selected, p.Aim = castSelected, castAim
+				p.CastPending = false
+			}
+			slot := p.Slots[castSelected]
+			kind, n := slot.Kind, slot.N
 			switch kind {
 			case "attack", "pierce", "homing":
 				speed := 420.0
@@ -739,7 +757,7 @@ func (a *Arena) tick(dt float64) {
 			case "heal":
 				p.HP = math.Min(600, p.HP+float64(n*4))
 			}
-			p.Last[p.Selected] = now + slotCooldown(kind, n)
+			p.Last[castSelected] = now + slotCooldown(kind, n)
 			p.Casts++
 			p.ActionSerial++
 			p.LastKind = kind

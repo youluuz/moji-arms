@@ -53,7 +53,7 @@ body.online-battle .game-wrap{max-width:100%;}
 #moveThumb{display:block;width:49px;height:49px;border:2px solid #d1f5ff;background:#53bcf3aa;border-radius:50%;box-shadow:0 0 12px #71d8ff77;pointer-events:none}
 .pad-label{position:absolute;bottom:4px;font-size:9px;color:#fff9;pointer-events:none}
 #moveZone:active{background:linear-gradient(90deg,#5bc7ff19,transparent)}
-@media(any-pointer:coarse){#touchControls{display:block}body.online-battle .card{min-height:58px}body.online-battle #controls{font-size:10px}}
+@media(hover:none) and (pointer:coarse){#touchControls{display:block}body.online-battle .card{min-height:58px}body.online-battle #controls{font-size:10px}}
 @media(max-width:640px){.online-slots{gap:4px}.online-slot{padding:5px 3px}.online-slot select{font-size:10px}.online-slot input{font-size:19px}body.online-battle .wrap{padding:3px}body.online-battle #gameArea>.panel{padding:4px}body.online-battle .cards{gap:3px}body.online-battle .card{font-size:10px}}
 @media(max-width:360px){#movePad{width:88px;height:88px}body.online-battle .card small{display:block}}
 @media(max-height:520px) and (any-pointer:coarse){body.online-battle #controls{display:none}body.online-battle .card{height:56px}#movePad{width:88px;height:88px}}
@@ -114,7 +114,7 @@ $('onlineSlots').innerHTML=loadoutRoles.map((role,i)=>{
  const s=savedLoadout?setup.slots[i]:{ch:'',kind:role,n:''};
  return `<div class="online-slot"><label for="onlineGlyph${i}">枠 ${i+1}</label><input id="onlineGlyph${i}" class="online-glyph-input" value="${escapeHtml(s.ch||'')}" maxlength="24" placeholder="🔥・漢字" aria-label="武装文字・絵文字${i+1}"><select class="online-kind" aria-label="枠${i+1}の能力">${loadoutRoles.map(k=>`<option value="${k}" ${s.kind===k?'selected':''}>${onlineNames[k]}</option>`).join('')}</select><button type="button" class="slot-random" data-random-slot="${i}" aria-label="枠${i+1}の文字をランダム">🎲 全種類ランダム</button><label>画数（カスタム）</label><input class="slot-strokes" type="number" min="1" max="40" value="${Number.isInteger(s.n)?s.n:''}" aria-label="枠${i+1}のカスタム画数"></div>`;
 }).join('');
-let strokeData={};const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{strokeData=x}).catch(()=>{});
+let strokeData={};const strokesReady=fetch('strokes.json').then(r=>r.ok?r.json():{}).then(x=>{strokeData=x;if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData}).catch(()=>{});
 function randomKanjiPool(){return window.MojiRandom.all()}
 function randomEmojiPool(){return ['🔥','⚡','🌸','🛡️','👻','🐉','💥','🌊','❄️','🌙','⭐','💫','🌈','🦊','⚔️','💎','🍀','🎯','🚀','🌀','💖','☄️']}
 function rollOnlineGlyph(i,pool,used){
@@ -223,8 +223,8 @@ function fitOnlineArena(){
  const shell=document.querySelector('#gameArea .game-wrap');if(!shell||!shell.clientWidth||!shell.clientHeight)return;
  const aspect=shell.clientWidth/shell.clientHeight;
  // Portrait gets a tall camera: never squeeze the old 900x470 arena onto the phone.
- view.w=aspect<1?520:900;
- view.h=Math.min(1000,Math.max(aspect<1?500:270,Math.round(view.w/aspect)));
+ view.w=aspect<1?600:1040;
+ view.h=Math.min(1050,Math.max(aspect<1?520:300,Math.round(view.w/aspect)));
  const scale=Math.min(shell.clientWidth/view.w,shell.clientHeight/view.h);
  cv.style.width=Math.floor(scale*view.w)+'px';cv.style.height=Math.floor(scale*view.h)+'px';
  const dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1));
@@ -383,7 +383,7 @@ cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')setAimFromPoint
 cv.addEventListener('pointerdown',e=>{
  if(e.pointerType==='mouse'){
   if(e.button!==0)return;
-  if(setAimFromPointer(e))down=true;
+  if(setAimFromPointer(e)){down=true;send({type:'cast',aim,selected})}
   return;
  }
  if(roomState?.phase!=='playing')return;

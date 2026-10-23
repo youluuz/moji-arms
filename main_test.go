@@ -164,6 +164,27 @@ func TestPublicMatchWaitsForHostStart(t *testing.T) {
 	if math.Abs(room.Players[0].Aim-1.25) > 0.00001 {
 		t.Fatal("one-shot cast used the wrong target angle")
 	}
+	// Press just before cooldown expires: preserve the aim and fire once.
+	p := room.Players[0]
+	p.Last[0] = float64(time.Now().UnixNano())/1e9 + .12
+	a.handle(first, []byte(`{"type":"cast","selected":0,"aim":0.75}`))
+	a.tick(1.0 / 30)
+	if !p.CastPending || p.Casts != 1 {
+		t.Fatal("near-ready tap disappeared during cooldown")
+	}
+	p.Last[0] = float64(time.Now().UnixNano())/1e9 - .01
+	a.tick(1.0 / 30)
+	if p.CastPending || p.Casts != 2 || p.LastKind != "attack" || math.Abs(p.Aim-.75) > .00001 {
+		t.Fatal("buffered tap should cast exactly once with the original aim")
+	}
+	// A stale tap must be discarded instead of attacking seconds later.
+	p.Last[0] = float64(time.Now().UnixNano())/1e9 + 2
+	a.handle(first, []byte(`{"type":"cast","selected":0,"aim":0.3}`))
+	p.PendingUntil = float64(time.Now().UnixNano())/1e9 - .01
+	a.tick(1.0 / 30)
+	if p.CastPending || p.Casts != 2 {
+		t.Fatal("expired cast was not cleared")
+	}
 }
 
 func TestUnifiedLobbyMobileAndUnicodeAssets(t *testing.T) {

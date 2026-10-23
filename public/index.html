@@ -249,7 +249,7 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 #cpuThumbDot{display:block;width:36px;height:36px;border-radius:50%;background:#72d8ffbb;border:2px solid white;pointer-events:none}
 #cpuTapHint{display:none;position:absolute;right:9px;bottom:9px;z-index:10;pointer-events:none;font-size:10px;color:#fff0ba;border-radius:20px;background:#0c213bcc;padding:6px}
 #gameScreen .arena-shell canvas{touch-action:none}
-@media(any-pointer:coarse){body.in-match #cpuMoveZone,body.in-match #cpuTapHint{display:block}body.in-match #mobileAction{display:none}}
+@media(hover:none) and (pointer:coarse){body.in-match #cpuMoveZone,body.in-match #cpuTapHint{display:block}body.in-match #mobileAction{display:none}}
 @media(max-width:650px) and (orientation:portrait){
  body.in-match main{padding:3px}
  #gameScreen .battle-head{margin-bottom:2px}
@@ -276,7 +276,7 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 #cpuTapReticle.active{animation:cpuTapFlash .32s ease-out both}
 @keyframes cpuTapFlash{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
 @media(max-width:740px){.mode-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.mode-tiles button{min-height:82px;padding:9px 4px}}
-@media(any-pointer:coarse){body.in-match .game-hint{display:none}body.in-match #cpuTapHint{display:block}}
+@media(hover:none) and (pointer:coarse){body.in-match .game-hint{display:none}body.in-match #cpuTapHint{display:block}}
 @media(orientation:portrait) and (max-width:660px){
  body.in-match #gameScreen{height:100dvh;min-height:0;overflow:hidden}
  body.in-match #gameScreen .game-panel{height:calc(100dvh - 45px);min-height:0;overflow:hidden;display:flex;flex-direction:column}
@@ -403,6 +403,7 @@ const getStrokeCount=ch=>{
  if(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Letter}\p{Number}]/u.test(ch))return 3;
  return 2;
 };
+if(window.MojiRandom)window.MojiRandom.strokeMap=dict;
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // Live loadout stats use exactly the same constants and cooldown function as combat.
@@ -950,8 +951,8 @@ function fitArena(){
  const shell=document.querySelector('#gameScreen .arena-shell');
  if(!shell||!shell.clientWidth||!shell.clientHeight)return;
  const aspect=shell.clientWidth/shell.clientHeight;
- cpuView.w=aspect<1?520:900;
- cpuView.h=Math.min(1000,Math.max(aspect<1?500:270,Math.round(cpuView.w/aspect)));
+ cpuView.w=aspect<1?600:1040;
+ cpuView.h=Math.min(WORLD_H,Math.max(aspect<1?520:300,Math.round(cpuView.w/aspect)));
  const scale=Math.min(shell.clientWidth/cpuView.w,shell.clientHeight/cpuView.h);
  c.style.width=Math.floor(cpuView.w*scale)+'px';
  c.style.height=Math.floor(cpuView.h*scale)+'px';
@@ -965,7 +966,7 @@ window.addEventListener('resize',fitArena);
 window.addEventListener('orientationchange',()=>requestAnimationFrame(fitArena));
 if(window.ResizeObserver)new ResizeObserver(fitArena).observe(document.querySelector('#gameScreen .arena-shell'));
 
-let matchToken=0,matchRewarded=false,activeDefenseSlot=-1,defenseBegin=0,defenseDuration=1800;let battleDamage=0,battleShots=0;
+let matchToken=0,matchRewarded=false,activeDefenseSlot=-1,defenseBegin=0,defenseDuration=1800,queuedCast=null;let battleDamage=0,battleShots=0;
 function init(){document.getElementById('result').classList.remove('show');const error=document.getElementById('validation');error.textContent='';
  if((matchMode==='multi'||matchMode==='multiCustom')&&location.protocol==='file:'){
   error.textContent='マルチにはサーバーが必要です。ZIPを展開し「文字武装_起動_Windows.exe」を起動して、その画面からアクセスしてください。';
@@ -993,7 +994,7 @@ function init(){document.getElementById('result').classList.remove('show');const
   sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(settings));
   openEmbeddedMultiplayer('');return;
  }
- battleDamage=0;battleShots=0;slots=nextSlots;zoneSetting=matchMode==='custom'?document.getElementById('shrinkMode').value:'normal';zoneRadius=zoneSetting==='instant'?180:1150;zoneDamageAccumulator=0;matchRewarded=false;activeDefenseSlot=-1;defenseBegin=0;player={x:650,y:520,hp:MAX_HP,speed:205,shield:0,shieldEnd:0,r:19};enemy={x:1160,y:520,hp:MAX_HP,speed:135,shield:0,shieldEnd:0,r:19,ready:0,guardReady:0};bullets=[];particles=[];lastZoneWarningAt=-Infinity;chooseThemes();obstacles=buildObstacles();startMusic();startTime=performance.now();selected=0;running=true;cam={x:player.x-450,y:player.y-235};last=performance.now();document.getElementById('status').textContent='戦闘開始！';document.getElementById('gameMapName').textContent=THEME_INFO[mapTheme].label;document.getElementById('lobbyScreen').classList.add('hidden');document.getElementById('gameScreen').classList.add('active');document.body.classList.add('in-match');window.scrollTo({top:0,behavior:'instant'});renderButtons();fitArena();const token=++matchToken;requestAnimationFrame(t=>loop(t,token))}
+ battleDamage=0;battleShots=0;down=false;touch=null;keys={};queuedCast=null;slots=nextSlots;zoneSetting=matchMode==='custom'?document.getElementById('shrinkMode').value:'normal';zoneRadius=zoneSetting==='instant'?180:1150;zoneDamageAccumulator=0;matchRewarded=false;activeDefenseSlot=-1;defenseBegin=0;player={x:650,y:520,hp:MAX_HP,speed:205,shield:0,shieldEnd:0,r:19};enemy={x:1160,y:520,hp:MAX_HP,speed:135,shield:0,shieldEnd:0,r:19,ready:0,guardReady:0};bullets=[];particles=[];lastZoneWarningAt=-Infinity;chooseThemes();obstacles=buildObstacles();startMusic();startTime=performance.now();selected=0;running=true;cam={x:player.x-450,y:player.y-235};last=performance.now();document.getElementById('status').textContent='戦闘開始！';document.getElementById('gameMapName').textContent=THEME_INFO[mapTheme].label;document.getElementById('lobbyScreen').classList.add('hidden');document.getElementById('gameScreen').classList.add('active');document.body.classList.add('in-match');window.scrollTo({top:0,behavior:'instant'});renderButtons();fitArena();const token=++matchToken;requestAnimationFrame(t=>loop(t,token))}
 document.getElementById('start').onclick=init;
 function renderButtons(){
  const names={attack:'⚔ 攻撃',defense:'🛡 防御',heal:'✚ 回復',pierce:'➤ 貫通',homing:'◎ 追尾'};
@@ -1012,13 +1013,20 @@ function slotCooldownMs(kind,n){
  }[kind]));
 }
 function shoot(owner,x,y,tx,ty,n,now){if(owner==='p')battleShots++;else playAbilitySound('attack',.22);let angle=Math.atan2(ty-y,tx-x);let speed=owner==='p'?420:345;bullets.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,n,owner,life:2.2,ch:owner==='p'?slots[selected].ch:'雷',homing:false,pierce:false});}
-function act(now){if(!running)return;let s=slots[selected];if(now<s.ready)return;
+function act(now){if(!running||!Number.isFinite(now))return;let s=slots[selected];if(!s||now<s.ready)return;
 recordCast();playAbilitySound(s.kind);
 if(s.kind==='attack'||s.kind==='pierce'||s.kind==='homing'){
  shoot('p',player.x,player.y,mouse.x,mouse.y,s.n,now);let b=bullets[bullets.length-1];b.fx=account.equipped.attack;b.pierce=s.kind==='pierce';b.homing=s.kind==='homing';if(b.homing){b.life=4.8;b.turnSide=0;}
  s.cooldownMs=slotCooldownMs(s.kind,s.n);s.ready=now+s.cooldownMs;
 }else if(s.kind==='defense'){player.shield=s.n*SHIELD_PER_STROKE;player.shieldEnd=now+1800;activeDefenseSlot=selected;defenseBegin=now;s.cooldownMs=slotCooldownMs(s.kind,s.n);s.ready=now+s.cooldownMs;document.getElementById('status').textContent=`${s.ch}の防御！ ${player.shield}ダメージ軽減（1.8秒）`;
 }else if(s.kind==='heal'){let amount=Math.min(MAX_HP-player.hp,s.n*HEAL_PER_STROKE);player.hp+=amount;s.cooldownMs=slotCooldownMs(s.kind,s.n);s.ready=now+s.cooldownMs;document.getElementById('status').textContent=`${s.ch}でHPを${amount}回復！`;}
+}
+// A tap during the final moments of cooldown is buffered across animation frames.
+function requestCast(now){
+ if(!running||!slots[selected])return;
+ const ready=slots[selected].ready;
+ if(now>=ready){queuedCast=null;act(now);}
+ else if(ready-now<=375){queuedCast={selected,aim:{x:mouse.x,y:mouse.y},deadline:now+400};}
 }
 function damage(target,amount,now,pierce=false){if(!pierce&&target.shieldEnd>now&&target.shield>0){let blocked=Math.min(target.shield,amount);target.shield-=blocked;amount-=blocked;}const beforeHp=target.hp;target.hp=Math.max(0,target.hp-amount);if(target===enemy)battleDamage+=Math.max(0,beforeHp-target.hp);if(target.hp===0&&running){running=false;document.getElementById('status').textContent=target===enemy?'🏆 勝利！ GPT-6を倒した！':'💀 敗北！ 装備を変えて再挑戦！';showResult(target===enemy);}}
 function circleRect(x,y,r,o){let px=clamp(x,o.x,o.x+o.w),py=clamp(y,o.y,o.y+o.h);return (x-px)**2+(y-py)**2<r*r}
@@ -1061,6 +1069,14 @@ let dx=player.x-enemy.x,dy=player.y-enemy.y,d=Math.hypot(dx,dy)||1;let direction
  const playerOutside=Math.hypot(player.x-900,player.y-525)>zoneRadius;
  zoneWarningUpdate(playerOutside,now);
  for(const unit of [player,enemy])if(Math.hypot(unit.x-900,unit.y-525)>zoneRadius)damage(unit,32*dt,now,true);
+ if(queuedCast){
+  if(now>queuedCast.deadline)queuedCast=null;
+  else if(slots[queuedCast.selected]&&now>=slots[queuedCast.selected].ready){
+   const savedSlot=selected,savedAim=mouse,pending=queuedCast;
+   queuedCast=null;selected=pending.selected;mouse=pending.aim;
+   act(now);selected=savedSlot;mouse=savedAim;
+  }
+ }
  if(down)act(now);if(now>enemy.ready){shoot('e',enemy.x,enemy.y,player.x,player.y,13,now);enemy.ready=now+1450;}if(enemy.hp<260&&now>enemy.guardReady){enemy.shield=9*SHIELD_PER_STROKE;enemy.shieldEnd=now+1100;enemy.guardReady=now+6500;}
 for(let i=bullets.length-1;i>=0;i--){let b=bullets[i];if(b.homing)steerHoming(b,dt,now);b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;let target=b.owner==='p'?enemy:player;if(!b.pierce&&obstacles.some(o=>now-startTime<o.expires&&circleRect(b.x,b.y,7,o))){bullets.splice(i,1)}else if(dist(b,target)<target.r+9){damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce);bullets.splice(i,1)}else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);}
 }document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':`安全エリア半径：${Math.round(zoneRadius)} / 1150`;
@@ -1250,9 +1266,11 @@ document.getElementById('php').textContent=Math.ceil(player.hp);document.getElem
  const guardBar=document.getElementById('guardBar'+i),guardText=document.getElementById('guardText'+i);
  if(guardBar&&guardText){const active=i===activeDefenseSlot&&player.shield>0;const remain=active?Math.max(0,player.shieldEnd-now):0;guardBar.style.width=(remain/defenseDuration*100)+'%';guardText.textContent=remain?`防御中 ${(remain/1000).toFixed(1)}s`:'防御効果 ―';}
 });document.querySelectorAll('.weapon').forEach((el,i)=>{el.classList.toggle('active',i===selected);el.classList.toggle('cool',now<slots[i].ready)})}
-window.addEventListener('keydown',e=>{if(!running)return;keys[e.key]=true;keys[e.key.toLowerCase()]=true;if(/^[1-5]$/.test(e.key)&&running){selected=+e.key-1;renderButtons()}if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();if(e.key===' ')act(performance.now())}});window.addEventListener('keyup',e=>{keys[e.key]=false;keys[e.key.toLowerCase()]=false});
+window.addEventListener('keydown',e=>{if(!running)return;keys[e.key]=true;keys[e.key.toLowerCase()]=true;if(/^[1-5]$/.test(e.key)&&running){selected=+e.key-1;renderButtons()}if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();if(e.key===' '){down=true;requestCast(performance.now())}}});window.addEventListener('keyup',e=>{keys[e.key]=false;keys[e.key.toLowerCase()]=false;if(e.key===' ')down=false});
 function point(e){let r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*cpuView.w/r.width,y:(e.clientY-r.top)*cpuView.h/r.height}}
-c.addEventListener('mousemove',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y});c.addEventListener('mousedown',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y;down=true;act(performance.now())});window.addEventListener('mouseup',()=>down=false);// Left-hand virtual stick + tap to fire for touch, with independent pointers.
+c.addEventListener('mousemove',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y});c.addEventListener('mousedown',e=>{if(e.button!==0||!running)return;mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y;down=true;requestCast(performance.now())});
+window.addEventListener('mouseup',()=>down=false);window.addEventListener('blur',()=>{down=false;queuedCast=null;keys={}});
+c.addEventListener('pointercancel',()=>{down=false});// Left-hand virtual stick + tap to fire for touch, with independent pointers.
 const cpuMoveZone=document.getElementById('cpuMoveZone'),cpuThumb=document.getElementById('cpuThumb'),cpuThumbDot=document.getElementById('cpuThumbDot');
 let cpuStickPointer=null,cpuStickOrigin={x:0,y:0};
 function cpuStickUpdate(e){
@@ -1286,10 +1304,10 @@ c.addEventListener('pointerdown',e=>{
  const visual=document.getElementById('cpuTapReticle'),rect=document.querySelector('#gameScreen .arena-shell').getBoundingClientRect();
  visual.style.left=e.clientX-rect.left+'px';visual.style.top=e.clientY-rect.top+'px';
  visual.classList.remove('active');void visual.offsetWidth;visual.classList.add('active');
- act(performance.now());
+ requestCast(performance.now());
 });
 window.addEventListener('blur',cpuStickRelease);
-document.getElementById('mobileAction').onclick=()=>{mouse={x:enemy.x,y:enemy.y};act(performance.now())};
+document.getElementById('mobileAction').onclick=()=>{if(!running)return;mouse={x:enemy.x,y:enemy.y};requestCast(performance.now())};
 ctx.fillStyle='#aabed3';ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillText('装備を選んで「対戦開始」を押そう',450,235);
 document.getElementById('again').onclick=()=>{celebrationId++;document.getElementById('result').classList.remove('show');init()};
 function returnToLobby(){stopMusic();winAudio.pause();++matchToken;++celebrationId;running=false;down=false;touch=null;keys={};document.getElementById('result').classList.remove('show');document.getElementById('gameScreen').classList.remove('active');document.body.classList.remove('in-match');document.getElementById('lobbyScreen').classList.remove('hidden');document.getElementById('gachaScreen').classList.add('hidden');document.body.classList.remove('login-view','gacha-view');document.getElementById('status').textContent='装備を調整して対戦開始！';updateCollection();updatePreview();renderAchievements();switchAppTab('play');}

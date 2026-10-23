@@ -14,6 +14,17 @@ const byCategory={
  emoji:[[0x1f300,0x1faff],[0x2600,0x27bf]]
 };
 const categories=Object.keys(byCategory);
+// Gentle 6% mid-stroke bonus; the rest still draws from every supported Unicode category.
+let lastStrokeMap=null,midStrokePool=[];
+function middleStrokeGlyph(){
+ const map=window.MojiRandom?.strokeMap;
+ if(!map)return null;
+ if(map!==lastStrokeMap){
+  lastStrokeMap=map;
+  midStrokePool=Object.keys(map).filter(ch=>Number.isInteger(map[ch])&&map[ch]>=5&&map[ch]<=18&&safe(ch));
+ }
+ return midStrokePool.length?midStrokePool[integer(midStrokePool.length)]:null;
+}
 const safe=(s)=>{
  if(typeof s!=='string'||!s||/[\u0000-\u001f\u007f-\u009f\s]/u.test(s))return false;
  if(encoder.encode(s).length>64||Array.from(s).length>16)return false;
@@ -41,7 +52,7 @@ function categoryRoll(category){
 function roll(exclude=new Set()){
  for(let attempt=0;attempt<240;attempt++){
   const category=categories[integer(categories.length)];
-  const ch=categoryRoll(category);
+  const ch=Math.random()<.06?(middleStrokeGlyph()||categoryRoll(category)):categoryRoll(category);
   if(ch&&!exclude.has(ch))return ch;
  }
  for(const ch of examples)if(safe(ch)&&!exclude.has(ch))return ch;
