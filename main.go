@@ -958,9 +958,10 @@ func (a *Arena) tick(dt float64) {
 			}
 			struck := false
 			for _, p := range room.Players {
-				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < 30 {
+				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < func() float64 { if b.Special=="roman" { return 43 }; return 30 }() {
+					protected := now<p.InvincibleUntil || (now<p.ShieldUntil && p.Shield>0) || now<room.DanceUntil
 					if now>=room.DanceUntil {hit(p, b.Damage, b.Pierce, now)}
-					if b.Special=="slow" && now>=p.InvincibleUntil && now>=room.DanceUntil {p.SlowedUntil=now+3}
+					if b.Special=="slow" && !protected {p.SlowedUntil=now+3}
 					struck = true
 					break
 				}
