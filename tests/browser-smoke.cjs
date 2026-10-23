@@ -28,6 +28,16 @@ const { chromium } = require('playwright');
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
    if(!await page.locator('#gameScreen .ultimate-cast').isVisible())throw Error(mode+' CPU ultimate icon is not visible');
+   const castCheck=await page.evaluate(()=>{
+    if(typeof slots==='undefined'||typeof act!=='function')return 'game functions unavailable';
+    selected=0;slots[0].n=40;
+    for(let i=0;i<6;i++){slots[0].ready=0;act(performance.now())}
+    return 'ok';
+   });
+   if(castCheck!=='ok')throw Error(mode+' CPU charge simulation: '+castCheck);
+   await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-cast')?.classList.contains('ready'),{timeout:10000});
+   await page.locator('#gameScreen .ultimate-cast').click();
+   await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent==='使用済',{timeout:9000});
    if(errors.length)throw Error(mode+' CPU match JS errors: '+errors.join('; '));
    await page.locator('#retreat').click();
    await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
