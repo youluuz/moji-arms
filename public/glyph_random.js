@@ -74,4 +74,23 @@ function all(){
  return cachedPool;
 }
 window.MojiRandom={all,roll,sample,examples,categories};
+// Shared-login invite flow: invitees start at the guest entrance, equip five glyphs
+// in the common lobby, then choose "コードで参加". No standalone PvP splash.
+const inviteCode=new URLSearchParams(location.search).get('room');
+if(inviteCode&&/^[A-Z0-9]{6}$/i.test(inviteCode)){
+ window.addEventListener('load',()=>{
+  const enter=document.getElementById('enterLobby'),codeBox=document.getElementById('joinRoomCode');
+  if(!enter||!codeBox)return; // Also loaded by the multiplayer iframe.
+  const help=document.querySelector('#loginScreen .login-card p');
+  if(help)help.textContent+=' 招待ルーム '+inviteCode.toUpperCase()+' への参加依頼が届いています。';
+  enter.addEventListener('click',()=>{
+   const mode=document.getElementById('modeSelect');
+   mode.value='multi';mode.dispatchEvent(new Event('change',{bubbles:true}));
+   codeBox.value=inviteCode.toUpperCase();
+   const tip=document.getElementById('validation');
+   if(tip)tip.textContent='招待ルーム '+inviteCode.toUpperCase()+'：武装5枠を決めて「コードで参加」を押してね。';
+  });
+ });
+}
+
 })();
