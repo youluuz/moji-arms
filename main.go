@@ -1,4 +1,4 @@
-// 文字武装 GLYPH STRIKE v6.5: Python-free standalone HTTP/WebSocket arena server.
+// 文字武装 GLYPH STRIKE v6.7: online arena with Unicode glyphs and mobile tap-to-cast.
 // No third-party Go modules are needed; go build works offline.
 package main
 
@@ -290,11 +290,7 @@ func isKind(s string) bool {
 	}
 	return false
 }
-// Standard matchmaking accepts only a single Han character in every slot.
-func validStandardGlyph(ch string) bool {
-	rs := []rune(ch)
-	return len(rs) == 1 && unicode.Is(unicode.Han, rs[0])
-}
+// All modes accept one Unicode glyph per slot; normal mode derives the stroke value.
 func validSlots(values []Slot, custom bool) bool {
 	if len(values) != 5 {
 		return false
