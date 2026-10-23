@@ -76,7 +76,7 @@ func strokes(ch string) int {
 		}
 	}
 	for _, r := range ch {
-		if r == 0xfe0f || r == 0x200d || r >= 0x1f300 {
+		if r == 0xfe0f || r == 0x200d || emojiPresentation(r) || r >= 0x1f300 {
 			return 5
 		}
 	}
@@ -86,6 +86,92 @@ func strokes(ch string) int {
 		}
 	}
 	return 2
+}
+
+// emojiPresentation mirrors JavaScript Unicode Emoji_Presentation for game stroke equivalence.
+// Ranges are generated from the runtime Unicode property rather than a handpicked emoji list.
+func emojiPresentation(r rune) bool {
+	return (r >= 0x231a && r <= 0x231b) ||
+		(r >= 0x23e9 && r <= 0x23ec) ||
+		r == 0x23f0 ||
+		r == 0x23f3 ||
+		(r >= 0x25fd && r <= 0x25fe) ||
+		(r >= 0x2614 && r <= 0x2615) ||
+		(r >= 0x2648 && r <= 0x2653) ||
+		r == 0x267f ||
+		r == 0x2693 ||
+		r == 0x26a1 ||
+		(r >= 0x26aa && r <= 0x26ab) ||
+		(r >= 0x26bd && r <= 0x26be) ||
+		(r >= 0x26c4 && r <= 0x26c5) ||
+		r == 0x26ce ||
+		r == 0x26d4 ||
+		r == 0x26ea ||
+		(r >= 0x26f2 && r <= 0x26f3) ||
+		r == 0x26f5 ||
+		r == 0x26fa ||
+		r == 0x26fd ||
+		r == 0x2705 ||
+		(r >= 0x270a && r <= 0x270b) ||
+		r == 0x2728 ||
+		r == 0x274c ||
+		r == 0x274e ||
+		(r >= 0x2753 && r <= 0x2755) ||
+		r == 0x2757 ||
+		(r >= 0x2795 && r <= 0x2797) ||
+		r == 0x27b0 ||
+		r == 0x27bf ||
+		(r >= 0x2b1b && r <= 0x2b1c) ||
+		r == 0x2b50 ||
+		r == 0x2b55 ||
+		r == 0x1f004 ||
+		r == 0x1f0cf ||
+		r == 0x1f18e ||
+		(r >= 0x1f191 && r <= 0x1f19a) ||
+		(r >= 0x1f1e6 && r <= 0x1f1ff) ||
+		r == 0x1f201 ||
+		r == 0x1f21a ||
+		r == 0x1f22f ||
+		(r >= 0x1f232 && r <= 0x1f236) ||
+		(r >= 0x1f238 && r <= 0x1f23a) ||
+		(r >= 0x1f250 && r <= 0x1f251) ||
+		(r >= 0x1f300 && r <= 0x1f320) ||
+		(r >= 0x1f32d && r <= 0x1f335) ||
+		(r >= 0x1f337 && r <= 0x1f37c) ||
+		(r >= 0x1f37e && r <= 0x1f393) ||
+		(r >= 0x1f3a0 && r <= 0x1f3ca) ||
+		(r >= 0x1f3cf && r <= 0x1f3d3) ||
+		(r >= 0x1f3e0 && r <= 0x1f3f0) ||
+		r == 0x1f3f4 ||
+		(r >= 0x1f3f8 && r <= 0x1f43e) ||
+		r == 0x1f440 ||
+		(r >= 0x1f442 && r <= 0x1f4fc) ||
+		(r >= 0x1f4ff && r <= 0x1f53d) ||
+		(r >= 0x1f54b && r <= 0x1f54e) ||
+		(r >= 0x1f550 && r <= 0x1f567) ||
+		r == 0x1f57a ||
+		(r >= 0x1f595 && r <= 0x1f596) ||
+		r == 0x1f5a4 ||
+		(r >= 0x1f5fb && r <= 0x1f64f) ||
+		(r >= 0x1f680 && r <= 0x1f6c5) ||
+		r == 0x1f6cc ||
+		(r >= 0x1f6d0 && r <= 0x1f6d2) ||
+		(r >= 0x1f6d5 && r <= 0x1f6d8) ||
+		(r >= 0x1f6dc && r <= 0x1f6df) ||
+		(r >= 0x1f6eb && r <= 0x1f6ec) ||
+		(r >= 0x1f6f4 && r <= 0x1f6fc) ||
+		(r >= 0x1f7e0 && r <= 0x1f7eb) ||
+		r == 0x1f7f0 ||
+		(r >= 0x1f90c && r <= 0x1f93a) ||
+		(r >= 0x1f93c && r <= 0x1f945) ||
+		(r >= 0x1f947 && r <= 0x1f9ff) ||
+		(r >= 0x1fa70 && r <= 0x1fa7c) ||
+		(r >= 0x1fa80 && r <= 0x1fa8a) ||
+		(r >= 0x1fa8e && r <= 0x1fac6) ||
+		r == 0x1fac8 ||
+		(r >= 0x1facd && r <= 0x1fadc) ||
+		(r >= 0x1fadf && r <= 0x1faea) ||
+		(r >= 0x1faef && r <= 0x1faf8)
 }
 
 // A compact approximation of a Unicode extended grapheme cluster. Handles keycap, VS16,
