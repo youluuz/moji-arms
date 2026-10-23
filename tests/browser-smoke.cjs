@@ -11,7 +11,16 @@ const { chromium } = require('playwright');
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
   await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
-  await page.waitForSelector('#lobbyScreen .kanji',{timeout:15000});
+  console.log('LOBBY_STATE',JSON.stringify(await page.evaluate(()=>({
+    login:document.getElementById('loginScreen').className,
+    lobby:document.getElementById('lobbyScreen').className,
+    mode:document.getElementById('modeSelect')?.value,
+    kanjiCount:document.querySelectorAll('#lobbyScreen .kanji').length,
+    glyph:document.querySelector('#lobbyScreen .kanji')?.getBoundingClientRect().toJSON(),
+    ultimate:document.querySelector('#loadoutPanel .ultimate-option')?.getBoundingClientRect().toJSON()
+  }))));
+  await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
   const cpuGlyph=await page.evaluate(()=>{
     const field=document.querySelector('#lobbyScreen .kanji');
     const stat=field.closest('.slot').querySelector('.slot-stat');
