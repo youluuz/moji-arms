@@ -9,17 +9,18 @@ const { chromium } = require('playwright');
   const res=await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
-  const cpuDiag=await page.evaluate(()=>{
-    const source=[...document.scripts].map(s=>s.textContent||'').filter(s=>s.length>10000).join('\n');
-    const results={sources:source.length};
-    for(const term of ['return 12','=12;', 'strokeCount','strokeOf','strokeMap','music.volume','audio.volume','bgm.volume','musicEnabled','cpuView.w','function fitArena','volume=','BGM','function strokes']){
-      const p=source.indexOf(term);
-      results[term]=p<0?'not-found':source.slice(Math.max(0,p-180),p+250);
-    }
-    results.lobbyChildren=[...document.querySelectorAll('#lobbyScreen > *')].slice(0,35).map(el=>({tag:el.tagName,id:el.id,cl:el.className?.toString().slice(0,80)}));
-    return results;
-  });
-  console.log('CPU_DIAG',JSON.stringify(cpuDiag));
+  await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
+  const cpuGlyph=await page.evaluate(()=>({
+    biang:getStrokeCount('𰻞'),biangSimple:getStrokeCount('𰻝'),
+    dragon:getStrokeCount('龘'),
+    attackCD:slotCooldownMs('attack',12),
+    defenseCD:slotCooldownMs('defense',12),
+    bgmVolumeMarker:document.documentElement.outerHTML.includes('bgmAudio.volume=.10')
+  }));
+  if(cpuGlyph.biang!==58||cpuGlyph.biangSimple!==43||cpuGlyph.dragon!==48||
+    cpuGlyph.attackCD!==Math.round(1000*(.65+12*.125+2*.02)*1.2)||
+    cpuGlyph.defenseCD!==Math.round(1000*(9+12*.4)*1.4))
+    throw Error('CPU rare-kanji/cooldown integration failure: '+JSON.stringify(cpuGlyph));
 
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
@@ -103,6 +104,17 @@ const { chromium } = require('playwright');
   if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
+  await page.waitForFunction(()=>strokeForGlyph('𰻞')===58,{timeout:20000});
+  const matchUI=await page.evaluate(()=>({
+    match:document.querySelector('#match')?.textContent,
+    privateCode:!!document.querySelector('.online-private-choice #roomCode'),
+    cooldown:onlineCD('attack',12),
+    rare:strokeForGlyph('𰻞')
+  }));
+  if(!matchUI.match?.includes('ランダムマッチ')||!matchUI.privateCode||
+    matchUI.cooldown!==Math.round(1000*(.65+12*.125+2*.02)*1.2)||matchUI.rare!==58)
+    throw Error('online matchmaking/rare-kanji UI mismatch '+JSON.stringify(matchUI));
+
   if(await page.locator('#joinArea .ultimate-option').count()!==6)throw Error('online must present identical six ultimates');
   const onlinePosition=await page.evaluate(()=>{
    const editor=document.querySelector('#joinArea .online-loadout'),picker=editor?.nextElementSibling;
