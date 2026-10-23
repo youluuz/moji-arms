@@ -118,6 +118,9 @@ function boot(){
   if(active){
    if(aiming&&now>=aimUntil){aiming=false;fire(chosen,aimAngle)}
    if(slowUntil&&now>=slowUntil){enemy.speed=135;slowUntil=0}
+   // CPU opponent cannot acquire a target while player is invisible.
+   if(invisibleUntil>now){enemy.ready=Math.max(enemy.ready||0,now+120);}
+   // Invisible player remains faintly traceable to the user; the CPU opponent loses targeting.
    // The existing projectile hit pipeline removes bullets; detect confirmed enemy hits.
    for(const b of [...specialBullets]){
     if(bullets.includes(b))continue;
