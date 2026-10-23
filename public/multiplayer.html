@@ -72,7 +72,7 @@ $('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+(setup.slo
 }).join(' / ')+' ｜ 収縮：'+setup.shrink;
 // Loadout editor: guests joining with an invite must deliberately equip five glyphs.
 const loadoutRoles=['attack','defense','heal','pierce','homing'];
-const savedLoadout=Array.isArray(setup.slots)&&setup.slots.length===5&&setup.slots.every(s=>typeof s?.ch==='string'&&s.ch.trim());
+const savedLoadout=Array.isArray(setup.slots)&&setup.slots.length===5&&setup.slots.every(s=>typeof s?.ch==='string'&&s.ch.trim()&&(setup.mode==='custom'||/^\p{Script=Han}$/u.test(s.ch)));
 $('onlineSlots').innerHTML=loadoutRoles.map((role,i)=>{
  const s=savedLoadout?setup.slots[i]:{ch:'',kind:role,n:''};
  return `<div class="online-slot"><label for="onlineGlyph${i}">枠 ${i+1}</label><input id="onlineGlyph${i}" class="online-glyph-input" value="${escapeHtml(s.ch||'')}" maxlength="24" placeholder="文字" aria-label="武装文字${i+1}"><select class="online-kind" aria-label="枠${i+1}の能力">${loadoutRoles.map(k=>`<option value="${k}" ${s.kind===k?'selected':''}>${onlineNames[k]}</option>`).join('')}</select><label>画数（カスタム）</label><input class="slot-strokes" type="number" min="1" max="40" value="${Number.isInteger(s.n)?s.n:''}" aria-label="枠${i+1}のカスタム画数"></div>`;
@@ -91,7 +91,7 @@ function collectOnlineSlots(){
  const out=[];
  for(let i=0;i<5;i++){
   const input=$(`onlineGlyph${i}`),glyphs=splitGlyphs(input.value);
-  if(glyphs.length!==1||!glyphs[0].trim()||glyphs[0].length>16){$('error').textContent=`枠${i+1}：武装文字を1つ入力してください。5つすべて必要です。`;input.focus();return null}
+  if(glyphs.length!==1||!glyphs[0].trim()||glyphs[0].length>16|| (setup.mode!=='custom'&&!/^\p{Script=Han}$/u.test(glyphs[0]))){$('error').textContent=`枠${i+1}：通常対戦は漢字1文字を入力してください。5枠すべて必要です。`;input.focus();return null}
   const slot=input.closest('.online-slot'),kind=slot.querySelector('.online-kind').value;
   const raw=slot.querySelector('.slot-strokes').value;
   const n=Number(raw);
@@ -145,9 +145,9 @@ function updateZoneWarning(me,m){
 }
 function fitOnlineArena(){
  const shell=document.querySelector('#gameArea .game-wrap');if(!shell||!shell.clientWidth||!shell.clientHeight)return;
- const scale=Math.min(shell.clientWidth/900,shell.clientHeight/470,.96);
+ const scale=Math.min(shell.clientWidth/900,shell.clientHeight/470,.86);
  cv.style.width=Math.max(1,Math.floor(scale*900))+'px';cv.style.height=Math.max(1,Math.floor(scale*470))+'px';
- const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
+ const dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1));
  if(cv.width!==Math.round(900*dpr)||cv.height!==Math.round(470*dpr)){
   cv.width=Math.round(900*dpr);cv.height=Math.round(470*dpr);
   cx.setTransform(dpr,0,0,dpr,0,0);
@@ -268,7 +268,7 @@ if(incomingRoom){$('joinArea').querySelector('h2').textContent='招待ルーム�
 else if(new URLSearchParams(location.search).get('auto')==='create'){$('joinArea').querySelector('h2').textContent='ルームを作成';if(savedLoadout)setTimeout(()=>connect('create'),80);else $('error').textContent='先に5枠すべての文字を入力してください。';}
 $('begin').onclick=()=>send({type:'start'});$('leave').onclick=$('return').onclick=()=>{$('onlineMusic').pause();sock?.close();location.href='index.html'};// Slot selection uses event delegation because the server refreshes the cards every tick.
 $('cards').addEventListener('click',e=>{
- const card=e.target.closest('button[data-slot]');if(!card)return;
+ const card=e.target.closest('button[data-slot]');if(!card)return;e.preventDefault();
  selected=Math.max(0,Math.min(4,Number(card.dataset.slot)));
  $('cards').querySelectorAll('.card').forEach((el,i)=>{el.classList.toggle('active',i===selected);el.setAttribute('aria-pressed',String(i===selected))});
 });
