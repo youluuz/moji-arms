@@ -263,7 +263,7 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
  #gameScreen .battle-bottom{display:none}
  #gameScreen .battle-head{margin-bottom:2px}
 }
-.quick-room-extra{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}
+.quick-room .quick-room-extra{display:flex;flex-direction:row;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}.quick-room{flex-wrap:wrap}.quick-room>div:first-child{flex:1;min-width:220px}
 .quick-room-extra input{width:min(150px,100%);padding:9px}
 .quick-room-extra button{padding:8px 12px}
 </style></head><body>
@@ -421,8 +421,7 @@ function shuffleLoadout(reason='manual'){
  // All 5 abilities can appear. Ensure a damaging role to avoid an unwinnable draw.
  do{kinds=rows.map(()=>randomChoice(RANDOM_ROLES))}while(!kinds.some(k=>['attack','pierce','homing'].includes(k)));
  rows.forEach((r,i)=>{
-  let ch=randomChoice(RANDOM_GLYPHS),attempts=0;
-  while(chosen.has(ch)&&attempts++<50)ch=randomChoice(RANDOM_GLYPHS);
+  let ch=window.MojiRandom.roll(chosen);
   chosen.add(ch);
   r.querySelector('.kanji').value=ch;
   r.querySelector('.kind').value=kinds[i];
@@ -466,7 +465,7 @@ function refreshModeHelp(){
  document.getElementById('modeBadge').textContent=badge;
  document.getElementById('modeSummary').textContent=hint;
  document.getElementById('shrinkControls').style.opacity=(matchMode==='normal'||matchMode==='multi')?'.6':'1';
- document.getElementById('start').textContent=matchMode.startsWith('multi')?'⚔ ルームを作る（自動） →':'⚔ 試合開始　→';
+ document.getElementById('start').textContent=matchMode.startsWith('multi')?'🌐 マルチ対戦へ進む　→':'⚔ CPU戦を開始　→';
  const selected=document.getElementById('shrinkMode');
  document.getElementById('zoneSummary').textContent=selected.disabled?'標準収縮：120秒':({normal:'標準：120秒',slow:'遅い：180秒',fast:'速い：70秒',none:'収縮なし',instant:'最小から開始'})[selected.value];
  modeCompact.value=matchMode;
