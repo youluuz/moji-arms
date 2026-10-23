@@ -664,9 +664,31 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false
 		}
 		room.broadcast()
+	case "ultimate":
+		if room.Phase!="playing" || !p.Alive || p.UltimateSpent || p.UltimateCharge < float64(ultimateCost(p.Ultimate)) {return}
+		now:=float64(time.Now().UnixNano())/1e9
+		if now<room.DanceUntil {return}
+		p.UltimateSpent=true;p.UltimateAiming=false;p.UltimateSerial++;p.LastUltimate=p.Ultimate;p.Fire=false;p.CastPending=false
+		switch p.Ultimate {
+		case "roman","slow":p.UltimateAiming=true;p.UltimateAim=p.Aim;p.UltimateAimUntil=now+5
+		case "invincible":p.InvincibleUntil=now+1.8
+		case "dance":room.DanceUntil=now+2
+		case "invisible":p.InvisibleUntil=now+3
+		case "namepu":p.NamepuUntil=now+5;p.NamepuUsed=true
+		}
+		room.broadcast()
+	case "ultimate-aim":
+		if room.Phase!="playing" || !p.Alive || !p.UltimateAiming {return}
+		var angle float64
+		parseInput(m,"aim",&angle)
+		if math.IsNaN(angle)||math.IsInf(angle,0) {return}
+		p.UltimateAim=angle;p.UltimateAiming=false
+		ultimateLaunch(room,p,float64(time.Now().UnixNano())/1e9)
 	case "cast":
 		// Reliable one-shot cast: a quick mobile tap is not lost between 50ms input updates.
 		if room.Phase != "playing" || !p.Alive { return }
+		now:=float64(time.Now().UnixNano())/1e9
+		if p.UltimateAiming || now<p.NamepuUntil || now<p.InvincibleUntil || now<room.DanceUntil {return}
 		var selected int
 		var castAim float64
 		parseInput(m, "selected", &selected)
@@ -757,7 +779,7 @@ func circleRect(x, y, rad float64, o Obstacle) bool {
 	return (x-px)*(x-px)+(y-py)*(y-py) < rad*rad
 }
 func hit(p *Player, damage float64, pierce bool, now float64) {
-	if !p.Alive {
+	if !p.Alive || now<p.InvincibleUntil {
 		return
 	}
 	if !pierce && now < p.ShieldUntil {
