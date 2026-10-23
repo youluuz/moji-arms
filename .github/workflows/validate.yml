@@ -28,3 +28,30 @@ jobs:
           node --check public/mobile-input-v70.js
       - name: Build the Render binary
         run: CGO_ENABLED=0 go build -o /tmp/mojiarms .
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start the local real game server
+        run: |
+          go build -o /tmp/mojiarms .
+          /tmp/mojiarms --no-browser --port 8083 > /tmp/mojiarms.log 2>&1 &
+          for i in $(seq 1 50); do
+            curl -fsS http://127.0.0.1:8083/healthz && exit 0
+            sleep 1
+          done
+          cat /tmp/mojiarms.log
+          exit 1
+      - name: Run Android-size, landscape and shared-mode browser smoke
+        run: node tests/browser-smoke.cjs
