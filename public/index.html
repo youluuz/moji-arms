@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | MOJI ARMS v6.5</title>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>文字武装 GLYPH STRIKE | MOJI ARMS v6.8</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1220;--panel:#131e32;--panel2:#182740;--edge:#314663;--line:#263a55;--ink:#f0f5ff;--muted:#a9bed7;--gold:#f4cb7c;--ice:#84d9ff;--good:#6bdfab}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -10%,#233d60 0,transparent 43%),linear-gradient(180deg,#0b1526,#0a1020);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:var(--ink);font-size:15px}
@@ -238,6 +238,34 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 .quick-room-button{border:1px solid #d6c8a1;border-radius:10px;background:#e8c678;color:#1e2631;font-weight:850;padding:12px 18px;white-space:nowrap}
 .quick-room-button:hover{filter:brightness(1.08)}
 @media(max-width:680px){.quick-room{flex-direction:column;align-items:stretch}.quick-room-button{width:100%}}
+/* v6.8: shared online overlay, portrait/landscape CPU viewport and left-hand floating pad */
+#onlineScreen{display:none;position:fixed;inset:0;z-index:500;background:#081525;color:#fff}
+#onlineScreen.active{display:flex;flex-direction:column}
+#onlineScreen .online-shell-head{height:38px;min-height:38px;display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:#0d1d34;border-bottom:1px solid #48637f;font-size:12px}
+#onlineScreen iframe{width:100%;height:100%;border:0;flex:1;min-height:0}
+#onlineScreen button{padding:5px 10px;border-radius:8px;font-size:12px}
+#cpuMoveZone{display:none;position:absolute;inset:0 auto 0 0;width:35%;z-index:10;touch-action:none;user-select:none;-webkit-user-select:none;border-right:1px dashed #7ad6ff44;background:linear-gradient(90deg,#6ecaff0b,transparent)}
+#cpuThumb{position:absolute;width:98px;height:98px;border:2px solid #a3e6ffb0;border-radius:50%;background:#14476a89;pointer-events:none;display:grid;place-items:center;left:10px;bottom:12px;box-shadow:0 0 14px #34b8ff33}
+#cpuThumbDot{display:block;width:36px;height:36px;border-radius:50%;background:#72d8ffbb;border:2px solid white;pointer-events:none}
+#cpuTapHint{display:none;position:absolute;right:9px;bottom:9px;z-index:10;pointer-events:none;font-size:10px;color:#fff0ba;border-radius:20px;background:#0c213bcc;padding:6px}
+#gameScreen .arena-shell canvas{touch-action:none}
+@media(any-pointer:coarse){body.in-match #cpuMoveZone,body.in-match #cpuTapHint{display:block}body.in-match #mobileAction{display:none}}
+@media(max-width:650px) and (orientation:portrait){
+ body.in-match main{padding:3px}
+ #gameScreen .battle-head{margin-bottom:2px}
+ #gameScreen .weapon{height:65px;padding:2px}
+ #gameScreen .game-hint{display:none}
+ #gameScreen .game-panel{padding:3px}
+}
+@media(orientation:landscape) and (max-height:490px){
+ body.in-match main{padding:2px}
+ #gameScreen .weapon{height:52px;padding:2px}
+ #gameScreen .battle-bottom{display:none}
+ #gameScreen .battle-head{margin-bottom:2px}
+}
+.quick-room-extra{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}
+.quick-room-extra input{width:min(150px,100%);padding:9px}
+.quick-room-extra button{padding:8px 12px}
 </style></head><body>
 <header class="topbar"><div class="brand"><span class="brand-icon">文<span class="logo-slash">／</span></span><div><div class="brand-name">文字武装 <small>GLYPH STRIKE</small></div><div class="brand-sub">MOJI // ARMS · ARENA 6.0</div></div></div><div class="top-actions"><span id="currentPlayer" class="player-pill">GUEST</span><button id="openGacha" type="button" class="nav-gacha">✦ ガチャへ</button><div class="stat-pill">🏆 <span id="winCounter">0</span> WIN</div><div class="stat-pill">✧ <span id="ownedCounter">0</span> / 54</div><div class="coin-pill">🪙 <span id="coinCounter">0</span> COIN</div></div></header>
 <nav id="appTabs" class="app-tabs hidden" aria-label="ゲーム画面を切り替え">
@@ -286,7 +314,7 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
  <article><b>◎ ホーミング</b><p>敵を追う弾。壁をある程度避けるが、必中ではない。</p><small>威力：画数×6</small></article>
 </div><p class="subtle">クールタイムは文字の画数に応じて変化し、5スロットそれぞれ独立して回復します。</p></details><div class="loadout-stats" aria-label="対戦時の能力値"><div><span class="subtle">プレイヤー最大HP / MAX HP</span><div class="hp-token" id="lobbyHP">♥ 600 / 600</div></div><div class="stats-copy">各文字の<strong>威力・効果量・クールタイム</strong>を表示します。<br>文字・役割を変更するとすぐ反映。画数が増えるほど効果も増加。</div></div><div class="slots" id="setup"></div><div class="loadout-random-inline" aria-label="ランダム装備の設定"><button id="shuffleLoadout" type="button" class="outline">🎲 5枠ランダム</button><label class="random-auto"><input id="randomAtStart" type="checkbox"><span>毎試合ランダムにする</span></label><span id="randomNotice" role="status" class="subtle random-notice">5つの文字と役割をまとめて再抽選（任意）</span></div><div id="validation" role="alert"></div><div class="start-actions"><button id="start" class="primary">⚔ 試合開始　→</button><span class="subtle">開始すると戦闘画面へ自動切替。<br>マルチはPython不要のゲームサーバーから起動。勝利時 +1コイン。</span></div><div class="quick-room" aria-label="オンライン対戦をすぐに始める">
  <div><strong>友達とオンライン対戦</strong><small>5つのスロットをすべて入力してからルームを作成します。未入力では試合に進めません。</small></div>
- <button id="createRoomNow" type="button" class="quick-room-button">🔗 ルームを作成して開く　→</button>
+ <button id="createRoomNow" type="button" class="quick-room-button">🔗 ルームを作成</button><div class="quick-room-extra"><button id="findRandomNow" type="button">🌐 ランダムマッチ</button><input id="joinRoomCode" aria-label="参加するルームコード" maxlength="6" placeholder="ルームコード"><button id="joinRoomNow" type="button">コードで参加</button></div>
 </div></section>
 <div class="lobby-shortcuts"><button id="gachaShortcut" type="button" class="outline">✦ ガチャを開く <span>所持コインで装飾を召喚</span></button><button id="collectionShortcut" type="button" class="outline">◇ エフェクト図鑑 <span>所持品を確認・装備</span></button></div>
 
@@ -321,11 +349,12 @@ body.in-match .app-tabs,body.login-view .app-tabs{display:none!important}
 <div class="gacha-to-collection"><span>引いたアイテムはエフェクト図鑑から確認・装備できるよ。</span><button id="fromGachaCollection" type="button" class="outline">✦ 図鑑で装備する →</button></div>
 </section></div>
 <div id="gameScreen"><div class="battle-head"><div><div class="battle-label">LIVE MATCH / MOJI ARMS</div><div class="battle-title">⚔ 文字闘技場</div><div class="subtle" id="gameMapName">黄金の神殿</div></div><button id="retreat" class="outline">← ロビーへ撤退</button></div>
-<div class="game-panel"><div class="hud"><div><div class="hud-line"><span>● <span id="battlePlayerName">PLAYER</span></span><span class="hp-number"><span id="php">600</span> / 600</span></div><div class="hp-bar"><div id="pbar" class="hp-fill"></div></div></div><div><div class="hud-line"><span>◆ CPU</span><span class="hp-number"><span id="ehp">600</span> / 600</span></div><div class="hp-bar"><div id="ebar" class="hp-fill enemy"></div></div></div></div><div id="status">装備を決めて試合開始！</div><div id="zoneInfo" class="subtle" style="padding:2px 12px 9px;font-size:12px">安全エリア：通常</div><div class="arena-shell"><canvas id="field" width="900" height="470"></canvas><div id="zoneWarning" class="zone-warning" aria-live="off">⚠ エリア外！ HP減少中</div></div><div class="weaponrow" id="weapons"></div><div class="battle-bottom"><div class="game-hint">移動：WASD / 矢印キー　・　照準：マウス　・　攻撃：左クリック　・　切替：1〜5<br>防御スロット下段の水色ゲージが<strong>防御効果の残り時間</strong>を示します。</div><button id="mobileAction" class="outline">⚔ 攻撃 / 防御</button></div></div></div>
+<div class="game-panel"><div class="hud"><div><div class="hud-line"><span>● <span id="battlePlayerName">PLAYER</span></span><span class="hp-number"><span id="php">600</span> / 600</span></div><div class="hp-bar"><div id="pbar" class="hp-fill"></div></div></div><div><div class="hud-line"><span>◆ CPU</span><span class="hp-number"><span id="ehp">600</span> / 600</span></div><div class="hp-bar"><div id="ebar" class="hp-fill enemy"></div></div></div></div><div id="status">装備を決めて試合開始！</div><div id="zoneInfo" class="subtle" style="padding:2px 12px 9px;font-size:12px">安全エリア：通常</div><div class="arena-shell"><canvas id="field" width="900" height="470"></canvas><div id="cpuMoveZone" aria-label="左側をドラッグして移動"><div id="cpuThumb"><span id="cpuThumbDot"></span></div></div><div id="cpuTapHint">🎯 右側タップで発動</div><div id="zoneWarning" class="zone-warning" aria-live="off">⚠ エリア外！ HP減少中</div></div><div class="weaponrow" id="weapons"></div><div class="battle-bottom"><div class="game-hint">移動：WASD / 矢印キー　・　照準：マウス　・　攻撃：左クリック　・　切替：1〜5<br>防御スロット下段の水色ゲージが<strong>防御効果の残り時間</strong>を示します。</div><button id="mobileAction" class="outline">⚔ 攻撃 / 防御</button></div></div></div>
+<section id="onlineScreen" aria-label="オンライン対戦"><div class="online-shell-head"><strong>🌐 文字武装 マルチプレイ</strong><button type="button" id="closeOnline">← 共通ロビーへ戻る</button></div><iframe id="onlineFrame" title="オンライン対戦" allow="fullscreen"></iframe></section>
 </main>
 <div id="result" role="dialog" aria-modal="true" aria-label="対戦結果"><canvas id="resultCanvas"></canvas><div class="result-inner"><div class="result-eyebrow">MATCH FINISHED <span class="result-serial">// MOJI ARMS</span></div><div class="result-hero"><div class="result-laurel"><span class="laurel-mark">✦</span><div class="crown" id="resultCrown">👑</div><div class="winner-char" id="resultChar">武</div></div><div class="result-message"><div id="resultRank" class="rank-word">VICTORY</div><h2 id="resultTitle">完全勝利</h2><div id="resultSubtitle">戦場を制したのは君だ！</div></div></div><div class="result-stats" id="resultStats"><div><small>試合時間</small><b id="resultTime">0:00</b></div><div><small>与ダメージ</small><b id="resultDamage">0</b></div><div><small>残りHP</small><b id="resultHP">600</b></div></div><div class="result-reward" id="resultReward">🪙 +1 COIN</div><div id="resultLoadout" class="result-loadout"></div><div class="result-actions"><button id="again" class="primary">⚔ もう一度戦う</button><button id="lobby" class="outline">← ロビーに戻る</button></div></div></div>
 <audio id="battleBgm" preload="none" loop></audio><audio id="victoryBgm" preload="none"></audio>
-<script>
+<script src="glyph_random.js"></script><script>
 const dict={'一':1,'二':2,'三':3,'刀':2,'火':4,'水':4,'木':4,'土':3,'山':3,'氷':5,'風':9,'炎':8,'雷':13,'龍':16,'竜':10,'斬':11,'轟':21,'鬱':29,'盾':9,'壁':16,'守':6,'鉄':13,'剣':10,'光':6,'闇':17,'爆':19,'鬼':10,'神':9,'雨':8,'石':5,'王':4,'弓':3,'矢':5,'力':2,'驫':30};
 // Only characters with a verified entry in the built-in stroke dictionary are legal in ranked/normal mode.
 Object.assign(dict,{'人':2,'口':3,'川':3,'日':4,'月':4,'田':5,'目':5,'白':5,'生':5,'空':8,'金':8,'銀':14,'銅':14,'鋼':16,'地':6,'天':4,'気':6,'電':13,'雪':11,'雲':12,'花':7,'草':9,'森':12,'林':8,'海':9,'波':8,'湖':12,'河':8,'星':9,'光':6,'影':15,'夜':8,'朝':12,'夕':3,'明':8,'暗':13,'黒':11,'赤':7,'青':8,'緑':14,'紫':12,'黄':11,'紅':9,'血':6,'心':4,'愛':13,'夢':13,'魂':14,'命':8,'死':6,'勇':9,'武':8,'戦':13,'闘':18,'勝':12,'負':9,'強':11,'弱':10,'速':10,'遅':12,'飛':9,'走':7,'歩':8,'突':8,'撃':15,'破':10,'壊':16,'滅':13,'殺':10,'刃':3,'槍':14,'銃':14,'斧':8,'鎧':18,'兜':11,'拳':10,'脚':11,'手':4,'足':7,'頭':16,'首':9,'体':7,'身':7,'巨':5,'大':3,'小':3,'中':4,'上':3,'下':3,'左':5,'右':5,'前':9,'後':9,'東':8,'西':6,'南':9,'北':5,'春':9,'夏':10,'秋':9,'冬':5,'龍':16,'虎':8,'狼':10,'獣':16,'鳥':11,'魚':11,'馬':10,'犬':4,'猫':11,'蛇':11,'虫':6,'羽':6,'翼':17,'炎':8,'燃':16,'焼':12,'熱':15,'冷':7,'凍':10,'氷':5,'風':9,'嵐':12,'雷':13,'霧':19,'雨':8,'虹':9,'霊':15,'魔':21,'妖':7,'怪':8,'悪':11,'善':12,'真':10,'偽':11,'新':13,'古':5,'永':5,'久':3,'無':12,'有':6,'零':13,'壱':7,'弐':6,'参':8,'百':6,'千':3,'万':3,'億':15,'兆':13,'界':9,'国':8,'城':9,'都':11,'京':8,'神':9,'仏':4,'仙':5,'聖':13,'王':4,'皇':9,'帝':9,'将':10,'軍':9,'兵':7,'士':3,'忍':7,'者':8,'侍':8,'刀':2,'剣':10,'盾':9,'壁':16,'守':6,'護':20,'攻':7,'防':7,'回':6,'復':12,'癒':18,'薬':16,'毒':8,'痛':12,'力':2,'技':7,'術':11,'法':8,'印':6,'式':6,'字':6,'文':4,'漢':13,'語':14,'音':9,'歌':14,'声':7,'叫':6,'轟':21,'驫':30,'鬱':29});
@@ -384,7 +413,7 @@ function refreshLobbyStats(){
 
 
 // Random arsenal: characters AND slot roles change. Includes letters, symbols and emoji.
-const RANDOM_GLYPHS=[...'火水木風雷龍虎海空星月山炎氷雪闇光花剣盾壁刀夢神鬼鉄勇武天鳥魚猫犬魔愛影霧流虹斬毒力翼魂波森',...'あいうえおかきくけこさしすせそアイウエオカキクケコ',...'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',...'☆★♨♠♥♣♦※!?%&@#§∞∑∇±→↗♪☀☂⚡☯✦', '🌸','🔥','🌀','💎','🚀','🍙','🐱','🎯','👑','🛡️','🌙','⚔️','♨️','😂'];
+const RANDOM_GLYPHS=window.MojiRandom.all();
 const RANDOM_ROLES=['attack','defense','heal','pierce','homing'];
 function randomChoice(list){return list[Math.floor(Math.random()*list.length)]}
 function shuffleLoadout(reason='manual'){
@@ -893,20 +922,24 @@ function zoneWarningUpdate(outside,now){
  const el=document.getElementById('zoneWarning');el.classList.toggle('visible',outside);
  if(outside&&running&&now-lastZoneWarningAt>1250){lastZoneWarningAt=now;playZoneWarning()}
 }
+const cpuView={w:900,h:470};
 function fitArena(){
  const shell=document.querySelector('#gameScreen .arena-shell');
  if(!shell||!shell.clientWidth||!shell.clientHeight)return;
- const scale=Math.min(shell.clientWidth/900,shell.clientHeight/470,.96);
- c.style.width=Math.max(1,Math.floor(900*scale))+'px';
- c.style.height=Math.max(1,Math.floor(470*scale))+'px';
- // High-resolution backing store, fixed 900x470 world coordinates.
- const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
- if(c.width!==Math.round(900*dpr)||c.height!==Math.round(470*dpr)){
-  c.width=Math.round(900*dpr);c.height=Math.round(470*dpr);
+ const aspect=shell.clientWidth/shell.clientHeight;
+ cpuView.w=aspect<1?520:900;
+ cpuView.h=Math.min(1000,Math.max(aspect<1?500:270,Math.round(cpuView.w/aspect)));
+ const scale=Math.min(shell.clientWidth/cpuView.w,shell.clientHeight/cpuView.h);
+ c.style.width=Math.floor(cpuView.w*scale)+'px';
+ c.style.height=Math.floor(cpuView.h*scale)+'px';
+ const dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1));
+ if(c.width!==Math.round(cpuView.w*dpr)||c.height!==Math.round(cpuView.h*dpr)){
+  c.width=Math.round(cpuView.w*dpr);c.height=Math.round(cpuView.h*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
  }
 }
 window.addEventListener('resize',fitArena);
+window.addEventListener('orientationchange',()=>requestAnimationFrame(fitArena));
 if(window.ResizeObserver)new ResizeObserver(fitArena).observe(document.querySelector('#gameScreen .arena-shell'));
 
 let matchToken=0,matchRewarded=false,activeDefenseSlot=-1,defenseBegin=0,defenseDuration=1800;let battleDamage=0,battleShots=0;
@@ -935,7 +968,7 @@ function init(){document.getElementById('result').classList.remove('show');const
   }
   const settings={mode:matchMode==='multi'?'normal':'custom',ch:avatarChar,slots:nextSlots,theme:document.getElementById('mapTheme').value,shrink:document.getElementById('shrinkMode').value};
   sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(settings));
-  window.location.href='multiplayer.html?auto=create';return;
+  openEmbeddedMultiplayer('');return;
  }
  battleDamage=0;battleShots=0;slots=nextSlots;zoneSetting=matchMode==='custom'?document.getElementById('shrinkMode').value:'normal';zoneRadius=zoneSetting==='instant'?180:1150;zoneDamageAccumulator=0;matchRewarded=false;activeDefenseSlot=-1;defenseBegin=0;player={x:650,y:520,hp:MAX_HP,speed:205,shield:0,shieldEnd:0,r:19};enemy={x:1160,y:520,hp:MAX_HP,speed:135,shield:0,shieldEnd:0,r:19,ready:0,guardReady:0};bullets=[];particles=[];lastZoneWarningAt=-Infinity;chooseThemes();obstacles=buildObstacles();startMusic();startTime=performance.now();selected=0;running=true;cam={x:player.x-450,y:player.y-235};last=performance.now();document.getElementById('status').textContent='戦闘開始！';document.getElementById('gameMapName').textContent=THEME_INFO[mapTheme].label;document.getElementById('lobbyScreen').classList.add('hidden');document.getElementById('gameScreen').classList.add('active');document.body.classList.add('in-match');window.scrollTo({top:0,behavior:'instant'});renderButtons();fitArena();const token=++matchToken;requestAnimationFrame(t=>loop(t,token))}
 document.getElementById('start').onclick=init;
@@ -997,7 +1030,7 @@ function steerHoming(b,dt,now){
  const next=current+clamp(diff(desired,current),-turnRate*dt,turnRate*dt);
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
-function loop(now,token){if(token!==matchToken)return;let dt=Math.min((now-last)/1000,.05);last=now;if(running){let vx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),vy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);if(touch){vx=touch.x-player.x;vy=touch.y-player.y;if(Math.hypot(vx,vy)<15)vx=vy=0;}let mag=Math.hypot(vx,vy)||1;moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
+function loop(now,token){if(token!==matchToken)return;let dt=Math.min((now-last)/1000,.05);last=now;if(running){let vx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),vy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);if(touch){vx=touch.x;vy=touch.y;}let mag=Math.hypot(vx,vy)||1;moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
 let dx=player.x-enemy.x,dy=player.y-enemy.y,d=Math.hypot(dx,dy)||1;let direction=d<215?-1:d>320?1:0;moveActor(enemy,dx/d*direction*enemy.speed*dt,dy/d*direction*enemy.speed*dt+Math.sin(now/650)*32*dt,now);
 // Closing safety circle; area outside continuously damages both sides.
  const elapsed=(now-startTime)/1000;
@@ -1009,7 +1042,7 @@ let dx=player.x-enemy.x,dy=player.y-enemy.y,d=Math.hypot(dx,dy)||1;let direction
 for(let i=bullets.length-1;i>=0;i--){let b=bullets[i];if(b.homing)steerHoming(b,dt,now);b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;let target=b.owner==='p'?enemy:player;if(!b.pierce&&obstacles.some(o=>now-startTime<o.expires&&circleRect(b.x,b.y,7,o))){bullets.splice(i,1)}else if(dist(b,target)<target.r+9){damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce);bullets.splice(i,1)}else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);}
 }document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':`安全エリア半径：${Math.round(zoneRadius)} / 1150`;
  draw(now);if(running)requestAnimationFrame(t=>loop(t,token))}
-function draw(now){cam.x=clamp(player.x-450,0,WORLD_W-900);cam.y=clamp(player.y-235,0,WORLD_H-470);ctx.clearRect(0,0,900,470);ctx.fillStyle='#112332';ctx.fillRect(0,0,900,470);ctx.save();ctx.translate(-cam.x,-cam.y);
+function draw(now){cam.x=clamp(player.x-cpuView.w/2,0,WORLD_W-cpuView.w);cam.y=clamp(player.y-cpuView.h/2,0,WORLD_H-cpuView.h);ctx.clearRect(0,0,cpuView.w,cpuView.h);ctx.fillStyle='#112332';ctx.fillRect(0,0,cpuView.w,cpuView.h);ctx.save();ctx.translate(-cam.x,-cam.y);
 // Arena background and themed obstacles
 const theme=THEME_INFO[mapTheme];
 const ground=ctx.createLinearGradient(0,0,WORLD_W,WORLD_H);
@@ -1174,7 +1207,7 @@ for(const b of bullets){
 }
 ctx.restore();
 ctx.fillStyle='rgba(7,16,28,.80)';ctx.beginPath();ctx.roundRect(6,5,280,25,6);ctx.fill();ctx.fillStyle='#e6f1fd';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText(theme.label+'  |  座標 '+Math.round(player.x)+','+Math.round(player.y),14,22);
-const mx=742,my=10,mw=145,mh=82;ctx.fillStyle='rgba(6,14,24,.82)';ctx.beginPath();ctx.roundRect(mx-5,my-5,mw+10,mh+10,12);ctx.fill();ctx.strokeStyle=theme.accent;ctx.lineWidth=1.5;ctx.strokeRect(mx,my,mw,mh);
+const mw=cpuView.w<700?110:145,mh=cpuView.w<700?66:82,mx=cpuView.w-mw-12,my=10;ctx.fillStyle='rgba(6,14,24,.82)';ctx.beginPath();ctx.roundRect(mx-5,my-5,mw+10,mh+10,12);ctx.fill();ctx.strokeStyle=theme.accent;ctx.lineWidth=1.5;ctx.strokeRect(mx,my,mw,mh);
 for(const o of obstacles){if(now-startTime>=o.expires)continue;ctx.fillStyle=theme.mini;ctx.fillRect(mx+o.x/WORLD_W*mw,my+o.y/WORLD_H*mh,Math.max(2,o.w/WORLD_W*mw),Math.max(2,o.h/WORLD_H*mh))}
 // Minimap projection of the shrinking circle; outside is shaded, marker remains visible.
 ctx.save();ctx.beginPath();ctx.rect(mx,my,mw,mh);ctx.clip();
@@ -1195,8 +1228,42 @@ document.getElementById('php').textContent=Math.ceil(player.hp);document.getElem
  if(guardBar&&guardText){const active=i===activeDefenseSlot&&player.shield>0;const remain=active?Math.max(0,player.shieldEnd-now):0;guardBar.style.width=(remain/defenseDuration*100)+'%';guardText.textContent=remain?`防御中 ${(remain/1000).toFixed(1)}s`:'防御効果 ―';}
 });document.querySelectorAll('.weapon').forEach((el,i)=>{el.classList.toggle('active',i===selected);el.classList.toggle('cool',now<slots[i].ready)})}
 window.addEventListener('keydown',e=>{if(!running)return;keys[e.key]=true;keys[e.key.toLowerCase()]=true;if(/^[1-5]$/.test(e.key)&&running){selected=+e.key-1;renderButtons()}if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();if(e.key===' ')act(performance.now())}});window.addEventListener('keyup',e=>{keys[e.key]=false;keys[e.key.toLowerCase()]=false});
-function point(e){let r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*470/r.height}}
-c.addEventListener('mousemove',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y});c.addEventListener('mousedown',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y;down=true;act(performance.now())});window.addEventListener('mouseup',()=>down=false);c.addEventListener('touchstart',e=>{e.preventDefault();touch=point(e.touches[0]);touch.x+=cam.x;touch.y+=cam.y;mouse={x:enemy.x,y:enemy.y}},{passive:false});c.addEventListener('touchmove',e=>{e.preventDefault();touch=point(e.touches[0]);touch.x+=cam.x;touch.y+=cam.y},{passive:false});c.addEventListener('touchend',()=>touch=null);document.getElementById('mobileAction').onclick=()=>{mouse={x:enemy.x,y:enemy.y};act(performance.now())};
+function point(e){let r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*cpuView.w/r.width,y:(e.clientY-r.top)*cpuView.h/r.height}}
+c.addEventListener('mousemove',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y});c.addEventListener('mousedown',e=>{mouse=point(e);mouse.x+=cam.x;mouse.y+=cam.y;down=true;act(performance.now())});window.addEventListener('mouseup',()=>down=false);// Left-hand virtual stick + tap to fire for touch, with independent pointers.
+const cpuMoveZone=document.getElementById('cpuMoveZone'),cpuThumb=document.getElementById('cpuThumb'),cpuThumbDot=document.getElementById('cpuThumbDot');
+let cpuStickPointer=null,cpuStickOrigin={x:0,y:0};
+function cpuStickUpdate(e){
+ const radius=cpuThumb.getBoundingClientRect().width*.35;
+ const dx=e.clientX-cpuStickOrigin.x,dy=e.clientY-cpuStickOrigin.y;
+ const magnitude=Math.hypot(dx,dy),factor=magnitude?Math.min(1,radius/magnitude):0;
+ const x=dx*factor,y=dy*factor;
+ cpuThumbDot.style.transform='translate('+x+'px,'+y+'px)';
+ touch={x:x/radius,y:y/radius};
+}
+function cpuStickRelease(e){
+ if(cpuStickPointer===null||e&&e.pointerId!==cpuStickPointer)return;
+ cpuStickPointer=null;touch=null;cpuThumbDot.style.transform='';
+ cpuThumb.style.left='10px';cpuThumb.style.top='auto';cpuThumb.style.bottom='12px';
+}
+cpuMoveZone.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'||cpuStickPointer!==null||!running)return;
+ e.preventDefault();cpuStickPointer=e.pointerId;cpuMoveZone.setPointerCapture(e.pointerId);
+ const rect=cpuMoveZone.getBoundingClientRect(),size=cpuThumb.getBoundingClientRect().width;
+ const x=Math.max(0,Math.min(rect.width-size,e.clientX-rect.left-size/2));
+ const y=Math.max(0,Math.min(rect.height-size,e.clientY-rect.top-size/2));
+ cpuThumb.style.left=x+'px';cpuThumb.style.top=y+'px';cpuThumb.style.bottom='auto';
+ cpuStickOrigin={x:rect.left+x+size/2,y:rect.top+y+size/2};cpuStickUpdate(e);
+});
+cpuMoveZone.addEventListener('pointermove',e=>{if(e.pointerId===cpuStickPointer){e.preventDefault();cpuStickUpdate(e)}});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])cpuMoveZone.addEventListener(event,cpuStickRelease);
+c.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'||!running)return;
+ e.preventDefault();const aimPoint=point(e);
+ mouse={x:aimPoint.x+cam.x,y:aimPoint.y+cam.y};
+ act(performance.now());
+});
+window.addEventListener('blur',cpuStickRelease);
+document.getElementById('mobileAction').onclick=()=>{mouse={x:enemy.x,y:enemy.y};act(performance.now())};
 ctx.fillStyle='#aabed3';ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillText('装備を選んで「対戦開始」を押そう',450,235);
 document.getElementById('again').onclick=()=>{celebrationId++;document.getElementById('result').classList.remove('show');init()};
 function returnToLobby(){stopMusic();winAudio.pause();++matchToken;++celebrationId;running=false;down=false;touch=null;keys={};document.getElementById('result').classList.remove('show');document.getElementById('gameScreen').classList.remove('active');document.body.classList.remove('in-match');document.getElementById('lobbyScreen').classList.remove('hidden');document.getElementById('gachaScreen').classList.add('hidden');document.body.classList.remove('login-view','gacha-view');document.getElementById('status').textContent='装備を調整して対戦開始！';updateCollection();updatePreview();renderAchievements();switchAppTab('play');}
@@ -1282,6 +1349,38 @@ document.getElementById('equipAfterPull').onclick=openCollectionFromAnywhere;
 for(const id of ['collectionShortcut','fromGachaCollection'])document.getElementById(id).onclick=openCollectionFromAnywhere;
 showMenuScreen('login');
 
+// Keep the entire experience within the login -> common lobby -> selected mode flow.
+let pendingMultiAction='create';
+function openEmbeddedMultiplayer(action='',code=''){
+ const frame=document.getElementById('onlineFrame');
+ const url=new URL('multiplayer.html',location.href);
+ url.searchParams.set('embedded','1');
+ if(action==='create'||action==='match')url.searchParams.set('auto',action);
+ if(action==='join'){url.searchParams.set('room',code);url.searchParams.set('auto','join')}
+ document.getElementById('onlineScreen').classList.add('active');
+ frame.src=url.pathname+url.search;
+}
+function closeEmbeddedMultiplayer(){
+ document.getElementById('onlineScreen').classList.remove('active');
+ document.getElementById('onlineFrame').removeAttribute('src');
+ pendingMultiAction='create';
+ switchAppTab('play');
+}
+document.getElementById('closeOnline').addEventListener('click',closeEmbeddedMultiplayer);
+window.addEventListener('message',e=>{
+ if(e.origin===location.origin&&e.source===document.getElementById('onlineFrame').contentWindow&&e.data?.type==='moji:returnLobby')closeEmbeddedMultiplayer();
+});
+document.getElementById('findRandomNow').onclick=()=>{
+ document.getElementById('modeSelect').value='multi';document.getElementById('modeSelect').dispatchEvent(new Event('change'));
+ pendingMultiAction='match';document.getElementById('createRoomNow').click();
+};
+document.getElementById('joinRoomNow').onclick=()=>{
+ const code=document.getElementById('joinRoomCode').value.trim().toUpperCase();
+ if(!/^[A-Z0-9]{6}$/.test(code)){
+  document.getElementById('validation').textContent='参加する6桁のルームコードを入力してください。';return;
+ }
+ pendingMultiAction='join';document.getElementById('createRoomNow').click();
+};
 // All five glyphs are mandatory. Never silently auto-equip blank slots.
 document.getElementById('createRoomNow').addEventListener('click',()=>{
  const error=document.getElementById('validation');error.textContent='';
@@ -1311,6 +1410,6 @@ document.getElementById('createRoomNow').addEventListener('click',()=>{
  const settings={mode:custom?'custom':'normal',ch:iconChar,slots:setupSlots,theme:document.getElementById('mapTheme').value,shrink:custom?document.getElementById('shrinkMode').value:'normal'};
  try{sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(settings))}
  catch(e){error.textContent='ブラウザの設定保存が許可されていません。';return;}
- location.href='multiplayer.html?auto=create';
+ openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());
 });
 </script></body></html>
