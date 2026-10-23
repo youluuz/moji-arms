@@ -1,69 +1,66 @@
-/* Broad Unicode glyph randomizer shared by CPU and multiplayer. */
+/* v6.9 - Fast, balanced Unicode glyph randomizer for CPU and online.
+   Draw from wide Unicode categories lazily: no 100k-character startup scan. */
 (function(){
-  'use strict';
-  const SEG=typeof Intl.Segmenter==='function'?new Intl.Segmenter('ja',{granularity:'grapheme'}):null;
-  const encoder=new TextEncoder();
-  const isGlyph=s=>{
-    if(!s||/[\u0000-\u001f\u007f-\u009f\s]/u.test(s))return false;
-    const chars=Array.from(s);
-    if(chars.length===1)return true;
-    if(encoder.encode(s).length>64)return false;
-    return SEG?Array.from(SEG.segment(s)).length===1:false;
-  };
-  const examples=['❤️','☄️','⚔️','🛡️','♨️','☺️','⭐','👨‍🚀','👩‍🚀','👩‍💻','👨‍👩‍👧','🏳️‍🌈','🇯🇵','🇺🇸','🇫🇷','🌸','🔥','😂','💥','🌀','💎','🚀','🍙','🐱','🎯','👑','⚡','🌙','👻'];
-  // Character ranges, including less familiar Kanji, Kana, Latin alphabets,
-  // numerals, punctuation, symbols and emoji. A glyph may comprise multiple code points.
-  const ranges=[
-    [0x21,0x7e], [0xa1,0x24f], [0x370,0x52f], [0x1e00,0x1eff],
-    [0x2c00,0x2c7f], [0x2e80,0x2eff], [0x2f00,0x2fdf],
-    [0x3000,0x30ff], [0x31a0,0x31ff], [0x3200,0x33ff],
-    [0x3400,0x4dbf], [0x4e00,0x9fff], [0xf900,0xfaff],
-    [0xac00,0xd7a3], [0xff01,0xffef],
-    [0x2000,0x27bf],[0x2900,0x2bff],
-    [0x1f000,0x1faff],
-    [0x20000,0x2a6df], [0x2a700,0x2b73f], [0x2b740,0x2b81f],
-    [0x2b820,0x2ceaf],[0x2ceb0,0x2ebef]
-  ];
-  let pool=null,categories=null;
-  function all(){
-    if(pool)return pool;
-    const result=[],seen=new Set();
-    const sections={han:[],kana:[],letter:[],symbol:[],emoji:[]};
-    function add(ch){
-      if(seen.has(ch)||!isGlyph(ch)||!/[\p{Letter}\p{Number}\p{Punctuation}\p{Symbol}]/u.test(ch))return;
-      seen.add(ch);result.push(ch);
-      if(/\p{Script=Han}/u.test(ch))sections.han.push(ch);
-      else if(/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(ch))sections.kana.push(ch);
-      else if(Array.from(ch).length>1||/[\p{Emoji_Presentation}]/u.test(ch))sections.emoji.push(ch);
-      else if(/[\p{Letter}\p{Number}]/u.test(ch))sections.letter.push(ch);
-      else sections.symbol.push(ch);
-    }
-    for(const [start,end] of ranges){
-      for(let cp=start;cp<=end;cp++)add(String.fromCodePoint(cp));
-    }
-    for(const ch of examples)add(ch);
-    if(typeof window.MOJI_STROKES==='object')for(const ch of Object.keys(window.MOJI_STROKES))add(ch);
-    pool=result;categories=Object.values(sections).filter(items=>items.length>0);return pool;
-  }
-  function choice(list){return list[Math.floor(Math.random()*list.length)]}
-  // Choose a character category first, then a glyph within it. Rare emoji
-  // and Latin/number symbols should not be drowned out by 80,000 Kanji.
-  function roll(exclude=new Set()){
-    all();
-    for(let n=0;n<120;n++){
-      const ch=choice(choice(categories));
-      if(!exclude.has(ch))return ch;
-    }
-    return pool.find(ch=>!exclude.has(ch))||'火';
-  }
-  function sample(count=5){
-    const used=new Set(),out=[];
-    while(out.length<count){
-      const ch=roll(used);
-      if(used.has(ch))break;
-      used.add(ch);out.push(ch);
-    }
-    return out;
-  }
-  window.MojiRandom={all,sample,roll,examples};
+'use strict';
+const SEG=typeof Intl.Segmenter==='function'?new Intl.Segmenter('ja',{granularity:'grapheme'}):null;
+const encoder=new TextEncoder();
+const examples=['❤️','☄️','⚔️','🛡️','♨️','☺️','⭐','👨‍🚀','👩‍🚀','👩‍💻','👨‍👩‍👧','🏳️‍🌈','🇯🇵','🇺🇸','🌸','🔥','😂','💥','🌀','💎','🚀','🍙','🐱','🎯','👑','⚡','🌙','👻','🌊','🎲','🪄','💖'];
+const byCategory={
+ han:[[0x3400,0x4dbf],[0x4e00,0x9fff],[0x20000,0x2a6df],[0x2a700,0x2b73f],[0x2b740,0x2b81f],[0x2b820,0x2ceaf],[0x2ceb0,0x2ebef]],
+ kana:[[0x3041,0x309f],[0x30a1,0x30ff],[0x31f0,0x31ff]],
+ letters:[[0x41,0x5a],[0x61,0x7a],[0xc0,0x24f],[0x370,0x52f],[0x1e00,0x1eff],[0xac00,0xd7a3]],
+ numbers:[[0x30,0x39],[0x660,0x669],[0x2460,0x24ff],[0xff10,0xff19]],
+ symbols:[[0x21,0x2f],[0x3a,0x40],[0x5b,0x60],[0x7b,0x7e],[0x2000,0x27bf],[0x2900,0x2bff],[0xff01,0xff65]],
+ emoji:[[0x1f300,0x1faff],[0x2600,0x27bf]]
+};
+const categories=Object.keys(byCategory);
+const safe=(s)=>{
+ if(typeof s!=='string'||!s||/[\u0000-\u001f\u007f-\u009f\s]/u.test(s))return false;
+ if(encoder.encode(s).length>64||Array.from(s).length>16)return false;
+ if(!/[\p{Letter}\p{Number}\p{Symbol}\p{Punctuation}]/u.test(s))return false;
+ return SEG?Array.from(SEG.segment(s)).length===1:Array.from(s).length===1;
+};
+const integer=n=>Math.floor(Math.random()*n);
+function randomInRanges(ranges){
+ const range=ranges[integer(ranges.length)];
+ return String.fromCodePoint(range[0]+integer(range[1]-range[0]+1));
+}
+function categoryRoll(category){
+ if(category==='emoji'&&integer(3)===0)return examples[integer(examples.length)];
+ const candidate=randomInRanges(byCategory[category]);
+ // Keep category distinctions useful and avoid unassigned Unicode code points.
+ if(!safe(candidate))return null;
+ if(category==='han'&&!/\p{Script=Han}/u.test(candidate))return null;
+ if(category==='kana'&&!/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(candidate))return null;
+ if(category==='letters'&&!/\p{Letter}/u.test(candidate))return null;
+ if(category==='numbers'&&!/\p{Number}/u.test(candidate))return null;
+ if(category==='symbols'&&!/[\p{Symbol}\p{Punctuation}]/u.test(candidate))return null;
+ if(category==='emoji'&&!/\p{Emoji_Presentation}/u.test(candidate)&&!/\p{Extended_Pictographic}/u.test(candidate))return null;
+ return candidate;
+}
+function roll(exclude=new Set()){
+ for(let attempt=0;attempt<240;attempt++){
+  const category=categories[integer(categories.length)];
+  const ch=categoryRoll(category);
+  if(ch&&!exclude.has(ch))return ch;
+ }
+ for(const ch of examples)if(safe(ch)&&!exclude.has(ch))return ch;
+ return '火';
+}
+function sample(count=5){
+ const seen=new Set(),out=[];
+ for(let n=0;out.length<count&&n<count*50;n++){
+  const c=roll(seen);if(seen.has(c))continue;seen.add(c);out.push(c);
+ }
+ return out;
+}
+// Legacy API compatibility: bounded display samples, not an eager enumeration.
+let cachedPool;
+function all(){
+ if(cachedPool)return cachedPool;
+ cachedPool=sample(240);
+ for(const ch of examples)if(!cachedPool.includes(ch))cachedPool.push(ch);
+ return cachedPool;
+}
+window.MojiRandom={all,roll,sample,examples,categories};
 })();
