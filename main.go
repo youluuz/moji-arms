@@ -65,6 +65,9 @@ func randomCode(n int) string {
 	return string(b)
 }
 func strokes(ch string) int {
+	// Common kana must use their written stroke count, not the generic letter=3 fallback.
+	if ch == "ー" { return 1 }
+	if ch == "イ" { return 2 }
 	if n, ok := dictionary[ch]; ok {
 		return n
 	}
@@ -654,6 +657,24 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		return
 	}
 	switch typ {
+	case "editing":
+		if room.Phase != "lobby" { return }
+		p.Ready = false
+		room.broadcast()
+	case "return-lobby":
+		// The match is finished: keep connections, invites, host and the same room code.
+		if room.Phase != "ended" { return }
+		room.Phase = "lobby"
+		room.Winner = ""
+		room.Message = "再戦の準備中（武装と必殺技を変更できます）"
+		room.Bullets = nil
+		for _, player := range room.Players {
+			player.Fire = false
+			player.CastPending = false
+			player.Keys = map[string]bool{}
+			player.Ready = true
+		}
+		room.broadcast()
 	case "setup":
 		if room.Phase != "lobby" {
 			return
@@ -1252,9 +1273,10 @@ func mobilePatchedIndex(source string) string {
 	source = strings.Replace(source, "bgmAudio.volume=.24", "bgmAudio.volume=.10", 1)
 	// The original HTML only embeds a small demonstration dictionary. Merge the
 	// complete Unihan-based table before any match, then refresh equipped values.
-	strokeLoader := `if(window.MojiRandom)window.MojiRandom.strokeMap=dict;
+	strokeLoader := `Object.assign(dict, {'イ':2,'ー':1});
+if(window.MojiRandom)window.MojiRandom.strokeMap=dict;
 window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('stroke dictionary unavailable');return r.json()}).then(map=>{
- Object.assign(dict,map);
+ Object.assign(dict,map,{'イ':2,'ー':1});
  if(window.MojiRandom){
    window.MojiRandom.strokeMap=dict;
    const oldRoll=window.MojiRandom.roll;
