@@ -558,7 +558,8 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		// Validate here, not only in the separate legacy setup event, so direct
 		// WebSocket clients cannot enter the waiting room with empty equipment.
 		var slots []Slot
-		var ch string
+		var ch, ultimate string
+		parseInput(m,"ultimate",&ultimate)
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
 		if !validCharacter(ch) || !validSlots(slots, room.Mode == "custom") {
@@ -579,7 +580,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			name = string(rs[:16])
 		}
 		pid := randomCode(12)
-		p := &Player{ID: pid, C: c, Name: name, Ch: ch, Slots: slots, Ready: true, X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1}
+		p := &Player{ID: pid, C: c, Name: name, Ch: ch, Slots: slots, Ready: true, X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1, Ultimate: chooseUltimate(ultimate)}
 		c.room = room
 		c.pid = pid
 		room.Players = append(room.Players, p)
@@ -611,6 +612,9 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			c.message(map[string]string{"type": "error", "message": "装備データが不正です"})
 			return
 		}
+		var ultimate string
+		parseInput(m,"ultimate",&ultimate)
+		p.Ultimate=chooseUltimate(ultimate)
 		p.Ch = ch
 		p.Slots = slots
 		p.Ready = true
@@ -634,6 +638,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		room.Started = time.Now()
 		room.Bullets = nil
 		room.Winner = ""
+		room.DanceUntil=0
 		for i, pp := range room.Players {
 			angle := 2 * math.Pi * float64(i) / float64(len(room.Players))
 			rx, ry := 360.0, 290.0
@@ -654,6 +659,9 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.Fire = false
 			pp.CastPending = false
 			pp.PendingUntil = 0
+			pp.UltimateCharge=0;pp.UltimateSpent=false;pp.UltimateAiming=false;pp.UltimateAim=0
+			pp.UltimateAimUntil=0;pp.UltimateWindupUntil=0;pp.InvincibleUntil=0;pp.InvisibleUntil=0;pp.SlowedUntil=0;pp.NamepuUntil=0
+			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false
 		}
 		room.broadcast()
 	case "cast":
