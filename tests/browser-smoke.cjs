@@ -26,6 +26,13 @@ const { chromium } = require('playwright');
   if(cpuGlyph.biang.n!==58||cpuGlyph.simple.n!==43||
     !cpuGlyph.biang.details.includes('58画')||!cpuGlyph.simple.details.includes('43画'))
     throw Error('CPU rare-kanji UI failure '+JSON.stringify(cpuGlyph));
+  const cpuKana=await page.evaluate(()=>{
+   const field=document.querySelector('#lobbyScreen .kanji'),digit=field.closest('.slot').querySelector('.strokes'),out={};
+   for(const glyph of ['イ','ー','フ','ネ','く']){field.value=glyph;field.dispatchEvent(new Event('input',{bubbles:true}));out[glyph]=Number(digit.value)}
+   return out;
+  });
+  if(JSON.stringify(cpuKana)!==JSON.stringify({'イ':2,'ー':1,'フ':1,'ネ':4,'く':1}))
+   throw Error('CPU kana written stroke count mismatch '+JSON.stringify(cpuKana));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
   // The ability picker must sit immediately after the five glyph inputs,
@@ -141,6 +148,11 @@ const { chromium } = require('playwright');
       scripts:document.scripts.length,heading:document.querySelector('#joinArea h2')?.textContent
     }))));
     throw Error('Online glyph editor unavailable. Browser errors: '+JSON.stringify(errors));
+  }
+  for(const [glyph,expected] of [['イ',2],['ー',1],['フ',1],['ネ',4],['ヴ',5]]){
+   await page.locator('#onlineGlyph0').fill(glyph);
+   const got=Number(await page.locator('#onlineGlyph0').locator('xpath=..').locator('.slot-strokes').inputValue());
+   if(got!==expected)throw Error('online kana stroke mismatch '+glyph+': '+got+' expected '+expected);
   }
   await page.locator('#onlineGlyph0').fill('𰻞');
   await page.waitForFunction(()=>{
