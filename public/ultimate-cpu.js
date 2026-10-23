@@ -49,7 +49,7 @@ function boot(){
  }
  if(typeof moveActor==='function'){
   const oldMove=moveActor;
-  moveActor=function(actor,...rest){if(performance.now()<danceUntil || (actor===player&&performance.now()<namepuUntil))return;return oldMove.call(this,actor,...rest)};
+  moveActor=function(actor,...rest){if(performance.now()<danceUntil || (actor===player&&(performance.now()<namepuUntil||performance.now()<windupUntil)))return;return oldMove.call(this,actor,...rest)};
  }
  function fire(id,angle){
   if(!isReady())return;
@@ -57,11 +57,11 @@ function boot(){
   const launch=()=>{
    if(!isReady())return;
    const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?650:610),vy:Math.sin(angle)*(id==='roman'?650:610),
-    n:(id==='roman'?250:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
+    n:(id==='roman'?420:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
    bullets.push(bullet);specialBullets.add(bullet);
    if(id==='roman')battleShots++;
   };
-  if(id==='roman')windupUntil=now+500, setTimeout(()=>{if(performance.now()>=windupUntil)launch();},500);
+  if(id==='roman')windupUntil=now+400, setTimeout(()=>{if(performance.now()>=windupUntil)launch();},400);
   else launch();
  }
  function chooseUltimate(){
