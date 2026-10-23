@@ -74,3 +74,12 @@ body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
  .ultimate-guide-section{padding:10px}
  .ultimate-guide-usage,.ultimate-guide-caution{font-size:12.5px;line-height:1.65}
 }
+
+/* v7.3: descriptions are optional — expand only when wanted. */
+.ultimate-guide-toggle{width:100%!important;display:flex!important;justify-content:space-between;align-items:center;gap:12px;text-align:left;padding:11px 14px!important;margin:0 0 12px!important;background:#1a2d48!important;color:#f4e0b7!important;border:1px solid #6580a0!important;border-radius:12px!important;font-weight:850;font-size:13px!important;line-height:1.35;cursor:pointer;touch-action:manipulation}
+.ultimate-guide-toggle[hidden]{display:none!important}
+.ultimate-guide-toggle:hover{background:#243e5e!important;border-color:#eacb85!important}
+.ultimate-guide-toggle:focus-visible{outline:3px solid #fff4bb;outline-offset:3px}
+.ultimate-guide-toggle[aria-expanded="true"]{margin-bottom:7px!important;border-color:#e7c583!important;background:#233751!important}
+.ultimate-guide-chevron{display:inline-flex;flex:0 0 22px;align-items:center;justify-content:center;color:#ffd98e;font-weight:900;font-size:19px}
+@media(max-width:700px){.ultimate-guide-toggle{padding:12px!important;min-height:45px;font-size:13px!important}}
