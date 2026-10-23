@@ -286,12 +286,17 @@ func isKind(s string) bool {
 	}
 	return false
 }
+// Standard matchmaking accepts only a single Han character in every slot.
+func validStandardGlyph(ch string) bool {
+	rs := []rune(ch)
+	return len(rs) == 1 && unicode.Is(unicode.Han, rs[0])
+}
 func validSlots(values []Slot, custom bool) bool {
 	if len(values) != 5 {
 		return false
 	}
 	for _, v := range values {
-		if !isKind(v.Kind) || !validCharacter(v.Ch) || v.N < 1 || v.N > 40 {
+		if !isKind(v.Kind) || !validCharacter(v.Ch) || (!custom && !validStandardGlyph(v.Ch)) || v.N < 1 || v.N > 40 {
 			return false
 		}
 		if !custom && strokes(v.Ch) != v.N {
@@ -425,7 +430,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		var ch string
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
-		if !validCharacter(ch) || !validSlots(slots, room.Mode == "custom") {
+		if !validCharacter(ch) || (room.Mode != "custom" && !validStandardGlyph(ch)) || !validSlots(slots, room.Mode == "custom") {
 			if typ == "create" {
 				delete(a.rooms, room.Code)
 			}
@@ -471,7 +476,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		var ch string
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
-		if !validSlots(slots, room.Mode == "custom") || !validCharacter(ch) {
+		if !validSlots(slots, room.Mode == "custom") || !validCharacter(ch) || (room.Mode != "custom" && !validStandardGlyph(ch)) {
 			c.message(map[string]string{"type": "error", "message": "装備データが不正です"})
 			return
 		}
