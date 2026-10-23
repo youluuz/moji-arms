@@ -1,0 +1,46 @@
+/* v7.0: multi-touch friendly CPU controls.
+   Keep the only movement hit target inside the visible joystick disc.
+   Outside the disc, even the left battlefield belongs to aiming. */
+@media (hover:none) and (pointer:coarse) {
+  body.in-match #cpuMoveZone {
+    position:absolute !important;
+    top:auto !important;
+    left:8px !important;
+    bottom:8px !important;
+    width:144px !important;
+    height:144px !important;
+    min-width:0 !important;
+    border-radius:50% !important;
+    clip-path:circle(49% at 50% 50%) !important;
+    background:rgba(72,153,211,.12) !important;
+    border:2px solid rgba(168,220,255,.35) !important;
+    touch-action:none !important;
+    pointer-events:auto !important;
+    -webkit-user-select:none !important;
+    user-select:none !important;
+  }
+  body.in-match #cpuTapHint {pointer-events:none !important;}
+  body.in-match #weapons {
+    position:relative;
+    z-index:35;
+    touch-action:none !important;
+    pointer-events:auto !important;
+  }
+  body.in-match #weapons .weapon {
+    touch-action:none !important;
+    pointer-events:auto !important;
+    -webkit-user-select:none !important;
+    user-select:none !important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.in-match #gameScreen .arena-shell canvas {
+    touch-action:none !important;
+  }
+}
+@media (hover:none) and (pointer:coarse) and (max-width:360px) {
+  body.in-match #cpuMoveZone {width:116px !important;height:116px !important;}
+}
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height:510px) {
+  body.in-match #cpuMoveZone {width:112px !important;height:112px !important;}
+  body.in-match #weapons .weapon {min-height:46px;}
+}
