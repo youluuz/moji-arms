@@ -21,7 +21,7 @@ func TestGraphemes(t *testing.T) {
 	}
 }
 func TestStrokesAndCooldown(t *testing.T) {
-	for s, n := range map[string]int{"薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "★": 2} {
+	for s, n := range map[string]int{"薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
 		if got := strokes(s); got != n {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
@@ -98,6 +98,11 @@ func TestNormalSlotsAllowSingleGrapheme(t *testing.T) {
 	if !validSlots(slots, false) {
 		t.Fatal("normal match must allow emoji and single Latin glyphs")
 	}
+	// Standard PvP uses the same automatic stroke conversion as the CPU browser.
+	slots[0] = Slot{Ch: "⚡", Kind: "attack", N: 5}
+	if !validSlots(slots, false) { t.Fatal("single-codepoint emoji needs 5 strokes") }
+	slots[0].N = 2
+	if validSlots(slots, false) { t.Fatal("server accepted mismatched emoji stroke value") }
 	slots[0] = Slot{Ch: "AB", Kind: "attack", N: 3}
 	if validSlots(slots, false) || validSlots(slots, true) {
 		t.Fatal("multi-glyph text must not be treated as one slot")
