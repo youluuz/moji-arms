@@ -245,3 +245,59 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
 }
+
+func TestSixUltimatesChargeAndServerRules(t *testing.T) {
+ specs:=map[string]int{"roman":360,"slow":320,"invincible":340,"dance":340,"invisible":300,"namepu":220}
+ for id,want:=range specs {if got:=ultimateCost(id);got!=want {t.Fatalf("ultimate %s: got %d want %d",id,got,want)}}
+ if ultimateCost("unknown")!=0 || chooseUltimate("unknown")!="roman" {t.Fatal("invalid ultimate must default safely")}
+ c1:=&Client{send:make(chan []byte,64),pid:"a"}
+ c2:=&Client{send:make(chan []byte,64),pid:"b"}
+ p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:360,Keys:map[string]bool{}}
+ q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:340,Keys:map[string]bool{}}
+ room:=&Room{Code:"ULT",Phase:"playing",Mode:"normal",Theme:"shrine",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,q}}
+ c1.room=room;c2.room=room
+ a:=&Arena{rooms:map[string]*Room{"ULT":room}}
+ a.handle(c1,[]byte(`{"type":"ultimate"}`))
+ if !p.UltimateAiming || !p.UltimateSpent || p.UltimateSerial!=1 {t.Fatal("roman must enter one-use aimed state")}
+ a.handle(c1,[]byte(`{"type":"ultimate"}`))
+ if p.UltimateSerial!=1 {t.Fatal("second ultimate illegally activated")}
+ a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
+ if p.UltimateAiming || p.UltimateWindupUntil<=0 {t.Fatal("roman target should start 0.5s windup")}
+ p.UltimateWindupUntil=float64(time.Now().UnixNano())/1e9-.01
+ a.tick(.01)
+ if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=250 {t.Fatal("roman cannon not emitted at expected power")}
+ a.handle(c2,[]byte(`{"type":"ultimate"}`))
+ if q.InvincibleUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("invulnerability not activated")}
+ hp:=q.HP;hit(q,999,true,float64(time.Now().UnixNano())/1e9)
+ if q.HP!=hp {t.Fatal("invincible should also block penetrating and area damage")}
+ // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
+ p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=220
+ a.handle(c1,[]byte(`{"type":"ultimate"}`))
+ if p.NamepuUntil<=float64(time.Now().UnixNano())/1e9 || !p.NamepuUsed {t.Fatal("namepu 5-second self-dance was not enabled")}
+ hp=p.HP;hit(p,10,true,float64(time.Now().UnixNano())/1e9)
+ if p.HP!=hp-10 {t.Fatal("namepu must not grant damage resistance")}
+ p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=320;p.NamepuUntil=0
+ a.handle(c1,[]byte(`{"type":"ultimate"}`))
+ a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
+ if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" {t.Fatal("slow ultimate should fire targeted projectile")}
+}
+func TestUltimateAssetsSharedAcrossModes(t *testing.T){
+ read:=func(path string)string{t.Helper();v,e:=gameFiles.ReadFile(path);if e!=nil{t.Fatal(e)};return string(v)}
+ core:=read("public/ultimate-core.js")
+ for _,id:=range []string{"roman","slow","invincible","dance","invisible","namepu"} {
+  if !strings.Contains(core,"id:'"+id+"'") {t.Fatalf("shared artwork/spec missing %s",id)}
+ }
+ cpu:=read("public/ultimate-cpu.js")
+ online:=read("public/ultimate-multi.js")
+ for _,v:=range []string{"MojiUlt","ultimate","namepu"} {
+  if !strings.Contains(cpu,v)||!strings.Contains(online,v) {t.Fatalf("CPU/online ultimate parity missing %s",v)}
+ }
+ index,err:=gameFiles.ReadFile("public/index.html");if err!=nil{t.Fatal(err)}
+ patched:=mobilePatchedIndex(string(index))
+ for _,asset:=range []string{"ultimate-core.js","ultimate-cpu.js","ultimate-ui.css"} {
+  if !strings.Contains(patched,asset) {t.Fatalf("common lobby forgot %s",asset)}
+ }
+ for _,asset:=range []string{"ultimate-core.js","ultimate-multi.js","ultimate-ui.css"} {
+  if !strings.Contains(read("public/multiplayer.html"),asset) {t.Fatalf("online mode forgot %s",asset)}
+ }
+}
