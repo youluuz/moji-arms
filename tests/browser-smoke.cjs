@@ -120,6 +120,13 @@ const { chromium } = require('playwright');
   if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
+  if(!await page.locator('#onlineGlyph0').count()){
+    console.log('ONLINE_SETUP_DIAG',JSON.stringify(await page.evaluate(()=>({
+      url:location.href,embedded:document.body.className,editor:document.getElementById('onlineSlots')?.innerHTML.slice(0,300),
+      scripts:document.scripts.length,heading:document.querySelector('#joinArea h2')?.textContent
+    }))));
+    throw Error('Online glyph editor unavailable. Browser errors: '+JSON.stringify(errors));
+  }
   await page.locator('#onlineGlyph0').fill('𰻞');
   await page.waitForFunction(()=>{
     const row=document.querySelector('#onlineGlyph0')?.closest('.online-slot');
