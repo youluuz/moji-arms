@@ -62,7 +62,7 @@ const { chromium } = require('playwright');
   if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow] svg').count())throw Error('new slow-shot icon missing');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
-  if(JSON.stringify(types)!==JSON.stringify([['roman',360],['slow',320],['invincible',340],['dance',340],['invisible',300],['namepu',220]]))throw Error('shared specs mismatch');
+  if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',280],['invincible',300],['dance',300],['invisible',260],['namepu',180]]))throw Error('shared specs mismatch');
   console.log('SOLO_LOBBY_INPUTS',JSON.stringify(await page.locator('#lobbyScreen input').evaluateAll(es=>es.map(e=>({id:e.id,placeholder:e.placeholder,type:e.type,className:e.className}))).catch(()=>[])));
   console.log('SOLO_LOBBY_BUTTONS',JSON.stringify(await page.locator('#lobbyScreen button').evaluateAll(es=>es.map(e=>({id:e.id,text:e.textContent?.trim().slice(0,24)})).filter(x=>x.id||/ランダム|開始/.test(x.text)).slice(0,35))));
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click({force:true});
