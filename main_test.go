@@ -21,7 +21,7 @@ func TestGraphemes(t *testing.T) {
 	}
 }
 func TestStrokesAndCooldown(t *testing.T) {
-	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
+	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "イ": 2, "ー": 1, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
 		if got := strokes(s); got != n {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
@@ -107,6 +107,50 @@ func TestNormalSlotsAllowSingleGrapheme(t *testing.T) {
 	if validSlots(slots, false) || validSlots(slots, true) {
 		t.Fatal("multi-glyph text must not be treated as one slot")
 	}
+}
+
+
+func TestRoomEquipmentEditsAndSameRoomRematch(t *testing.T) {
+ a:=&Arena{rooms:map[string]*Room{}}
+ slots:=[]Slot{
+  {Ch:"火",Kind:"attack",N:strokes("火")},{Ch:"水",Kind:"defense",N:strokes("水")},
+  {Ch:"木",Kind:"heal",N:strokes("木")},{Ch:"風",Kind:"pierce",N:strokes("風")},
+  {Ch:"雷",Kind:"homing",N:strokes("雷")},
+ }
+ first:=&Client{send:make(chan []byte,128)}
+ second:=&Client{send:make(chan []byte,128)}
+ join,_:=json.Marshal(map[string]any{"type":"match","ch":"火","slots":slots,"ultimate":"roman"})
+ a.handle(first,join);a.handle(second,join)
+ room:=first.room
+ if room==nil || second.room!=room || room.Phase!="lobby"{t.Fatal("room setup failed")}
+ code,host:=room.Code,room.Host
+ a.handle(second,[]byte(`{"type":"editing"}`))
+ if room.Players[1].Ready{t.Fatal("changing loadout must lock start until saved")}
+ a.handle(first,[]byte(`{"type":"start"}`))
+ if room.Phase!="lobby"{t.Fatal("host started while guest was editing")}
+ slots[0]=Slot{Ch:"イ",Kind:"attack",N:2}
+ slots[1]=Slot{Ch:"ー",Kind:"defense",N:1}
+ equipment,_:=json.Marshal(map[string]any{"type":"setup","ch":"イ","slots":slots,"ultimate":"slow"})
+ a.handle(second,equipment)
+ if !room.Players[1].Ready||room.Players[1].Slots[0].N!=2||room.Players[1].Slots[1].N!=1||room.Players[1].Ultimate!="slow" {
+  t.Fatal("joined player failed to apply changed kana loadout and ultimate")
+ }
+ a.handle(first,[]byte(`{"type":"start"}`))
+ if room.Phase!="playing"{t.Fatal("host failed to launch after updated setup")}
+ a.handle(second,[]byte(`{"type":"setup","ch":"火","slots":[],"ultimate":"roman"}`))
+ if room.Players[1].Ultimate!="slow"{t.Fatal("equipment changed mid-match")}
+ room.Phase="ended";room.Winner=first.pid
+ a.handle(second,[]byte(`{"type":"return-lobby"}`))
+ if first.room!=room||second.room!=room||room.Code!=code||room.Host!=host||
+   len(room.Players)!=2||room.Phase!="lobby"||room.Winner!=""{
+  t.Fatal("rematch must retain the original room and players")
+ }
+ if !room.Players[0].Ready||!room.Players[1].Ready {t.Fatal("rematch lobby not ready")}
+ a.handle(first,[]byte(`{"type":"start"}`))
+ if room.Phase!="playing"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600{
+  t.Fatal("second round did not start with updated equipment")
+ }
+ if strokes("イ")!=2 || strokes("ー")!=1 {t.Fatal("kana stroke regression")}
 }
 
 func TestPublicMatchWaitsForHostStart(t *testing.T) {
