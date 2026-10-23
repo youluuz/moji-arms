@@ -109,7 +109,7 @@ else{
 const incomingRoom=new URLSearchParams(location.search).get('room');if(incomingRoom){$('roomCode').value=incomingRoom.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)}
 $('modeText').textContent=setup.mode==='custom'?'カスタムマルチ':'通常マルチ';$('match').style.display=setup.mode==='custom'?'none':'';// All combat math comes from the same rules as the CPU and server.
 const ONLINE_HP=600;
-const onlineCD=(kind,n)=>Math.round(1000*({attack:.65+n*.125,defense:9+n*.4,heal:13+n*.55,pierce:7+n*.45,homing:4.5+n*.42}[kind]));
+const onlineCD=(kind,n)=>Math.round(1000*({attack:.65+n*.125+Math.max(0,n-10)*.02,defense:9+n*.4,heal:13+n*.55,pierce:7+n*.45,homing:4.5+n*.42}[kind]));
 const onlineNames={attack:'攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'追尾'};
 $('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+(setup.slots||[]).map(s=>{
  const effect=s.kind==='heal'?`回復${s.n*4}`:s.kind==='defense'?`軽減${s.n*6}`:`火力${s.n*6}`;
@@ -294,7 +294,7 @@ function showGame(m){
  }
  activeSetup.slots.forEach((slot,i)=>{
   const card=$('cards').children[i],remaining=self?.cooldowns?.[i]||0;
-  const duration={attack:Math.max(.65,.65+slot.n*.125),defense:9+slot.n*.4,heal:13+slot.n*.55,pierce:7+slot.n*.45,homing:4.5+slot.n*.42}[slot.kind];
+  const duration={attack:Math.max(.65,.65+slot.n*.125+Math.max(0,slot.n-10)*.02),defense:9+slot.n*.4,heal:13+slot.n*.55,pierce:7+slot.n*.45,homing:4.5+slot.n*.42}[slot.kind];
   card.classList.toggle('active',i===selected);
   card.setAttribute('aria-pressed',String(i===selected));
   card.querySelector('.card-cooldown').textContent=remaining?remaining.toFixed(1)+'s':'準備OK';
