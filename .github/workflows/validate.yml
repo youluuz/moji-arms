@@ -1,0 +1,30 @@
+name: Check all battle modes
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Go race-free rules and regression suite
+        run: go test ./... -count=1 -v
+      - name: Go source static analysis
+        run: go vet ./...
+      - name: JavaScript parser checks
+        run: |
+          node --check public/glyph_random.js
+          node --check public/ultimate-core.js
+          node --check public/ultimate-cpu.js
+          node --check public/ultimate-multi.js
+          node --check public/mobile-input-v70.js
+      - name: Build the Render binary
+        run: CGO_ENABLED=0 go build -o /tmp/mojiarms .
