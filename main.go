@@ -511,11 +511,11 @@ func newObstacles(theme string) []Obstacle {
 }
 func ultimateCost(id string) int {
  switch id {
- case "roman": return 360
- case "slow": return 320
- case "invincible","dance": return 340
- case "invisible": return 300
- case "namepu": return 220
+ case "roman": return 320
+ case "slow": return 280
+ case "invincible","dance": return 300
+ case "invisible": return 260
+ case "namepu": return 180
  }
  return 0
 }
