@@ -301,3 +301,35 @@ func TestUltimateAssetsSharedAcrossModes(t *testing.T){
   if !strings.Contains(read("public/multiplayer.html"),asset) {t.Fatalf("online mode forgot %s",asset)}
  }
 }
+
+func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
+ now:=float64(time.Now().UnixNano())/1e9
+ for _,mode:=range []string{"normal","custom"} {
+  for _,kind:=range []string{"roman","slow","invincible","dance","invisible","namepu"} {
+   t.Run(mode+"_"+kind,func(t *testing.T){
+    c:=&Client{send:make(chan []byte,12),pid:"p"}
+    p:=&Player{ID:"p",C:c,Alive:true,HP:600,X:900,Y:500,Ultimate:kind,UltimateCharge:float64(ultimateCost(kind)),Keys:map[string]bool{}}
+    other:=&Player{ID:"q",Alive:true,HP:600,X:970,Y:500,Keys:map[string]bool{}}
+    room:=&Room{Code:"MODE",Phase:"playing",Mode:mode,Theme:"night",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,other}}
+    c.room=room
+    arena:=&Arena{rooms:map[string]*Room{"MODE":room}}
+    arena.handle(c,[]byte(`{"type":"ultimate"}`))
+    if !p.UltimateSpent||p.UltimateSerial!=1 {t.Fatal("ultimate did not activate exactly once")}
+    switch kind {
+    case "roman","slow":
+     if !p.UltimateAiming||p.UltimateAimUntil<=now {t.Fatal("aimed ability must request targeting")}
+    case "invincible":
+     if p.InvincibleUntil<=now {t.Fatal("invincible was not set")}
+    case "dance":
+     if room.DanceUntil<=now {t.Fatal("dance did not synchronize to all players")}
+    case "invisible":
+     if p.InvisibleUntil<=now {t.Fatal("invisibility was not set")}
+    case "namepu":
+     if p.NamepuUntil<=now||!p.NamepuUsed {t.Fatal("namepu activation was not recorded")}
+    }
+    arena.handle(c,[]byte(`{"type":"ultimate"}`))
+    if p.UltimateSerial!=1 {t.Fatal("second ultimate triggered in same match")}
+   })
+  }
+ }
+}
