@@ -35,7 +35,7 @@ func TestStrokesAndCooldown(t *testing.T) {
 }
 func TestZoneAndRooms(t *testing.T) {
 	room := &Room{Shrink: "none", Phase: "playing", Started: time.Now().Add(-120 * time.Second)}
-	if room.zone()["r"] != 1150 {
+	if room.zone()["r"] != 1300 {
 		t.Fatal("no shrink")
 	}
 	room.Shrink = "instant"
@@ -48,7 +48,7 @@ func TestZoneAndRooms(t *testing.T) {
 	}
 	room.Shrink = "normal"
 	room.Started = time.Now()
-	if room.zone()["r"] < 1149 {
+	if room.zone()["r"] < 1299 {
 		t.Fatal("normal shrink starts full")
 	}
 	obs := newObstacles("shrine")
@@ -213,6 +213,7 @@ func TestUnifiedLobbyMobileAndUnicodeAssets(t *testing.T) {
 		"embeddedMode", "onlineReturnToLobby", "connect('match')",
 		"window.MojiRandom.roll", "data-sample")
 	check("public/glyph_random.js", "categories", "function roll", "1faff")
+	check("public/arena-expansion-v72.js", "MAX_CORNERS", "__arenaLArm", "circleTouchesRect")
 }
 
 func TestMobileV70InputIsolationAssets(t *testing.T) {
@@ -243,8 +244,67 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
 	if !strings.Contains(served, "cpuView.w=aspect<1?670:1130") || !strings.Contains(html, "view.w=aspect<1?670:1130") { t.Fatal("battle cameras must use the wider view in all modes") }
-	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") {
+	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") || !strings.Contains(served, "/arena-expansion-v72.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
+	}
+}
+
+// The online server owns the world dimensions and both modes use its obstacles.
+// Each L is two overlapping rectangles with exactly the same lifetime, so
+// movement and non-piercing bullets still use the standard rectangle collision.
+func TestWiderArenaAndLCornerPlacement(t *testing.T) {
+	if W != 2100 || H != 1200 {
+		t.Fatalf("arena is %vx%v, expected 2100x1200", W, H)
+	}
+	for _, theme := range []string{"shrine", "sakura", "night"} {
+		for run := 0; run < 8; run++ {
+			obs := newObstacles(theme)
+			if len(obs) != 20 {
+				t.Fatalf("expected 16 structures (4 L corners) in %s, got %d wall pieces", theme, len(obs))
+			}
+			pairs := 0
+			for i, left := range obs {
+				if left.X < 65 || left.Y < 65 || left.X+left.W > W-65 || left.Y+left.H > H-65 {
+					t.Fatalf("out-of-bounds obstacle %s at %v,%v", theme, left.X, left.Y)
+				}
+				for _, right := range obs[i+1:] {
+					if left.Expires == right.Expires {
+						// The two arms meet at the corner and must be solid cover.
+						if !(left.X < right.X+right.W && left.X+left.W > right.X &&
+							left.Y < right.Y+right.H && left.Y+left.H > right.Y) {
+							t.Fatal("L arms must meet without an open collision gap")
+						}
+						pairs++
+					}
+				}
+			}
+			if pairs != 4 {
+				t.Fatalf("expected four compound L-shaped covers in %s, found %d", theme, pairs)
+			}
+		}
+	}
+}
+
+func TestWiderArenaCPUAndOnlineAssets(t *testing.T) {
+	base, err := gameFiles.ReadFile("public/index.html")
+	if err != nil { t.Fatal(err) }
+	served := mobilePatchedIndex(string(base))
+	if !strings.Contains(served, "/arena-expansion-v72.js") {
+		t.Fatal("CPU normal/custom maps do not load the L-cover extension")
+	}
+	if strings.Contains(string(base), "1800") && !strings.Contains(served, "2100") {
+		t.Fatal("CPU arena width has not been migrated")
+	}
+	if strings.Contains(string(base), "1050") && !strings.Contains(served, "1200") {
+		t.Fatal("CPU arena height has not been migrated")
+	}
+	online, err := gameFiles.ReadFile("public/multiplayer.html")
+	if err != nil { t.Fatal(err) }
+	if !strings.Contains(string(online), "Math.min(2100-view.w") ||
+		!strings.Contains(string(online), "Math.min(1200-view.h") ||
+		!strings.Contains(string(online), "view.h=Math.min(1200") ||
+		!strings.Contains(string(online), "o.x/2100*mmw") {
+		t.Fatal("online camera or minimap still uses the previous arena size")
 	}
 }
 
