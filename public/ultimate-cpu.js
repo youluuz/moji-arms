@@ -5,6 +5,12 @@ function boot(){
  if(!window.MojiUlt||!document.getElementById('weapons')||!document.getElementById('field'))return;
  const U=window.MojiUlt, lobby=document.getElementById('loadoutPanel'),shell=document.querySelector('#gameScreen .arena-shell');
  const pick=U.attachUI(lobby),battle=U.attachUI(shell);battle.showBattle(true);
+ // Put ultimate selection directly after the five glyph/slot editor, not at
+ // the bottom of the entire lobby (where settings and entry actions live).
+ const glyphSlots=document.getElementById('setup');
+ if(glyphSlots && lobby.contains(glyphSlots)){
+  glyphSlots.insertAdjacentElement('afterend',pick.root);
+ }
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
