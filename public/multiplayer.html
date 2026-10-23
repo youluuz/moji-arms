@@ -270,13 +270,20 @@ function showGame(m){
  if(self){$('selfHP').textContent=Math.ceil(self.hp);$('selfBar').style.width=Math.max(0,self.hp/600*100)+'%';}
  $('mapName').textContent=({shrine:'黄金の神殿',sakura:'桜舞う庭園',night:'蒼月の城塞'})[m.theme]+' ｜ '+m.players.length+'人対戦';
  $('zoneSize').textContent=Math.round(m.zone.r);
- $('cards').innerHTML=activeSetup.slots.map((s,i)=>{
-  const remaining=self?.cooldowns?.[i]||0;
-  const duration={attack:Math.max(.65,.65+s.n*.125),defense:9+s.n*.4,heal:13+s.n*.55,pierce:7+s.n*.45,homing:4.5+s.n*.42}[s.kind];
-  const percent=Math.max(0,100-Math.min(100,remaining/duration*100));
-  const guard=s.kind==='defense'&&self?.guardSlot===i&&self?.shieldLeft>0;
-  return `<button type="button" data-slot="${i}" aria-pressed="${i===selected}" class="card ${i===selected?'active':''}">${i+1}｜${escapeHtml(s.ch)} <small>${({attack:'攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'追尾'})[s.kind]}</small><div class="card-cooldown">${remaining?remaining.toFixed(1)+'s':'準備OK'}</div><div class="card-track"><div style="width:${percent}%"></div></div>${s.kind==='defense'?`<div class="card-track guard-track"><div style="width:${guard?Math.min(100,self.shieldLeft/1.8*100):0}%"></div></div>`:''}</button>`;
- }).join('');
+ // Render slot buttons once: replacing them 30 times/sec eats mobile taps.
+ if($('cards').children.length!==5){
+  $('cards').innerHTML=activeSetup.slots.map((slot,i)=>`<button type="button" data-slot="${i}" class="card"><span>${i+1}｜${escapeHtml(slot.ch)}</span> <small>${onlineNames[slot.kind]}</small><div class="card-cooldown"></div><div class="card-track"><div class="progress"></div></div>${slot.kind==='defense'?'<div class="card-track guard-track"><div class="guard-progress"></div></div>':''}</button>`).join('');
+ }
+ activeSetup.slots.forEach((slot,i)=>{
+  const card=$('cards').children[i],remaining=self?.cooldowns?.[i]||0;
+  const duration={attack:Math.max(.65,.65+slot.n*.125),defense:9+slot.n*.4,heal:13+slot.n*.55,pierce:7+slot.n*.45,homing:4.5+slot.n*.42}[slot.kind];
+  card.classList.toggle('active',i===selected);
+  card.setAttribute('aria-pressed',String(i===selected));
+  card.querySelector('.card-cooldown').textContent=remaining?remaining.toFixed(1)+'s':'準備OK';
+  card.querySelector('.progress').style.width=Math.max(0,100-Math.min(100,remaining/duration*100))+'%';
+  const guard=card.querySelector('.guard-progress');
+  if(guard)guard.style.width=(self?.guardSlot===i&&self?.shieldLeft>0?Math.min(100,self.shieldLeft/1.8*100):0)+'%';
+ });
  // Server-announced events sound only on successful casts, not on every mouse click.
  for(const fighter of m.players){const serial=fighter.actionSerial||0;const prev=heardActions.get(fighter.id)||0;if(serial>prev&&m.phase==='playing'&&fighter.lastKind)playAbilitySound(fighter.lastKind,fighter.id===myId?.85:.22);heardActions.set(fighter.id,serial)}
  updateZoneWarning(self,m);fitOnlineArena();
@@ -345,40 +352,70 @@ $('cards').addEventListener('click',e=>{
  selected=Math.max(0,Math.min(4,Number(card.dataset.slot)));
  $('cards').querySelectorAll('.card').forEach((el,i)=>{el.classList.toggle('active',i===selected);el.setAttribute('aria-pressed',String(i===selected))});
 });
-let touchAimManual=false;
+// Mouse keeps hold-to-fire; phones use one reliable server cast per battlefield tap.
 function setAimFromPointer(e){
  const r=cv.getBoundingClientRect(),me=roomState?.players.find(p=>p.id===myId);
- if(!me||!r.width||!r.height)return;
- const x=(e.clientX-r.left)*900/r.width+cam.x,y=(e.clientY-r.top)*470/r.height+cam.y;
- aim=Math.atan2(y-me.y,x-me.x);touchAimManual=true;
+ if(!me||!r.width||!r.height)return false;
+ const x=(e.clientX-r.left)*view.w/r.width+cam.x;
+ const y=(e.clientY-r.top)*view.h/r.height+cam.y;
+ aim=Math.atan2(y-me.y,x-me.x);
+ return true;
 }
-function aimAtNearestEnemy(){
- const me=roomState?.players.find(p=>p.id===myId);if(!me)return;
- const targets=roomState.players.filter(p=>p.id!==myId&&p.alive).sort((a,b)=>(a.x-me.x)**2+(a.y-me.y)**2-((b.x-me.x)**2+(b.y-me.y)**2));
- if(targets[0])aim=Math.atan2(targets[0].y-me.y,targets[0].x-me.x);
+const tapReticle=$('tapReticle');
+function showTapReticle(e){
+ const shell=document.querySelector('#gameArea .game-wrap').getBoundingClientRect();
+ tapReticle.style.left=e.clientX-shell.left+'px';tapReticle.style.top=e.clientY-shell.top+'px';
+ tapReticle.classList.remove('active');void tapReticle.offsetWidth;tapReticle.classList.add('active');
 }
-cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)setAimFromPointer(e)});
-cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;setAimFromPointer(e);if(e.pointerType==='mouse'){down=true}else{e.preventDefault();cv.setPointerCapture(e.pointerId)}});
+cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')setAimFromPointer(e)});
+cv.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'){
+  if(e.button!==0)return;
+  if(setAimFromPointer(e))down=true;
+  return;
+ }
+ if(roomState?.phase!=='playing')return;
+ e.preventDefault();
+ if(setAimFromPointer(e)){
+  showTapReticle(e);
+  send({type:'cast',aim,selected});
+ }
+});
 const cancelFire=()=>{down=false};
 cv.addEventListener('pointerup',cancelFire);cv.addEventListener('pointercancel',cancelFire);
 window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')cancelFire()});
-// Virtual stick works with both touch and pen; never uses the mouse aiming channel.
-const movePad=$('movePad'),moveThumb=$('moveThumb');let padPointer=null;
+// A floating thumb stick starts anywhere on the left 35% of the arena.
+const moveZone=$('moveZone'),movePad=$('movePad'),moveThumb=$('moveThumb');
+let padPointer=null,padOriginX=0,padOriginY=0;
 function moveStick(e){
- const r=movePad.getBoundingClientRect();const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
- const radius=r.width*.35,dist=Math.hypot(dx,dy),factor=dist?Math.min(1,radius/dist):0;
+ const radius=movePad.getBoundingClientRect().width*.35;
+ const dx=e.clientX-padOriginX,dy=e.clientY-padOriginY;
+ const distance=Math.hypot(dx,dy),factor=distance?Math.min(1,radius/distance):0;
  const x=dx*factor,y=dy*factor;
- moveThumb.style.transform=`translate(${x}px,${y}px)`;
+ moveThumb.style.transform='translate('+x+'px,'+y+'px)';
  keys.a=x<-radius*.22;keys.d=x>radius*.22;keys.w=y<-radius*.22;keys.s=y>radius*.22;
 }
-function releaseStick(e){if(padPointer!==null&&(!e||e.pointerId===padPointer)){padPointer=null;moveThumb.style.transform='';for(const k of ['w','a','s','d'])keys[k]=false}}
-movePad.addEventListener('pointerdown',e=>{e.preventDefault();padPointer=e.pointerId;movePad.setPointerCapture(e.pointerId);moveStick(e)});
-movePad.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();moveStick(e)}});
-movePad.addEventListener('pointerup',releaseStick);movePad.addEventListener('pointercancel',releaseStick);
-const fireButton=$('mobileFire');let firePointer=null;
-fireButton.addEventListener('pointerdown',e=>{e.preventDefault();firePointer=e.pointerId;fireButton.setPointerCapture(e.pointerId);if(!touchAimManual)aimAtNearestEnemy();down=true});
-function releaseMobileFire(e){if(firePointer===e.pointerId){firePointer=null;down=false}}
-fireButton.addEventListener('pointerup',releaseMobileFire);fireButton.addEventListener('pointercancel',releaseMobileFire);
+function releaseStick(e){
+ if(padPointer!==null&&(!e||e.pointerId===padPointer)){
+  padPointer=null;moveThumb.style.transform='';
+  movePad.style.top='auto';movePad.style.left='12px';movePad.style.bottom='13px';
+  for(const k of ['w','a','s','d'])keys[k]=false;
+ }
+}
+moveZone.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'||padPointer!==null)return;
+ e.preventDefault();padPointer=e.pointerId;moveZone.setPointerCapture(e.pointerId);
+ const shell=moveZone.parentElement.getBoundingClientRect(),size=movePad.getBoundingClientRect().width;
+ const x=Math.max(0,Math.min(moveZone.clientWidth-size,e.clientX-shell.left-size/2));
+ const y=Math.max(0,Math.min(shell.height-size,e.clientY-shell.top-size/2));
+ movePad.style.bottom='auto';movePad.style.left=x+'px';movePad.style.top=y+'px';
+ padOriginX=shell.left+x+size/2;padOriginY=shell.top+y+size/2;
+ moveStick(e);
+});
+moveZone.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();moveStick(e)}});
+moveZone.addEventListener('pointerup',releaseStick);
+moveZone.addEventListener('pointercancel',releaseStick);
+moveZone.addEventListener('lostpointercapture',releaseStick);
 window.addEventListener('blur',()=>{down=false;releaseStick();keys={}});
 window.addEventListener('keydown',e=>{
  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
