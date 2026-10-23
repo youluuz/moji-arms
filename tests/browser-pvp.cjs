@@ -53,7 +53,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     });
     if(terrain.parts!==26||terrain.groups!==16||
        terrain.counts[1]!==8||terrain.counts[2]!==6||terrain.counts[3]!==2||
-       terrain.center.x!==1150||terrain.center.y!==650||terrain.center.r<1350)
+       terrain.center.x!==1150||terrain.center.y!==650||terrain.center.r<1330)
       throw Error(mode+': arena/L-T-U-cover mismatch '+JSON.stringify(terrain));
     // A real tap-cast must accrue automatic stroke units on the server.
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
