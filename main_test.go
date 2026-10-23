@@ -35,7 +35,7 @@ func TestStrokesAndCooldown(t *testing.T) {
 }
 func TestZoneAndRooms(t *testing.T) {
 	room := &Room{Shrink: "none", Phase: "playing", Started: time.Now().Add(-120 * time.Second)}
-	if room.zone()["r"] != 1300 {
+	if room.zone()["r"] != 1350 {
 		t.Fatal("no shrink")
 	}
 	room.Shrink = "instant"
@@ -48,7 +48,7 @@ func TestZoneAndRooms(t *testing.T) {
 	}
 	room.Shrink = "normal"
 	room.Started = time.Now()
-	if room.zone()["r"] < 1299 {
+	if room.zone()["r"] < 1349 {
 		t.Fatal("normal shrink starts full")
 	}
 	obs := newObstacles("shrine")
@@ -213,7 +213,7 @@ func TestUnifiedLobbyMobileAndUnicodeAssets(t *testing.T) {
 		"embeddedMode", "onlineReturnToLobby", "connect('match')",
 		"window.MojiRandom.roll", "data-sample")
 	check("public/glyph_random.js", "categories", "function roll", "1faff")
-	check("public/arena-expansion-v72.js", "MAX_CORNERS", "__arenaLArm", "circleTouchesRect")
+	check("public/arena-expansion-v72.js", "__arenaShape", "__arenaLArm", "canPlace")
 }
 
 func TestMobileV70InputIsolationAssets(t *testing.T) {
@@ -249,62 +249,97 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	}
 }
 
-// The online server owns the world dimensions and both modes use its obstacles.
-// Each L is two overlapping rectangles with exactly the same lifetime, so
-// movement and non-piercing bullets still use the standard rectangle collision.
-func TestWiderArenaAndLCornerPlacement(t *testing.T) {
-	if W != 2100 || H != 1200 {
-		t.Fatalf("arena is %vx%v, expected 2100x1200", W, H)
+// Both online modes use server-authoritative obstacles; CPU modes use
+// rectangles too. All compound structures must be connected, within the
+// arena, and share an expiry time per structure.
+func TestExpandedArenaAndVariedCover(t *testing.T) {
+	if W != 2300 || H != 1300 {
+		t.Fatalf("arena is %vx%v, expected 2300x1300", W, H)
 	}
-	for _, theme := range []string{"shrine", "sakura", "night"} {
-		for run := 0; run < 8; run++ {
-			obs := newObstacles(theme)
-			if len(obs) != 20 {
-				t.Fatalf("expected 16 structures (4 L corners) in %s, got %d wall pieces", theme, len(obs))
-			}
-			pairs := 0
-			for i, left := range obs {
-				if left.X < 65 || left.Y < 65 || left.X+left.W > W-65 || left.Y+left.H > H-65 {
-					t.Fatalf("out-of-bounds obstacle %s at %v,%v", theme, left.X, left.Y)
+	for _, layout := range []struct{name string; count int}{
+		{"L",2},{"T",2},{"U",3},
+	} {
+		for rot := 0; rot < 4; rot++ {
+			parts := obstacleParts(layout.name,100,100,200,190,48,rot)
+			if len(parts) != layout.count { t.Fatalf("%s rotation %d has %d pieces",layout.name,rot,len(parts)) }
+			for i, part := range parts {
+				if part.X<100 || part.Y<100 || part.X+part.W>300 || part.Y+part.H>290 {
+					t.Fatalf("%s rotation %d part %d escapes its footprint",layout.name,rot,i)
 				}
-				for _, right := range obs[i+1:] {
-					if left.Expires == right.Expires {
-						// The two arms meet at the corner and must be solid cover.
-						if !(left.X < right.X+right.W && left.X+left.W > right.X &&
-							left.Y < right.Y+right.H && left.Y+left.H > right.Y) {
-							t.Fatal("L arms must meet without an open collision gap")
-						}
-						pairs++
+				connected := i==0
+				for j, other := range parts {
+					if i!=j && part.X < other.X+other.W && part.X+part.W>other.X &&
+						part.Y<other.Y+other.H && part.Y+part.H>other.Y {
+						connected=true
 					}
 				}
+				if !connected {t.Fatalf("%s rotation %d has disconnected part %d",layout.name,rot,i)}
 			}
-			if pairs != 4 {
-				t.Fatalf("expected four compound L-shaped covers in %s, found %d", theme, pairs)
+		}
+	}
+	for _, theme := range []string{"shrine","sakura","night"} {
+		for trial:=0;trial<8;trial++ {
+			walls:=newObstacles(theme)
+			if len(walls)!=26 {
+				t.Fatalf("%s layout %d generated %d pieces, expected 26",theme,trial,len(walls))
+			}
+			structures:=make(map[float64][]Obstacle)
+			for _, o:=range walls {
+				if o.X<65 || o.Y<65 || o.X+o.W>W-65 || o.Y+o.H>H-65 {
+					t.Fatalf("%s obstacle beyond map edge: %+v",theme,o)
+				}
+				structures[o.Expires]=append(structures[o.Expires],o)
+			}
+			if len(structures)!=16 {t.Fatalf("%s has %d structures instead of 16",theme,len(structures))}
+			dual,triple:=0,0
+			for _,parts:=range structures {
+				switch len(parts) {
+				case 1:
+				case 2: dual++
+				case 3: triple++
+				default: t.Fatalf("unexpected compound cover size %d",len(parts))
+				}
+				for i,part:=range parts {
+					if i==0 {continue}
+					touchesAnother:=false
+					for j,other:=range parts {
+						if i!=j && part.X<other.X+other.W && part.X+part.W>other.X &&
+							part.Y<other.Y+other.H && part.Y+part.H>other.Y {
+							touchesAnother=true
+						}
+					}
+					if !touchesAnother {t.Fatal("obstacle pieces do not meet")}
+				}
+			}
+			if dual!=6 || triple!=2 {
+				t.Fatalf("%s compound variety wrong: 2-part=%d 3-part=%d",theme,dual,triple)
 			}
 		}
 	}
 }
 
-func TestWiderArenaCPUAndOnlineAssets(t *testing.T) {
+func TestExpandedArenaCPUAndOnlineAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
 	if !strings.Contains(served, "/arena-expansion-v72.js") {
-		t.Fatal("CPU normal/custom maps do not load the L-cover extension")
+		t.Fatal("CPU normal/custom maps do not load the cover extension")
 	}
-	if strings.Contains(string(base), "1800") && !strings.Contains(served, "2100") {
+	if strings.Contains(string(base), "1800") && !strings.Contains(served, "2300") {
 		t.Fatal("CPU arena width has not been migrated")
 	}
-	if strings.Contains(string(base), "1050") && !strings.Contains(served, "1200") {
+	if strings.Contains(string(base), "1050") && !strings.Contains(served, "1300") {
 		t.Fatal("CPU arena height has not been migrated")
+	}
+	cpuExtension,err:=gameFiles.ReadFile("public/arena-expansion-v72.js")
+	if err!=nil {t.Fatal(err)}
+	for _,shape:=range []string{"'L'","'T'","'U'","__arenaShape"} {
+		if !strings.Contains(string(cpuExtension),shape) {t.Errorf("CPU missing shape logic %s",shape)}
 	}
 	online, err := gameFiles.ReadFile("public/multiplayer.html")
 	if err != nil { t.Fatal(err) }
-	if !strings.Contains(string(online), "Math.min(2100-view.w") ||
-		!strings.Contains(string(online), "Math.min(1200-view.h") ||
-		!strings.Contains(string(online), "view.h=Math.min(1200") ||
-		!strings.Contains(string(online), "o.x/2100*mmw") {
-		t.Fatal("online camera or minimap still uses the previous arena size")
+	for _,mark:=range []string{"Math.min(2300-view.w","Math.min(1300-view.h","view.h=Math.min(1300","o.x/2300*mmw","o.y/1300*mmh","cx.strokeRect(45,45,2210,1210)"} {
+		if !strings.Contains(string(online),mark) {t.Errorf("online camera/minimap mismatch: %s",mark)}
 	}
 }
 
