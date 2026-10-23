@@ -2,12 +2,12 @@
 (function(){
 'use strict';
 const defs=[
- {id:'roman',name:'ロマン砲',cost:360,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
- {id:'slow',name:'鈍化弾',cost:320,icon:'鈍',color:'#9bbcff',tip:'狙った相手を減速',target:true},
- {id:'invincible',name:'無敵',cost:340,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
- {id:'dance',name:"Let's DANCE",cost:340,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
- {id:'invisible',name:'透明化',cost:300,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
- {id:'namepu',name:'ナメプ',cost:220,icon:'😐',color:'#e9ff85',tip:'5秒間真顔で踊り続ける',target:false}
+ {id:'roman',name:'ロマン砲',cost:320,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
+ {id:'slow',name:'鈍化弾',cost:280,icon:'鈍',color:'#9bbcff',tip:'狙った相手を減速',target:true},
+ {id:'invincible',name:'無敵',cost:300,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
+ {id:'dance',name:"Let's DANCE",cost:300,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
+ {id:'invisible',name:'透明化',cost:260,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
+ {id:'namepu',name:'ナメプ',cost:180,icon:'😐',color:'#e9ff85',tip:'5秒間真顔で踊り続ける',target:false}
 ];
 const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
 // Accessible, mobile-readable explanations shared by all four battle modes.
@@ -15,8 +15,8 @@ const guides={
  roman:{
   role:'高火力・照準型',short:'超火力',
   summary:'オーラをまとった「ロマン砲」の文字を撃ち出し、大ダメージを与える。',
-  usage:'必殺技ボタンを押して構え、5秒以内に戦場の狙いたい位置をタップ／クリック。照準を決めた後、0.5秒の溜めを経て発射。',
-  caution:'構えている間は移動できるが、通常武装は使えない。障害物を貫通せず、外すと大きな隙になる。5秒過ぎると最後の照準方向へ自動発射。'
+  usage:'必殺技ボタンを押して構え、5秒以内に戦場の狙いたい位置をタップ／クリック。照準を決めた後、0.4秒の硬直を経て発射。',
+  caution:'照準確定後の0.4秒は移動も通常武装もできない。構え中も通常武装は使えない。障害物を貫通せず、外すと大きな隙になる。5秒過ぎると最後の照準方向へ自動発射。'
  },
  slow:{
   role:'妨害・照準型',short:'減速',
