@@ -1,0 +1,92 @@
+/* v7.6 online arena parity: CPU screenshot is the visual/layout authority.
+   Keep all existing WebSocket, canvas aiming, multi-touch and 2–10-player mechanics. */
+body.online-battle{background:#091426!important;color:#eef5ff;overflow:hidden}
+body.online-battle .wrap{max-width:none!important;margin:0!important;padding:0 8px!important;height:100dvh!important;overflow:hidden!important}
+body.online-battle #gameArea{height:100%!important;display:flex!important;gap:0!important;min-height:0}
+body.online-battle #gameArea>.battle-head{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ flex:0 0 42px!important;min-height:0!important;margin:0!important;padding:3px 3px 5px!important;
+ border:0!important;border-bottom:1px solid #40526a!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+}
+body.online-battle #gameArea .battle-label{display:none!important}
+body.online-battle #gameArea .battle-title{color:#f1f5ff!important;font-size:15px!important;font-weight:900!important;line-height:1.1!important}
+body.online-battle #gameArea .battle-head .subtle{color:#a4c8f5!important;font-size:11px!important;line-height:1.15!important}
+body.online-battle #onlineBattleBack{font-size:12px!important;border:1px solid #59718e!important;background:#192a43!important;color:#edf4ff!important;border-radius:9px;padding:7px 12px!important}
+body.online-battle #gameArea>.game-panel{
+ display:flex!important;flex-direction:column!important;flex:1 1 auto!important;min-height:0!important;
+ padding:0!important;margin:0!important;gap:0!important;
+ background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:hidden!important;
+}
+body.online-battle #gameArea .hud{
+ flex:0 0 43px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:12px!important;background:transparent!important;border:0!important;border-radius:0!important;
+ margin:0!important;padding:5px 4px 2px!important;align-items:center!important;font-size:12px!important;
+}
+body.online-battle #gameArea .combat-hp{min-width:0}
+body.online-battle #gameArea .combat-hp .hud-line{margin-bottom:4px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;font-size:11px!important;line-height:1.2!important;font-weight:800!important;color:#f4f7ff!important}
+body.online-battle #gameArea .combat-hp .hud-line>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.online-battle #gameArea .combat-hp .hp-number{color:#f2f7ff!important;white-space:nowrap;font-weight:900;font-size:11px!important}
+body.online-battle #gameArea .combat-hp .hp-bar{height:9px!important;border:0!important;border-radius:12px!important;background:#22374c!important;overflow:hidden}
+body.online-battle #gameArea .combat-hp .hp-fill{height:100%;border-radius:10px!important;transition:width .17s linear}
+body.online-battle #gameArea .combat-hp.own .hp-fill{background:linear-gradient(90deg,#37adab,#6de6bd)!important}
+body.online-battle #gameArea .combat-hp.rival .hp-fill{background:linear-gradient(90deg,#bf407f,#ff84a6)!important}
+body.online-battle #gameArea .battle-meta{display:block;flex:0 0 34px;min-height:0;padding:0 4px 3px;line-height:1.22;font-size:12px}
+body.online-battle #gameArea #battleAnnounce{color:#ffd35e;font-weight:900}
+body.online-battle #gameArea #onlineStatus{float:right!important;color:#a6bfdc!important;font-size:11px!important}
+body.online-battle #gameArea .battle-zone-info{clear:both;color:#add3ff;font-size:11px;margin-top:4px}
+body.online-battle #gameArea .arena-shell{
+ position:relative!important;flex:1 1 auto!important;min-height:0!important;min-width:0!important;
+ width:100%!important;max-width:none!important;margin:0!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:#281e32!important;border:1px solid #536c88!important;border-radius:11px!important;
+ outline:0!important;box-shadow:none!important;overflow:hidden!important;
+}
+body.online-battle #gameArea #arena{
+ border:0!important;border-radius:0!important;max-width:100%!important;max-height:100%!important;
+ touch-action:none;cursor:crosshair;
+}
+body.online-battle #gameArea .weaponrow{
+ flex:0 0 86px!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+ gap:6px!important;padding:5px 0 0!important;margin:0!important;
+ background:transparent!important;border:0!important;border-radius:0!important;min-height:0!important;
+}
+body.online-battle #gameArea .weapon{
+ height:auto!important;min-height:0!important;padding:5px 3px!important;border:1px solid #4c769b!important;
+ border-radius:8px!important;background:#20344f!important;
+ color:#f8f9ff!important;box-shadow:none!important;
+ display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:1px!important;
+}
+body.online-battle #gameArea .weapon.active{border:2px solid #f7c45e!important;background:#3d485c!important;box-shadow:0 0 0 1px #af8746!important}
+body.online-battle #gameArea .weapon .wchar{font-size:21px!important;color:#f3f6fd!important;line-height:1.05!important}
+body.online-battle #gameArea .weapon .wkind{font-size:10px!important;color:#dbe7fc!important;line-height:1.1!important}
+body.online-battle #gameArea .weapon .card-cooldown{font-size:9px!important;color:#b1d7ff!important}
+body.online-battle #gameArea .weapon .card-track{margin-top:3px!important;height:4px!important;width:99%!important;border-radius:4px!important}
+body.online-battle #gameArea .weapon .card-track>div{background:#58bdea!important}
+body.online-battle #gameArea #controls{flex:0 0 20px!important;margin:3px 0 0!important;padding:0 1px!important;font-size:9px!important;line-height:1.2!important;color:#b3c9e4!important}
+body.online-battle #gameArea #battleResult{position:absolute;top:88px;left:50%;transform:translateX(-50%);z-index:12;pointer-events:none}
+body.online-battle #gameArea .game-panel>.buttons{display:none!important}
+@media (max-width:640px){
+ body.online-battle .wrap{padding:0 3px!important}
+ body.online-battle #gameArea>.battle-head{flex-basis:37px!important}
+ body.online-battle #gameArea .hud{flex-basis:39px!important;gap:5px!important;padding:3px 2px!important}
+ body.online-battle #gameArea .combat-hp .hud-line{font-size:9px!important}
+ body.online-battle #gameArea .combat-hp .hp-number{font-size:9px!important}
+ body.online-battle #gameArea .battle-meta{flex-basis:31px!important;font-size:10px}
+ body.online-battle #gameArea .battle-zone-info{font-size:10px;margin-top:2px}
+ body.online-battle #gameArea .weaponrow{flex-basis:67px!important;gap:3px!important;padding-top:3px!important}
+ body.online-battle #gameArea .weapon{padding:2px 1px!important}
+ body.online-battle #gameArea .weapon .wchar{font-size:16px!important}
+ body.online-battle #gameArea .weapon .wkind{font-size:8px!important}
+ body.online-battle #gameArea .weapon .card-cooldown{font-size:8px!important}
+ body.online-battle #gameArea #controls{display:none!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+ body.online-battle #gameArea>.battle-head{flex-basis:27px!important}
+ body.online-battle #gameArea .hud{flex-basis:32px!important}
+ body.online-battle #gameArea .battle-meta{flex-basis:23px!important;font-size:9px}
+ body.online-battle #gameArea .battle-zone-info{margin-top:0}
+ body.online-battle #gameArea .weaponrow{flex-basis:52px!important}
+ body.online-battle #gameArea .weapon .wchar{font-size:15px!important}
+ body.online-battle #gameArea #controls{display:none!important}
+}
