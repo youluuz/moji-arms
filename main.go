@@ -1322,7 +1322,7 @@ window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('str
  let active=null;
  window.addEventListener('message',function(event){
   if(event.origin!==location.origin||event.data?.type!=='moji:embeddedBattle')return;
-  const frame=Array.from(document.querySelectorAll('iframe')).find(f=>f.contentWindow===event.source && /multiplayer\\.html/.test(f.src));
+  const frame=Array.from(document.querySelectorAll('iframe')).find(f=>f.contentWindow===event.source && /multiplayer\.html/.test(f.src));
   if(!frame)return;
   if(event.data.active){
    if(active&&active.frame===frame)return;
