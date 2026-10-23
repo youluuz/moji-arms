@@ -237,6 +237,7 @@ type Bullet struct {
 	X, Y, VX, VY, Damage, TTL float64
 	Owner, Ch                 string
 	Pierce, Homing            bool
+	Special                   string
 }
 type Player struct {
 	ID, Name, Ch        string
@@ -257,6 +258,14 @@ type Player struct {
 	Casts, ActionSerial int
 	LastKind            string
 	LastInput           time.Time
+	Ultimate string
+	UltimateCharge, UltimateAim float64
+	UltimateSpent, UltimateAiming bool
+	UltimateAimUntil, UltimateWindupUntil float64
+	InvincibleUntil, InvisibleUntil, SlowedUntil, NamepuUntil float64
+	UltimateSerial int
+	LastUltimate string
+	NamepuUsed bool
 }
 type Room struct {
 	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
@@ -265,6 +274,7 @@ type Room struct {
 	Players                                                 []*Player
 	Obstacles                                               []Obstacle
 	Bullets                                                 []Bullet
+	DanceUntil                                              float64
 }
 type Client struct {
 	conn    net.Conn
@@ -329,11 +339,13 @@ func (r *Room) state() map[string]any {
 		if p.LastKind != "" {
 			lastKind = p.LastKind
 		}
-		players = append(players, map[string]any{"id": p.ID, "name": p.Name, "ch": p.Ch, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "actionSerial": p.ActionSerial, "lastKind": lastKind})
+		char:=p.Ch
+        if now<p.NamepuUntil {char="😐"}
+        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"slowLeft":math.Max(0,p.SlowedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "actionSerial": p.ActionSerial, "lastKind": lastKind})
 	}
 	bullets := make([]map[string]any, 0, len(r.Bullets))
 	for _, b := range r.Bullets {
-		bullets = append(bullets, map[string]any{"x": math.Round(b.X*10) / 10, "y": math.Round(b.Y*10) / 10, "ch": b.Ch, "owner": b.Owner, "pierce": b.Pierce, "homing": b.Homing})
+		bullets = append(bullets, map[string]any{"x": math.Round(b.X*10) / 10, "y": math.Round(b.Y*10) / 10, "ch": b.Ch, "owner": b.Owner, "pierce": b.Pierce, "homing": b.Homing, "special": b.Special})
 	}
 	win := any(nil)
 	if r.Winner != "" {
@@ -442,6 +454,21 @@ func newObstacles(theme string) []Obstacle {
 		out = append(out, Obstacle{X: x, Y: y, W: wid, H: hei, Style: style, Expires: (43 + float64(len(out))*4.6 + mathrand.Float64()*3) * 1000})
 	}
 	return out
+}
+func ultimateCost(id string) int {
+ switch id {
+ case "roman": return 360
+ case "slow": return 320
+ case "invincible","dance": return 340
+ case "invisible": return 300
+ case "namepu": return 220
+ }
+ return 0
+}
+func chooseUltimate(id string) string { if ultimateCost(id)>0 {return id}; return "roman" }
+func ultimateLaunch(room *Room,p *Player,now float64) {
+ if p.Ultimate=="roman" {p.UltimateWindupUntil=now+.5;return}
+ if p.Ultimate=="slow" {angle:=p.UltimateAim;room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*610,VY:math.Sin(angle)*610,Damage:60,TTL:2.5,Owner:p.ID,Ch:"鈍化弾",Special:"slow"})}
 }
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
