@@ -158,7 +158,7 @@ document.querySelector('.glyph-examples').addEventListener('click',e=>{
 function strokeForGlyph(ch){
  if(Object.prototype.hasOwnProperty.call(strokeData,ch))return strokeData[ch];
  if(/\p{Script=Han}/u.test(ch))return 12;
- if(/[\uFE0F\u200D\u{1F300}-\u{10FFFF}]/u.test(ch))return 5;
+ if(ch.includes('\uFE0F')||ch.includes('\u200D')||/\p{Emoji_Presentation}/u.test(ch)||/[\u{1F300}-\u{10FFFF}]/u.test(ch))return 5;
  if(/[\p{L}\p{N}]/u.test(ch))return 3;
  return 2;
 }
