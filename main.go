@@ -52,6 +52,12 @@ func init() {
 	if e = json.Unmarshal(data, &dictionary); e != nil {
 		panic(e)
 	}
+	// The server is authoritative for Japanese kana just as it is for rare Han.
+	kana, e := gameFiles.ReadFile("public/kana-strokes.json")
+	if e != nil { panic(e) }
+	var kanaDictionary map[string]int
+	if e = json.Unmarshal(kana, &kanaDictionary); e != nil { panic(e) }
+	for ch, n := range kanaDictionary { dictionary[ch] = n }
 }
 func bound(v, a, b float64) float64       { return math.Max(a, math.Min(b, v)) }
 func dist(x1, y1, x2, y2 float64) float64 { return math.Hypot(x1-x2, y1-y2) }
@@ -1275,8 +1281,11 @@ func mobilePatchedIndex(source string) string {
 	// complete Unihan-based table before any match, then refresh equipped values.
 	strokeLoader := `Object.assign(dict, {'イ':2,'ー':1});
 if(window.MojiRandom)window.MojiRandom.strokeMap=dict;
-window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('stroke dictionary unavailable');return r.json()}).then(map=>{
- Object.assign(dict,map,{'イ':2,'ー':1});
+window.MojiStrokeReady=Promise.all([
+ fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('stroke dictionary unavailable');return r.json()}),
+ fetch('/kana-strokes.json').then(r=>{if(!r.ok)throw Error('kana stroke dictionary unavailable');return r.json()})
+]).then(([map,kana])=>{
+ Object.assign(dict,map,kana);
  if(window.MojiRandom){
    window.MojiRandom.strokeMap=dict;
    const oldRoll=window.MojiRandom.roll;
