@@ -171,6 +171,7 @@ type Player struct {
 type Room struct {
 	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
 	Started                                                 time.Time
+	Public                                                  bool
 	Players                                                 []*Player
 	Obstacles                                               []Obstacle
 	Bullets                                                 []Bullet
@@ -248,7 +249,7 @@ func (r *Room) state() map[string]any {
 	if r.Winner != "" {
 		win = r.Winner
 	}
-	return map[string]any{"type": "state", "phase": r.Phase, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message}
+	return map[string]any{"type": "state", "phase": r.Phase, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -383,9 +384,21 @@ func (a *Arena) handle(c *Client, raw []byte) {
 	parseInput(m, "type", &typ)
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if (typ == "create" || typ == "join") && c.room == nil {
+	// "match" joins an open public lobby (oldest first) or creates one.
+	// A public lobby never starts automatically; only its host can press Start.
+	if (typ == "create" || typ == "join" || typ == "match") && c.room == nil {
 		var room *Room
-		if typ == "create" {
+		createdRoom := false
+		if typ == "match" {
+			for _, candidate := range a.rooms {
+				if candidate.Public && candidate.Mode == "normal" && candidate.Phase == "lobby" && len(candidate.Players) < 10 {
+					if room == nil || candidate.Started.Before(room.Started) {
+						room = candidate
+					}
+				}
+			}
+		}
+		if typ == "create" || (typ == "match" && room == nil) {
 			if len(a.rooms) >= maxRooms {
 				c.message(map[string]string{"type": "error", "message": "ルーム数の上限に達しました"})
 				return
@@ -394,7 +407,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			parseInput(m, "mode", &mode)
 			parseInput(m, "theme", &theme)
 			parseInput(m, "shrink", &shrink)
-			if mode != "custom" {
+			if typ == "match" || mode != "custom" {
 				mode = "normal"
 			}
 			if theme != "sakura" && theme != "night" && theme != "shrine" {
@@ -412,9 +425,14 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			for a.rooms[code] != nil {
 				code = randomCode(6)
 			}
-			room = &Room{Code: code, Mode: mode, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Message: "参加者を待機中", Obstacles: newObstacles(theme)}
+			message := "参加者を待機中"
+			if typ == "match" {
+				message = "ランダムマッチ募集中（ホストが手動で試合開始）"
+			}
+			room = &Room{Code: code, Mode: mode, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Public: typ == "match", Message: message, Obstacles: newObstacles(theme)}
 			a.rooms[code] = room
-		} else {
+			createdRoom = true
+		} else if typ == "join" {
 			var code string
 			parseInput(m, "code", &code)
 			room = a.find(strings.ToUpper(strings.TrimSpace(code)))
@@ -431,7 +449,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		parseInput(m, "slots", &slots)
 		parseInput(m, "ch", &ch)
 		if !validCharacter(ch) || (room.Mode != "custom" && !validStandardGlyph(ch)) || !validSlots(slots, room.Mode == "custom") {
-			if typ == "create" {
+			if createdRoom {
 				delete(a.rooms, room.Code)
 			}
 			c.message(map[string]string{"type": "error", "message": "5枠の武装文字をすべて設定してください"})
