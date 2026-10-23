@@ -90,3 +90,26 @@ body.online-battle #gameArea .game-panel>.buttons{display:none!important}
  body.online-battle #gameArea .weapon .wchar{font-size:15px!important}
  body.online-battle #gameArea #controls{display:none!important}
 }
+
+/* Waiting-room equipment editor stays interactive after the room is joined. */
+#waitArea #roomLoadoutArea{margin:14px 0;padding:14px;border:1px solid #597a9e;border-radius:14px;background:linear-gradient(145deg,#1a304b,#101e33)}
+#roomLoadoutArea h3{margin:0 0 4px;color:#ffe0a3;font-size:17px}
+#roomLoadoutArea .muted{font-size:12px;line-height:1.5;margin:5px 0 10px}
+#roomLoadoutArea .online-loadout{margin:0 0 8px}
+#roomLoadoutArea .online-slot input{min-width:0}
+#roomLoadoutArea .ultimate-widget{margin:10px 0;max-width:100%}
+#saveRoomLoadout{min-height:45px}
+#roomEditStatus{font-size:12px;color:#b7f0d9;margin-left:12px}
+#onlineOutcome #onlineRematch{background:linear-gradient(120deg,#e9c77b,#bd8b43);color:#182038;font-weight:900}
+#onlineOutcome #onlineBack{background:#243b5b;border-color:#6d8198}
+@media(max-width:700px){
+ #waitArea #roomLoadoutArea{padding:10px}
+ #roomLoadoutArea .online-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #roomLoadoutArea .online-slot{padding:7px}
+ #roomLoadoutArea .online-loadout-heading{gap:5px}
+ #roomLoadoutArea .online-loadout-heading button{font-size:11px;padding:6px}
+ #saveRoomLoadout{width:100%;min-height:48px}
+ #roomEditStatus{display:block;margin:5px 0 0}
+ #onlineOutcome .online-outcome-card{max-height:92dvh;overflow:auto;padding:20px 14px}
+ #onlineOutcome .online-outcome button{min-height:44px}
+}
