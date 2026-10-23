@@ -21,7 +21,7 @@ func TestGraphemes(t *testing.T) {
 	}
 }
 func TestStrokesAndCooldown(t *testing.T) {
-	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "イ": 2, "ー": 1, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
+	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "イ": 2, "ー": 1, "フ": 1, "ノ": 1, "ネ": 4, "ッ": 3, "が": 5, "ぱ": 5, "ヴ": 5, "あ": 3, "く": 1, "し": 1, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
 		if got := strokes(s); got != n {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
@@ -150,7 +150,7 @@ func TestRoomEquipmentEditsAndSameRoomRematch(t *testing.T) {
  if room.Phase!="playing"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600{
   t.Fatal("second round did not start with updated equipment")
  }
- if strokes("イ")!=2 || strokes("ー")!=1 {t.Fatal("kana stroke regression")}
+ if strokes("イ")!=2 || strokes("ー")!=1 || strokes("フ")!=1 || strokes("ネ")!=4 {t.Fatal("kana stroke regression")}
 }
 
 func TestPublicMatchWaitsForHostStart(t *testing.T) {
