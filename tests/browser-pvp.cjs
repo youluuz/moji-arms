@@ -21,22 +21,41 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      for(let k=0;k<5;k++)await page.locator('#onlineGlyph'+k).fill(chars[k]);
      if(mode==='custom')for(let k=0;k<5;k++)await page.locator('.online-slot .slot-strokes').nth(k).fill('12');
      await page.locator('#joinArea .ultimate-option[data-ultimate=roman]').click();
-     if(i===0)await page.locator('#create').click();
+     if(i===0){
+      if(mode==='normal')await page.locator('#match').click();
+      else {await page.locator('.online-private-choice summary').click();await page.locator('#create').click();}
+     }
     }
     const host=pages[0],guest=pages[1];
     await host.waitForFunction(()=>!!roomState && roomState.phase==='lobby',{timeout:15000});
     const code=await host.locator('#code').innerText();
     if(!/^[A-Z0-9]{6}$/.test(code))throw Error(mode+': bad invite code '+code);
-    await guest.locator('#roomCode').fill(code);
-    await guest.locator('#join').click();
+    if(mode==='normal'){
+     if(await guest.locator('#roomCode').inputValue()!=='')throw Error('random match must not require code');
+     await guest.locator('#match').click();
+    } else {
+     // The shared lobby already collected five glyphs: an invite auto-joins.
+     await guest.evaluate(()=>{
+      const slots=collectOnlineSlots();
+      sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify({...setup,ch:'火',slots}));
+     });
+     await guest.goto(base+'/multiplayer.html?embedded=1&room='+code,{waitUntil:'domcontentloaded'});
+    }
     await host.waitForFunction(()=>roomState?.players?.length===2,{timeout:15000});
     await guest.waitForFunction(()=>roomState?.players?.length===2,{timeout:15000});
+    for(const page of pages){
+     const state=await page.evaluate(()=>({waiting:document.body.classList.contains('online-waiting'),entryHidden:getComputedStyle(document.getElementById('joinArea')).display==='none',code:roomState?.code}));
+     if(!state.waiting||!state.entryHidden||state.code!==code)throw Error(mode+': did not auto-switch to joined room: '+JSON.stringify(state));
+    }
     if(!await host.locator('#begin').isEnabled())throw Error(mode+': host start disabled');
     await host.locator('#begin').click();
     await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing',{timeout:15000})));
     for(let i=0;i<2;i++){
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
+     if(!await page.locator('#gameArea .battle-head').isVisible()||!await page.locator('#cards .card.weapon').count())throw Error(mode+': CPU-style battle HUD not rendered');
+     const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
+     if(volume!==.10)throw Error(mode+': BGM startup volume '+volume);
      if(!await page.locator('#gameArea .ultimate-cast').isVisible())throw Error(mode+': missing ultimate cast button');
      const st=await page.evaluate(()=>({id:myId,all:roomState.players.map(p=>({id:p.id,ultimate:p.ultimate,charge:p.ultimateCharge}))}));
      if(!st.all.every(p=>p.ultimate==='roman'&&p.charge===0))throw Error(mode+': ultimate state mismatch '+JSON.stringify(st));

@@ -73,7 +73,7 @@ func strokes(ch string) int {
 	}
 	for _, r := range ch {
 		if unicode.Is(unicode.Han, r) {
-			return 12
+			return 0 // Unknown Han must not silently become twelve strokes
 		}
 	}
 	for _, r := range ch {
@@ -396,7 +396,7 @@ func validSlots(values []Slot, custom bool) bool {
 		return false
 	}
 	for _, v := range values {
-		if !isKind(v.Kind) || !validCharacter(v.Ch) || v.N < 1 || v.N > 40 {
+		if !isKind(v.Kind) || !validCharacter(v.Ch) || v.N < 1 || v.N > 84 {
 			return false
 		}
 		if !custom && strokes(v.Ch) != v.N {
@@ -527,15 +527,15 @@ func ultimateLaunch(room *Room,p *Player,now float64) {
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
 	case "attack":
-		return .65 + float64(n)*.125 + math.Max(0, float64(n-10))*.02
+		return (.65 + float64(n)*.125 + math.Max(0, float64(n-10))*.02) * 1.2
 	case "defense":
-		return 9 + float64(n)*.4
+		return (9 + float64(n)*.4) * 1.4
 	case "heal":
-		return 13 + float64(n)*.55
+		return (13 + float64(n)*.55) * 1.4
 	case "pierce":
-		return 7 + float64(n)*.45
+		return (7 + float64(n)*.45) * 1.4
 	case "homing":
-		return 4.5 + float64(n)*.42
+		return (4.5 + float64(n)*.42) * 1.4
 	}
 	return 10
 }
@@ -1239,10 +1239,48 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script><script defer src="/arena-expansion-v72.js"></script>`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script><script defer src="/arena-expansion-v72.js"></script><link rel="stylesheet" href="/ui-polish-v74.css">`
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// Smaller kanji keep their usual rhythm; >10 strokes gain 20ms per extra stroke.
-	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
+	// Keep stroke values authoritative and avoid fake 12-stroke fallback.
+	source = strings.ReplaceAll(source, "n>40", "n>84")
+	source = strings.ReplaceAll(source, "max=\"40\"", "max=\"84\"")
+	source = strings.ReplaceAll(source, "画数は1〜40", "画数は1〜84")
+	source = strings.ReplaceAll(source, "画数1〜40", "画数1〜84")
+	source = strings.Replace(source, `if(/\p{Script=Han}/u.test(ch))return 12; // fallback only for unregistered ideographs`,
+		`if(/\p{Script=Han}/u.test(ch))return null; // unknown ideographs have no invented value`, 1)
+	source = strings.Replace(source, "bgmAudio.volume=.24", "bgmAudio.volume=.10", 1)
+	// The original HTML only embeds a small demonstration dictionary. Merge the
+	// complete Unihan-based table before any match, then refresh equipped values.
+	strokeLoader := `if(window.MojiRandom)window.MojiRandom.strokeMap=dict;
+window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('stroke dictionary unavailable');return r.json()}).then(map=>{
+ Object.assign(dict,map);
+ if(window.MojiRandom){
+   window.MojiRandom.strokeMap=dict;
+   const oldRoll=window.MojiRandom.roll;
+   window.MojiRandom.roll=function(exclude){
+    for(let attempt=0;attempt<80;attempt++){
+     const ch=oldRoll(exclude);
+     if(!/\p{Script=Han}/u.test(ch)||Number.isInteger(dict[ch]))return ch;
+    }
+    return '火';
+   };
+ }
+ if(typeof updateMode==='function')updateMode();
+ if(typeof refreshLobbyStats==='function')refreshLobbyStats();
+ return true;
+}).catch(err=>{console.warn('画数辞書の取得に失敗',err);return false;});`
+	source = strings.Replace(source, "if(window.MojiRandom)window.MojiRandom.strokeMap=dict;", strokeLoader, 1)
+	// Both CPU modes use the exact same cooldown curve as the server.
+	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:1.2*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
+	for _, pair := range [][2]string{
+		{"defense:9+n*.4", "defense:1.4*(9+n*.4)"},
+		{"heal:13+n*.55", "heal:1.4*(13+n*.55)"},
+		{"pierce:7+n*.45", "pierce:1.4*(7+n*.45)"},
+		{"homing:4.5+n*.42", "homing:1.4*(4.5+n*.42)"},
+	} {
+		source = strings.Replace(source, pair[0], pair[1], 1)
+	}
 	// Keep the large legacy CPU game in sync with the shared arena dimensions.
 	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
 	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?730:1250", 1)
@@ -1295,7 +1333,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.3", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.4", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1321,7 +1359,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v7.3 / Python不要")
+	fmt.Println("  文字武装 v7.4 / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")

@@ -9,7 +9,23 @@ const { chromium } = require('playwright');
   const res=await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
+  await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
+  await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
+  const cpuGlyph=await page.evaluate(()=>{
+    const field=document.querySelector('#lobbyScreen .kanji');
+    const stat=field.closest('.slot').querySelector('.slot-stat');
+    const digit=field.closest('.slot').querySelector('.strokes');
+    field.value='𰻞';field.dispatchEvent(new Event('input',{bubbles:true}));
+    const biang={n:Number(digit.value),details:stat.textContent};
+    field.value='𰻝';field.dispatchEvent(new Event('input',{bubbles:true}));
+    const simple={n:Number(digit.value),details:stat.textContent};
+    return {biang,simple};
+  });
+  if(cpuGlyph.biang.n!==58||cpuGlyph.simple.n!==43||
+    !cpuGlyph.biang.details.includes('58画')||!cpuGlyph.simple.details.includes('43画'))
+    throw Error('CPU rare-kanji UI failure '+JSON.stringify(cpuGlyph));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
   // The ability picker must sit immediately after the five glyph inputs,
@@ -91,6 +107,27 @@ const { chromium } = require('playwright');
   if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
+  if(!await page.locator('#onlineGlyph0').count()){
+    console.log('ONLINE_SETUP_DIAG',JSON.stringify(await page.evaluate(()=>({
+      url:location.href,embedded:document.body.className,editor:document.getElementById('onlineSlots')?.innerHTML.slice(0,300),
+      scripts:document.scripts.length,heading:document.querySelector('#joinArea h2')?.textContent
+    }))));
+    throw Error('Online glyph editor unavailable. Browser errors: '+JSON.stringify(errors));
+  }
+  await page.locator('#onlineGlyph0').fill('𰻞');
+  await page.waitForFunction(()=>{
+    const row=document.querySelector('#onlineGlyph0')?.closest('.online-slot');
+    return row?.querySelector('.slot-strokes')?.value==='58';
+  },{timeout:20000});
+  const matchUI=await page.evaluate(()=>({
+    match:document.querySelector('#match')?.textContent,
+    privateCode:!!document.querySelector('.online-private-choice #roomCode'),
+    rare:Number(document.querySelector('#onlineGlyph0')?.closest('.online-slot').querySelector('.slot-strokes')?.value),
+    hidden:getComputedStyle(document.querySelector('.online-private-choice #roomCode')).display==='none'
+  }));
+  if(!matchUI.match?.includes('ランダムマッチ')||!matchUI.privateCode||matchUI.rare!==58)
+    throw Error('online matchmaking/rare-kanji UI mismatch '+JSON.stringify(matchUI));
+
   if(await page.locator('#joinArea .ultimate-option').count()!==6)throw Error('online must present identical six ultimates');
   const onlinePosition=await page.evaluate(()=>{
    const editor=document.querySelector('#joinArea .online-loadout'),picker=editor?.nextElementSibling;
