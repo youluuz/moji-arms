@@ -3,7 +3,11 @@
 'use strict';
 function boot(){
  if(!window.MojiUlt||!document.getElementById('arena'))return;
- const U=window.MojiUlt, pick=U.attachUI(document.querySelector('#joinArea .online-loadout'));
+ const U=window.MojiUlt, glyphSection=document.querySelector('#joinArea .online-loadout');
+ const pick=U.attachUI(glyphSection);
+ // Keep glyph examples/help with the five character inputs, then place the
+ // six ultimate choices immediately below this character-selection section.
+ glyphSection.insertAdjacentElement('afterend',pick.root);
  const battle=U.attachUI(document.querySelector('#gameArea .game-wrap'));battle.showBattle(true);
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
