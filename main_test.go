@@ -437,9 +437,9 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
 }
 
 func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
- // All four modes use the same 1.2x basic and 1.4x other weapon cooldowns.
+ // Four modes share a slightly slower base attack and stronger tiered penalties after 20 and 40 strokes.
  for _,tc:=range []struct{n int; seconds float64}{
-  {1,.93},{10,2.28},{12,2.628},{20,4.02},{30,5.76},{40,7.5},
+  {1,1.0075},{10,2.47},{12,2.847},{20,4.355},{30,6.79},{40,9.225},{58,16.128},{84,26.099},
  } {
   if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
    t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
@@ -450,12 +450,12 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
  }
  index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"attack:1.2*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)") {
+ if !strings.Contains(served,"attack:1.3*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)+Math.max(0,n-20)*.055+Math.max(0,n-40)*.14") {
   t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
  }
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  for _,expected:=range []string{
-  "attack:1.2*(.65+n*.125+Math.max(0,n-10)*.02)",
+  "attack:1.3*(.65+n*.125+Math.max(0,n-10)*.02)+Math.max(0,n-20)*.055+Math.max(0,n-40)*.14",
   "const duration=onlineCD(slot.kind,slot.n)/1000",
  } {
   if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
@@ -466,6 +466,18 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
   if math.Abs(slotCooldown(kind,15)-base*1.4)>.000001 {t.Fatalf("%s cooldown should be multiplied by 1.4",kind)}
  }
 }
+func TestOnlineCombatScreenMatchesCPUScreenshotLayout(t *testing.T) {
+ online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
+ css,e:=gameFiles.ReadFile("public/online-cpu-parity.css");if e!=nil{t.Fatal(e)}
+ for _,marker:=range []string{"online-cpu-parity.css","id=\"selfName\"","id=\"enemyName\"","id=\"enemyBar\"","id=\"battleAnnounce\"","class=\"battle-zone-info\"","id=\"zoneSize\"","class=\"game-wrap arena-shell\"","id=\"cards\" class=\"cards weaponrow\"","drawHandle=requestAnimationFrame(draw)"} {
+  if !strings.Contains(string(online),marker) {t.Errorf("CPU-style online battle markup missing %s",marker)}
+ }
+ for _,marker:=range []string{"#gameArea .combat-hp.rival .hp-fill","#gameArea .weaponrow","#gameArea .arena-shell","#gameArea .battle-meta"} {
+  if !strings.Contains(string(css),marker) {t.Errorf("CPU-style online battle CSS missing %s",marker)}
+ }
+ if slotCooldown("attack",58)<=slotCooldown("attack",40)+5 {t.Fatal("58-stroke glyph attack must have notably longer cooldown")}
+}
+
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
  js,e:=gameFiles.ReadFile("public/ultimate-core.js");if e!=nil{t.Fatal(e)}
  content:=string(js)
