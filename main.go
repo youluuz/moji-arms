@@ -1,0 +1,1043 @@
+// 文字武装 GLYPH STRIKE v6.4: Python-free standalone HTTP/WebSocket arena server.
+// No third-party Go modules are needed; go build works offline.
+package main
+
+import (
+	"bufio"
+	"context"
+	"crypto/rand"
+	"crypto/sha1"
+	"embed"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"io/fs"
+	"log"
+	"math"
+	mathrand "math/rand"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+	"unicode"
+	"unicode/utf8"
+)
+
+//go:embed public/*
+var gameFiles embed.FS
+var dictionary map[string]int
+
+const W, H = 1800.0, 1050.0
+const maxRooms = 150
+
+func init() {
+	data, e := gameFiles.ReadFile("public/strokes.json")
+	if e != nil {
+		panic(e)
+	}
+	if e = json.Unmarshal(data, &dictionary); e != nil {
+		panic(e)
+	}
+}
+func bound(v, a, b float64) float64       { return math.Max(a, math.Min(b, v)) }
+func dist(x1, y1, x2, y2 float64) float64 { return math.Hypot(x1-x2, y1-y2) }
+func randomCode(n int) string {
+	alphabet := "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b)
+}
+func strokes(ch string) int {
+	if n, ok := dictionary[ch]; ok {
+		return n
+	}
+	if !validCharacter(ch) {
+		return 0
+	}
+	for _, r := range ch {
+		if unicode.Is(unicode.Han, r) {
+			return 12
+		}
+	}
+	for _, r := range ch {
+		if r == 0xfe0f || r == 0x200d || r >= 0x1f300 {
+			return 5
+		}
+	}
+	for _, r := range ch {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			return 3
+		}
+	}
+	return 2
+}
+
+// A compact approximation of a Unicode extended grapheme cluster. Handles keycap, VS16,
+// ZWJ emoji sequences, skin-tone modifiers and paired regional-indicator flags.
+func validCharacter(s string) bool {
+	if !utf8.ValidString(s) || len(s) == 0 || len(s) > 64 {
+		return false
+	}
+	rs := []rune(s)
+	if len(rs) > 16 {
+		return false
+	}
+	bases := 0
+	zwj := false
+	regionals := 0
+	for i, r := range rs {
+		if unicode.IsSpace(r) || unicode.IsControl(r) || r == 0x7f {
+			return false
+		}
+		if r == 0x200d {
+			if i == 0 || i == len(rs)-1 {
+				return false
+			}
+			zwj = true
+			continue
+		}
+		if r == 0xfe0f || r == 0xfe0e || r == 0x20e3 || unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) || r >= 0x1f3fb && r <= 0x1f3ff {
+			continue
+		}
+		if r >= 0x1f1e6 && r <= 0x1f1ff {
+			regionals++
+			continue
+		}
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsSymbol(r) || unicode.IsPunct(r) {
+			bases++
+		} else {
+			return false
+		}
+	}
+	if regionals > 0 {
+		return regionals == 2 && bases == 0
+	}
+	if zwj {
+		return bases >= 2 && bases <= 6
+	}
+	return bases == 1
+}
+
+type Slot struct {
+	Ch   string `json:"ch"`
+	Kind string `json:"kind"`
+	N    int    `json:"n"`
+}
+type Obstacle struct {
+	X       float64 `json:"x"`
+	Y       float64 `json:"y"`
+	W       float64 `json:"w"`
+	H       float64 `json:"h"`
+	Style   string  `json:"style"`
+	Expires float64 `json:"expires"`
+}
+type Bullet struct {
+	X, Y, VX, VY, Damage, TTL float64
+	Owner, Ch                 string
+	Pierce, Homing            bool
+}
+type Player struct {
+	ID, Name, Ch        string
+	C                   *Client
+	X, Y, HP, Shield    float64
+	Alive, Ready, Fire  bool
+	ShieldUntil         float64
+	Slots               []Slot
+	Selected            int
+	Keys                map[string]bool
+	Aim                 float64
+	Last                [5]float64
+	GuardSlot           int
+	Casts, ActionSerial int
+	LastKind            string
+	LastInput           time.Time
+}
+type Room struct {
+	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
+	Started                                                 time.Time
+	Players                                                 []*Player
+	Obstacles                                               []Obstacle
+	Bullets                                                 []Bullet
+}
+type Client struct {
+	conn    net.Conn
+	read    *bufio.Reader
+	send    chan []byte
+	writeMu sync.Mutex
+	room    *Room
+	pid     string
+	done    chan struct{}
+	once    sync.Once
+}
+type Arena struct {
+	mu    sync.Mutex
+	rooms map[string]*Room
+}
+
+var arena = &Arena{rooms: map[string]*Room{}}
+
+func (r *Room) elapsed() float64 {
+	if r.Phase == "lobby" {
+		return 0
+	}
+	return time.Since(r.Started).Seconds() * 1000
+}
+func (r *Room) zone() map[string]float64 {
+	rad := 1150.0
+	switch r.Shrink {
+	case "none":
+		rad = 1150
+	case "instant":
+		rad = 180
+	default:
+		seconds := 120.0
+		if r.Shrink == "slow" {
+			seconds = 180
+		} else if r.Shrink == "fast" {
+			seconds = 70
+		}
+		rad = math.Max(180, 1150-970*math.Min(1, r.elapsed()/1000/seconds))
+	}
+	return map[string]float64{"x": W / 2, "y": H / 2, "r": rad}
+}
+func (r *Room) broadcast() {
+	data := r.state()
+	buf, e := json.Marshal(data)
+	if e != nil {
+		return
+	}
+	for _, p := range r.Players {
+		p.C.enqueue(buf)
+	}
+}
+func (r *Room) state() map[string]any {
+	now := float64(time.Now().UnixNano()) / 1e9
+	players := make([]map[string]any, 0, len(r.Players))
+	for _, p := range r.Players {
+		cd := make([]float64, 5)
+		for i := range cd {
+			cd[i] = math.Round(math.Max(0, p.Last[i]-now)*100) / 100
+		}
+		lastKind := any(nil)
+		if p.LastKind != "" {
+			lastKind = p.LastKind
+		}
+		players = append(players, map[string]any{"id": p.ID, "name": p.Name, "ch": p.Ch, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "actionSerial": p.ActionSerial, "lastKind": lastKind})
+	}
+	bullets := make([]map[string]any, 0, len(r.Bullets))
+	for _, b := range r.Bullets {
+		bullets = append(bullets, map[string]any{"x": math.Round(b.X*10) / 10, "y": math.Round(b.Y*10) / 10, "ch": b.Ch, "owner": b.Owner, "pierce": b.Pierce, "homing": b.Homing})
+	}
+	win := any(nil)
+	if r.Winner != "" {
+		win = r.Winner
+	}
+	return map[string]any{"type": "state", "phase": r.Phase, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message}
+}
+func (c *Client) enqueue(b []byte) {
+	select {
+	case c.send <- b:
+	default:
+		select {
+		case <-c.send:
+		default:
+		}
+		select {
+		case c.send <- b:
+		default:
+		}
+	}
+}
+func (c *Client) message(value any) {
+	data, e := json.Marshal(value)
+	if e == nil {
+		c.enqueue(data)
+	}
+}
+func (a *Arena) find(code string) *Room { return a.rooms[code] }
+func (a *Arena) byID(room *Room, id string) *Player {
+	for _, p := range room.Players {
+		if p.ID == id {
+			return p
+		}
+	}
+	return nil
+}
+func isKind(s string) bool {
+	switch s {
+	case "attack", "defense", "heal", "pierce", "homing":
+		return true
+	}
+	return false
+}
+func validSlots(values []Slot, custom bool) bool {
+	if len(values) != 5 {
+		return false
+	}
+	for _, v := range values {
+		if !isKind(v.Kind) || !validCharacter(v.Ch) || v.N < 1 || v.N > 40 {
+			return false
+		}
+		if !custom && strokes(v.Ch) != v.N {
+			return false
+		}
+	}
+	return true
+}
+func newObstacles(theme string) []Obstacle {
+	kinds := map[string][]string{"shrine": {"stone", "gate", "pillar"}, "sakura": {"hedge", "fence", "lantern"}, "night": {"wall", "barrier", "crystal"}}[theme]
+	out := make([]Obstacle, 0, 14)
+	for attempts := 0; len(out) < 14 && attempts < 650; attempts++ {
+		style := kinds[len(out)%3]
+		vertical := mathrand.Float64() < .52
+		wid, hei := 110.0+mathrand.Float64()*125, 40.0+mathrand.Float64()*38
+		if vertical {
+			wid = 42 + mathrand.Float64()*40
+			hei = 110 + mathrand.Float64()*140
+		}
+		if style == "pillar" || style == "lantern" || style == "crystal" {
+			wid = 65 + mathrand.Float64()*23
+			hei = wid
+		}
+		x := 105 + mathrand.Float64()*(W-wid-210)
+		y := 105 + mathrand.Float64()*(H-hei-210)
+		if dist(x+wid/2, y+hei/2, W/2, H/2) < 235 {
+			continue
+		}
+		// Do not place a wall over a possible player's starting point.
+		// Both standard and custom games use 2–10 players, with an ellipse for spawns.
+		blockedSpawn := false
+		for participants := 2; participants <= 10 && !blockedSpawn; participants++ {
+			for index := 0; index < participants; index++ {
+				a := 2 * math.Pi * float64(index) / float64(participants)
+				px := W/2 + 360*math.Cos(a)
+				py := H/2 + 290*math.Sin(a)
+				if circleRect(px, py, 38, Obstacle{X: x, Y: y, W: wid, H: hei}) {
+					blockedSpawn = true
+					break
+				}
+			}
+		}
+		if blockedSpawn {
+			continue
+		}
+		overlap := false
+		for _, o := range out {
+			if x < o.X+o.W+65 && x+wid > o.X-65 && y < o.Y+o.H+65 && y+hei > o.Y-65 {
+				overlap = true
+				break
+			}
+		}
+		if overlap {
+			continue
+		}
+		out = append(out, Obstacle{X: x, Y: y, W: wid, H: hei, Style: style, Expires: (43 + float64(len(out))*4.6 + mathrand.Float64()*3) * 1000})
+	}
+	return out
+}
+func slotCooldown(kind string, n int) float64 {
+	switch kind {
+	case "attack":
+		return .65 + float64(n)*.125
+	case "defense":
+		return 9 + float64(n)*.4
+	case "heal":
+		return 13 + float64(n)*.55
+	case "pierce":
+		return 7 + float64(n)*.45
+	case "homing":
+		return 4.5 + float64(n)*.42
+	}
+	return 10
+}
+func parseInput(value map[string]json.RawMessage, field string, dst any) {
+	_ = json.Unmarshal(value[field], dst)
+}
+func (a *Arena) handle(c *Client, raw []byte) {
+	var m map[string]json.RawMessage
+	if len(raw) > 60000 || json.Unmarshal(raw, &m) != nil {
+		return
+	}
+	var typ string
+	parseInput(m, "type", &typ)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if (typ == "create" || typ == "join") && c.room == nil {
+		var room *Room
+		if typ == "create" {
+			if len(a.rooms) >= maxRooms {
+				c.message(map[string]string{"type": "error", "message": "ルーム数の上限に達しました"})
+				return
+			}
+			var mode, theme, shrink string
+			parseInput(m, "mode", &mode)
+			parseInput(m, "theme", &theme)
+			parseInput(m, "shrink", &shrink)
+			if mode != "custom" {
+				mode = "normal"
+			}
+			if theme != "sakura" && theme != "night" && theme != "shrine" {
+				theme = []string{"sakura", "night", "shrine"}[mathrand.Intn(3)]
+			}
+			if mode != "custom" {
+				shrink = "normal"
+			}
+			switch shrink {
+			case "slow", "normal", "fast", "none", "instant":
+			default:
+				shrink = "normal"
+			}
+			code := randomCode(6)
+			for a.rooms[code] != nil {
+				code = randomCode(6)
+			}
+			room = &Room{Code: code, Mode: mode, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Message: "参加者を待機中", Obstacles: newObstacles(theme)}
+			a.rooms[code] = room
+		} else {
+			var code string
+			parseInput(m, "code", &code)
+			room = a.find(strings.ToUpper(strings.TrimSpace(code)))
+			if room == nil || room.Phase != "lobby" || len(room.Players) >= 10 {
+				c.message(map[string]string{"type": "error", "message": "ルームが見つからない、試合中、または満員です"})
+				return
+			}
+		}
+		var name string
+		parseInput(m, "name", &name)
+		name = strings.TrimSpace(name)
+		if name == "" {
+			name = "挑戦者"
+		}
+		rs := []rune(name)
+		if len(rs) > 16 {
+			name = string(rs[:16])
+		}
+		pid := randomCode(12)
+		p := &Player{ID: pid, C: c, Name: name, Ch: "武", X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1}
+		c.room = room
+		c.pid = pid
+		room.Players = append(room.Players, p)
+		if room.Host == "" {
+			room.Host = pid
+		}
+		c.message(map[string]any{"type": "joined", "id": pid, "code": room.Code, "mode": room.Mode})
+		room.broadcast()
+		return
+	}
+	if c.room == nil {
+		return
+	}
+	room := c.room
+	p := a.byID(room, c.pid)
+	if p == nil {
+		return
+	}
+	switch typ {
+	case "setup":
+		if room.Phase != "lobby" {
+			return
+		}
+		var slots []Slot
+		var ch string
+		parseInput(m, "slots", &slots)
+		parseInput(m, "ch", &ch)
+		if !validSlots(slots, room.Mode == "custom") || !validCharacter(ch) {
+			c.message(map[string]string{"type": "error", "message": "装備データが不正です"})
+			return
+		}
+		p.Ch = ch
+		p.Slots = slots
+		p.Ready = true
+		room.broadcast()
+	case "start":
+		if c.pid != room.Host || room.Phase != "lobby" {
+			return
+		}
+		if len(room.Players) < 2 {
+			c.message(map[string]string{"type": "error", "message": "2人以上の参加が必要です"})
+			return
+		}
+		for _, pp := range room.Players {
+			if !pp.Ready {
+				c.message(map[string]string{"type": "error", "message": "全員の準備完了が必要です"})
+				return
+			}
+		}
+		room.Phase = "playing"
+		room.Message = "戦闘開始"
+		room.Started = time.Now()
+		room.Bullets = nil
+		room.Winner = ""
+		for i, pp := range room.Players {
+			angle := 2 * math.Pi * float64(i) / float64(len(room.Players))
+			rx, ry := 360.0, 290.0
+			if room.Shrink == "instant" {
+				rx, ry = 110, 110 // within the minimum safe radius (180)
+			}
+			pp.X = W/2 + rx*math.Cos(angle)
+			pp.Y = H/2 + ry*math.Sin(angle)
+			pp.HP = 600
+			pp.Alive = true
+			pp.Shield = 0
+			pp.Last = [5]float64{}
+			pp.GuardSlot = -1
+			pp.Selected = 0
+			pp.Casts = 0
+			pp.ActionSerial = 0
+			pp.LastKind = ""
+			pp.Fire = false
+		}
+		room.broadcast()
+	case "input":
+		if room.Phase != "playing" || !p.Alive {
+			return
+		}
+		if time.Since(p.LastInput) < 10*time.Millisecond {
+			return
+		}
+		p.LastInput = time.Now()
+		var keys []string
+		parseInput(m, "keys", &keys)
+		p.Keys = map[string]bool{}
+		for _, key := range keys {
+			switch key {
+			case "w", "a", "s", "d":
+				p.Keys[key] = true
+			}
+		}
+		parseInput(m, "aim", &p.Aim)
+		if math.IsNaN(p.Aim) || math.IsInf(p.Aim, 0) {
+			p.Aim = 0
+		}
+		parseInput(m, "fire", &p.Fire)
+		parseInput(m, "selected", &p.Selected)
+		if p.Selected < 0 {
+			p.Selected = 0
+		} else if p.Selected > 4 {
+			p.Selected = 4
+		}
+	}
+}
+func (a *Arena) disconnected(c *Client) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	room := c.room
+	if room == nil {
+		return
+	}
+	newPlayers := make([]*Player, 0, len(room.Players))
+	for _, p := range room.Players {
+		if p.ID != c.pid {
+			newPlayers = append(newPlayers, p)
+		}
+	}
+	room.Players = newPlayers
+	if room.Host == c.pid {
+		room.Host = ""
+		if len(newPlayers) > 0 {
+			room.Host = newPlayers[0].ID
+		}
+	}
+	if len(room.Players) == 0 {
+		delete(a.rooms, room.Code)
+	} else {
+		if room.Phase == "playing" {
+			alive := 0
+			for _, p := range room.Players {
+				if p.Alive {
+					alive++
+				}
+			}
+			if alive <= 1 {
+				room.Phase = "ended"
+				room.Winner = ""
+				for _, p := range room.Players {
+					if p.Alive {
+						room.Winner = p.ID
+					}
+				}
+			}
+		}
+		room.broadcast()
+	}
+	c.room = nil
+	c.pid = ""
+}
+func circleRect(x, y, rad float64, o Obstacle) bool {
+	px := bound(x, o.X, o.X+o.W)
+	py := bound(y, o.Y, o.Y+o.H)
+	return (x-px)*(x-px)+(y-py)*(y-py) < rad*rad
+}
+func hit(p *Player, damage float64, pierce bool, now float64) {
+	if !p.Alive {
+		return
+	}
+	if !pierce && now < p.ShieldUntil {
+		absorbed := math.Min(p.Shield, damage)
+		p.Shield -= absorbed
+		damage -= absorbed
+	}
+	p.HP = math.Max(0, p.HP-damage)
+	if p.HP <= 0 {
+		p.Alive = false
+	}
+}
+func (a *Arena) tick(dt float64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	now := float64(time.Now().UnixNano()) / 1e9
+	for _, room := range a.rooms {
+		if room.Phase != "playing" {
+			continue
+		}
+		zone := room.zone()
+		radius := zone["r"]
+		obs := make([]Obstacle, 0, len(room.Obstacles))
+		for _, o := range room.Obstacles {
+			if room.elapsed() < o.Expires {
+				obs = append(obs, o)
+			}
+		}
+		for _, p := range room.Players {
+			if !p.Alive {
+				continue
+			}
+			dx, dy := 0.0, 0.0
+			if p.Keys["d"] {
+				dx++
+			}
+			if p.Keys["a"] {
+				dx--
+			}
+			if p.Keys["s"] {
+				dy++
+			}
+			if p.Keys["w"] {
+				dy--
+			}
+			mag := math.Hypot(dx, dy)
+			if mag == 0 {
+				mag = 1
+			}
+			nx := bound(p.X+dx/mag*215*dt, 22, W-22)
+			collide := false
+			for _, o := range obs {
+				if circleRect(nx, p.Y, 20, o) {
+					collide = true
+					break
+				}
+			}
+			if !collide {
+				p.X = nx
+			}
+			ny := bound(p.Y+dy/mag*215*dt, 22, H-22)
+			collide = false
+			for _, o := range obs {
+				if circleRect(p.X, ny, 20, o) {
+					collide = true
+					break
+				}
+			}
+			if !collide {
+				p.Y = ny
+			}
+			if dist(p.X, p.Y, W/2, H/2) > radius {
+				hit(p, 32*dt, true, now)
+			}
+			if !p.Alive || !p.Fire || len(p.Slots) != 5 {
+				continue
+			}
+			slot := p.Slots[p.Selected]
+			kind, n := slot.Kind, slot.N
+			if now < p.Last[p.Selected] {
+				continue
+			}
+			switch kind {
+			case "attack", "pierce", "homing":
+				speed := 420.0
+				if kind == "pierce" {
+					speed = 480
+				} else if kind == "homing" {
+					speed = 350
+				}
+				a := p.Aim
+				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: float64(n * 6), TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
+				if kind == "homing" {
+					room.Bullets[len(room.Bullets)-1].TTL = 4.8
+				}
+			case "defense":
+				p.Shield = float64(n * 6)
+				p.ShieldUntil = now + 1.8
+				p.GuardSlot = p.Selected
+			case "heal":
+				p.HP = math.Min(600, p.HP+float64(n*4))
+			}
+			p.Last[p.Selected] = now + slotCooldown(kind, n)
+			p.Casts++
+			p.ActionSerial++
+			p.LastKind = kind
+		}
+		newBullets := make([]Bullet, 0, len(room.Bullets))
+		for _, b := range room.Bullets {
+			if b.Homing {
+				var target *Player
+				best := math.MaxFloat64
+				for _, p := range room.Players {
+					if p.ID == b.Owner || !p.Alive {
+						continue
+					}
+					d := (p.X-b.X)*(p.X-b.X) + (p.Y-b.Y)*(p.Y-b.Y)
+					if d < best {
+						best = d
+						target = p
+					}
+				}
+				if target != nil {
+					old := math.Atan2(b.VY, b.VX)
+					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
+					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
+					angle := old + bound(delta, -3.6*dt, 3.6*dt)
+					b.VX = 350 * math.Cos(angle)
+					b.VY = 350 * math.Sin(angle)
+				}
+			}
+			b.X += b.VX * dt
+			b.Y += b.VY * dt
+			b.TTL -= dt
+			if b.TTL <= 0 || b.X < 0 || b.X > W || b.Y < 0 || b.Y > H {
+				continue
+			}
+			if !b.Pierce {
+				collide := false
+				for _, o := range obs {
+					if circleRect(b.X, b.Y, 7, o) {
+						collide = true
+						break
+					}
+				}
+				if collide {
+					continue
+				}
+			}
+			struck := false
+			for _, p := range room.Players {
+				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < 30 {
+					hit(p, b.Damage, b.Pierce, now)
+					struck = true
+					break
+				}
+			}
+			if !struck {
+				newBullets = append(newBullets, b)
+			}
+		}
+		if len(newBullets) > 400 {
+			newBullets = newBullets[len(newBullets)-400:]
+		}
+		room.Bullets = newBullets
+		alive := 0
+		winner := ""
+		for _, p := range room.Players {
+			if p.Alive {
+				alive++
+				winner = p.ID
+			}
+		}
+		if alive <= 1 {
+			room.Phase = "ended"
+			room.Winner = winner
+			room.Message = "勝者決定"
+		}
+		room.broadcast()
+	}
+}
+func (a *Arena) simulation(ctx context.Context) {
+	ticker := time.NewTicker(time.Second / 30)
+	defer ticker.Stop()
+	last := time.Now()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			now := time.Now()
+			dt := bound(now.Sub(last).Seconds(), 0, .065)
+			last = now
+			a.tick(dt)
+		}
+	}
+}
+
+// WebSocket server, RFC6455, with no external runtime or dependencies.
+func websocketKey(key string) string {
+	h := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+	return base64.StdEncoding.EncodeToString(h[:])
+}
+func (c *Client) writeFrame(op byte, payload []byte) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	if len(payload) > 0x7fffffff {
+		return errors.New("frame exceeds limit")
+	}
+	header := []byte{0x80 | op, 0}
+	if len(payload) < 126 {
+		header[1] = byte(len(payload))
+	} else if len(payload) < 65536 {
+		header[1] = 126
+		header = append(header, byte(len(payload)>>8), byte(len(payload)))
+	} else {
+		header[1] = 127
+		wide := make([]byte, 8)
+		binary.BigEndian.PutUint64(wide, uint64(len(payload)))
+		header = append(header, wide...)
+	}
+	_ = c.conn.SetWriteDeadline(time.Now().Add(4 * time.Second))
+	if _, e := c.conn.Write(append(header, payload...)); e != nil {
+		return e
+	}
+	return nil
+}
+func (c *Client) writer() {
+	ticker := time.NewTicker(20 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.done:
+			return
+		case <-ticker.C:
+			if e := c.writeFrame(0x9, []byte("moji")); e != nil {
+				_ = c.conn.Close()
+				return
+			}
+		case data := <-c.send:
+			if e := c.writeFrame(1, data); e != nil {
+				_ = c.conn.Close()
+				return
+			}
+		}
+	}
+}
+func (c *Client) reader() error {
+	for {
+		_ = c.conn.SetReadDeadline(time.Now().Add(120 * time.Second))
+		a, e := c.read.ReadByte()
+		if e != nil {
+			return e
+		}
+		b, e := c.read.ReadByte()
+		if e != nil {
+			return e
+		}
+		op := a & 0x0f
+		masked := b&0x80 != 0
+		size := uint64(b & 0x7f)
+		if size == 126 {
+			two := make([]byte, 2)
+			if _, e = io.ReadFull(c.read, two); e != nil {
+				return e
+			}
+			size = uint64(binary.BigEndian.Uint16(two))
+		}
+		if size == 127 {
+			eight := make([]byte, 8)
+			if _, e = io.ReadFull(c.read, eight); e != nil {
+				return e
+			}
+			size = binary.BigEndian.Uint64(eight)
+		}
+		if !masked || size > 60000 {
+			return errors.New("client frame invalid or oversized")
+		}
+		var mask [4]byte
+		if _, e = io.ReadFull(c.read, mask[:]); e != nil {
+			return e
+		}
+		payload := make([]byte, size)
+		if _, e = io.ReadFull(c.read, payload); e != nil {
+			return e
+		}
+		for i := range payload {
+			payload[i] ^= mask[i%4]
+		}
+		switch op {
+		case 0x1:
+			arena.handle(c, payload)
+		case 0x8:
+			return io.EOF
+		case 0x9:
+			_ = c.writeFrame(0xa, payload)
+		case 0xa:
+		default:
+			if op != 0 {
+				return errors.New("unsupported websocket opcode")
+			}
+		}
+	}
+}
+func websocketHandler(w http.ResponseWriter, r *http.Request) {
+	// Browsers on an unrelated website should not be able to create rooms here.
+	if origin := r.Header.Get("Origin"); origin != "" {
+		parsed, err := url.Parse(origin)
+		if err != nil || (!strings.EqualFold(parsed.Host, r.Host) && !strings.EqualFold(parsed.Host, r.Header.Get("X-Forwarded-Host"))) || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+			http.Error(w, "WebSocket origin not allowed", http.StatusForbidden)
+			return
+		}
+	}
+	if !strings.EqualFold(r.Header.Get("Upgrade"), "websocket") || !strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") || r.Header.Get("Sec-WebSocket-Key") == "" {
+		http.Error(w, "WebSocket upgrade required", 400)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	h, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "upgrade unsupported", 500)
+		return
+	}
+	conn, rw, e := h.Hijack()
+	if e != nil {
+		return
+	}
+	_, e = rw.WriteString("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + websocketKey(r.Header.Get("Sec-WebSocket-Key")) + "\r\n\r\n")
+	if e == nil {
+		e = rw.Flush()
+	}
+	if e != nil {
+		_ = conn.Close()
+		return
+	}
+	c := &Client{conn: conn, read: rw.Reader, send: make(chan []byte, 4), done: make(chan struct{})}
+	go c.writer()
+	_ = c.reader()
+	arena.disconnected(c)
+	c.once.Do(func() { close(c.done) })
+	_ = conn.Close()
+}
+func getLANIP() string {
+	c, e := net.DialTimeout("udp", "192.0.2.1:80", 150*time.Millisecond)
+	if e != nil {
+		return ""
+	}
+	defer c.Close()
+	addr := c.LocalAddr().(*net.UDPAddr)
+	if addr.IP.IsLoopback() {
+		return ""
+	}
+	return addr.IP.String()
+}
+func browserOpen(url string) {
+	switch runtime.GOOS {
+	case "windows":
+		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		_ = exec.Command("open", url).Start()
+	default:
+		_ = exec.Command("xdg-open", url).Start()
+	}
+}
+func getPort(listener net.Listener) int {
+	_, part, _ := net.SplitHostPort(listener.Addr().String())
+	n, _ := strconv.Atoi(part)
+	return n
+}
+func main() {
+	var internet, noBrowser bool
+	var port int
+	flag.BoolVar(&internet, "internet", defaultInternetMode == "true", "Expose via a temporary Cloudflare Quick Tunnel URL")
+	flag.BoolVar(&noBrowser, "no-browser", false, "Do not open the browser automatically")
+	flag.IntVar(&port, "port", 8000, "HTTP/WebSocket port (0 for any free port)")
+	flag.Parse()
+	if env := os.Getenv("PORT"); env != "" && port == 8000 {
+		if n, e := strconv.Atoi(env); e == nil {
+			port = n
+		}
+	}
+	listener, e := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+	if e != nil && os.Getenv("PORT") == "" {
+		log.Printf("ポート %d が使用中: %v。空きポートを試します。", port, e)
+		listener, e = net.Listen("tcp", "0.0.0.0:0")
+	}
+	if e != nil {
+		log.Fatal("サーバーの起動に失敗しました:", e)
+	}
+	actual := getPort(listener)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	go arena.simulation(ctx)
+	files, e := fs.Sub(gameFiles, "public")
+	if e != nil {
+		log.Fatal(e)
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/ws", http.HandlerFunc(websocketHandler))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		arena.mu.Lock()
+		count := len(arena.rooms)
+		arena.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "6.4", "rooms": count})
+	})
+	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"ip": getLANIP()})
+	})
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, ".html") {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		http.FileServer(http.FS(files)).ServeHTTP(w, r)
+	}))
+	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 8 * time.Second}
+	go func() {
+		if e := srv.Serve(listener); e != nil && e != http.ErrServerClosed {
+			log.Print("サーバー停止:", e)
+		}
+	}()
+	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
+	fmt.Println("\n===============================================")
+	fmt.Println("  文字武装 v6.4 / Python不要")
+	fmt.Println("  ローカル: " + localURL)
+	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
+	fmt.Print("===============================================\n\n")
+	if internet {
+		tunnelURL, e := startTunnel(ctx, actual)
+		if e != nil {
+			log.Println("公開URL発行失敗:", e, "\nローカル対戦は引き続き利用できます。")
+			if !noBrowser {
+				browserOpen(localURL)
+			}
+		} else {
+			fmt.Println("\n★ 別Wi-Fi用の公開ゲームURL: " + tunnelURL + "\n★ 友達にはゲーム内の招待リンクを送ります。\n★ このウィンドウを閉じると公開終了です。\n")
+			if !noBrowser {
+				browserOpen(tunnelURL)
+			}
+		}
+	} else if !noBrowser {
+		browserOpen(localURL)
+	}
+	// Keep the browser server and optional tunnel alive until Ctrl+C or console close.
+	<-ctx.Done()
+	_ = srv.Shutdown(context.Background())
+}
+
+// Tunnel launch is implemented in tunnel.go. The game itself never requires Python.
+var _ = filepath.Separator
+var defaultInternetMode = "false"
