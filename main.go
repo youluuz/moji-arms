@@ -1225,6 +1225,12 @@ func mobilePatchedIndex(source string) string {
 	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
 	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2100")
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1200")
+	// Keep CPU spawn and collision-safe obstacle generation centered in the
+	// expanded arena. The large CPU HTML contains these legacy literals.
+	source = regexp.MustCompile(`\b1150\b`).ReplaceAllString(source, "1300")
+	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:755,y:600")
+	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1345,y:600")
+	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(755,600)||near(1345,600)")
 	return strings.Replace(source, "</head>", additions+"</head>", 1)
 }
 func main() {
