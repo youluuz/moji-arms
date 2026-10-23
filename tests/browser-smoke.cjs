@@ -100,6 +100,33 @@ const { chromium } = require('playwright');
    await page.locator('#retreat').click();
    await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
   }
+
+  // Real parent-page regression: the online iframe must cover the FULL CPU battle viewport,
+  // not retain the lobby's small embedded frame. Test portrait AND landscape.
+  await page.evaluate(()=>{
+   const iframe=document.createElement('iframe');
+   iframe.id='fullscreenParityCheck';iframe.src='/multiplayer.html?embedded=1';
+   iframe.style.cssText='width:270px;height:200px;border:2px solid red';
+   document.body.appendChild(iframe);
+  });
+  const embedded=await page.waitForEvent('framenavigated',{predicate:f=>f.url().includes('/multiplayer.html?embedded=1'),timeout:15000}).catch(()=>page.frames().find(f=>f.url().includes('/multiplayer.html?embedded=1')));
+  if(!embedded)throw Error('embedded multiplayer test frame did not load');
+  await embedded.evaluate(()=>parent.postMessage({type:'moji:embeddedBattle',active:true},location.origin));
+  await page.waitForFunction(()=>Math.abs(document.getElementById('fullscreenParityCheck').getBoundingClientRect().width-innerWidth)<4,{timeout:9000});
+  await page.setViewportSize({width:844,height:390});
+  await page.waitForFunction(()=>Math.abs(document.getElementById('fullscreenParityCheck').getBoundingClientRect().height-innerHeight)<4,{timeout:9000});
+  const full=await page.evaluate(()=>{
+   const r=document.getElementById('fullscreenParityCheck').getBoundingClientRect();
+   return {width:r.width,height:r.height,viewportW:innerWidth,viewportH:innerHeight};
+  });
+  if(Math.abs(full.width-full.viewportW)>4||Math.abs(full.height-full.viewportH)>4)
+   throw Error('embedded PvP cannot fill phone landscape '+JSON.stringify(full));
+  await embedded.evaluate(()=>parent.postMessage({type:'moji:embeddedBattle',active:false},location.origin));
+  await page.waitForFunction(()=>document.getElementById('fullscreenParityCheck').getBoundingClientRect().width<400,{timeout:9000});
+  await page.evaluate(()=>document.getElementById('fullscreenParityCheck').remove());
+  await page.setViewportSize({width:390,height:844});
+  console.log('Shared lobby iframe fullscreen bridge verified on mobile portrait and landscape.');
+
   console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
