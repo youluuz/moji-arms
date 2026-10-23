@@ -1,4 +1,4 @@
-// 文字武装 GLYPH STRIKE v6.7: online arena with Unicode glyphs and mobile tap-to-cast.
+// 文字武装 GLYPH STRIKE v7.0: mobile multi-touch control and arena server.
 // No third-party Go modules are needed; go build works offline.
 package main
 
@@ -1113,6 +1113,13 @@ func getPort(listener net.Listener) int {
 	n, _ := strconv.Atoi(part)
 	return n
 }
+// The legacy CPU lobby is an embedded large HTML page. Inject small shared fixes
+// on the server so the same improvements reach / and /index.html without rewriting
+// the original multi-megabyte single-file game or losing existing assets.
+func mobilePatchedIndex(source string) string {
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><script defer src="/mobile-input-v70.js"></script>`
+	return strings.Replace(source, "</head>", additions+"</head>", 1)
+}
 func main() {
 	var internet, noBrowser bool
 	var port int
@@ -1141,6 +1148,10 @@ func main() {
 	if e != nil {
 		log.Fatal(e)
 	}
+	originalIndex, e := gameFiles.ReadFile("public/index.html")
+	if e != nil { log.Fatal("CPU lobby could not load:", e) }
+	mobileIndex := mobilePatchedIndex(string(originalIndex))
+	if mobileIndex == string(originalIndex) { log.Fatal("CPU lobby HTML has no </head> injection point") }
 	mux := http.NewServeMux()
 	mux.Handle("/ws", http.HandlerFunc(websocketHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -1148,14 +1159,20 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "6.5", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.0", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"ip": getLANIP()})
 	})
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" || strings.HasSuffix(r.URL.Path, ".html") {
+		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			http.ServeContent(w, r, "index.html", time.Time{}, strings.NewReader(mobileIndex))
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, ".html") {
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 		http.FileServer(http.FS(files)).ServeHTTP(w, r)
@@ -1168,7 +1185,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v6.5 / Python不要")
+	fmt.Println("  文字武装 v7.0 / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")
