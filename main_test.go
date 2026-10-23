@@ -80,7 +80,7 @@ func TestObstacleSpawnSafety(t *testing.T) {
 	}
 }
 
-func TestNormalSlotsRequireKanji(t *testing.T) {
+func TestNormalSlotsAllowSingleGrapheme(t *testing.T) {
 	slots := []Slot{
 		{Ch: "火", Kind: "attack", N: strokes("火")},
 		{Ch: "水", Kind: "defense", N: strokes("水")},
@@ -91,12 +91,15 @@ func TestNormalSlotsRequireKanji(t *testing.T) {
 	if !validSlots(slots, false) {
 		t.Fatal("normal loadout must accept five kanji")
 	}
-	slots[0] = Slot{Ch: "A", Kind: "attack", N: 3}
-	if validSlots(slots, false) {
-		t.Fatal("normal match accepted non-kanji")
+	slots[0] = Slot{Ch: "🔥", Kind: "attack", N: strokes("🔥")}
+	slots[1] = Slot{Ch: "A", Kind: "defense", N: strokes("A")}
+	slots[2] = Slot{Ch: "👩‍🚀", Kind: "heal", N: strokes("👩‍🚀")}
+	if !validSlots(slots, false) {
+		t.Fatal("normal match must allow emoji and single Latin glyphs")
 	}
-	if !validSlots(slots, true) {
-		t.Fatal("custom match should still accept arbitrary single glyphs")
+	slots[0] = Slot{Ch: "AB", Kind: "attack", N: 3}
+	if validSlots(slots, false) || validSlots(slots, true) {
+		t.Fatal("multi-glyph text must not be treated as one slot")
 	}
 }
 
@@ -136,7 +139,7 @@ func TestPublicMatchWaitsForHostStart(t *testing.T) {
 	// A malformed player must not destroy another player's existing public lobby.
 	bad := &Client{send: make(chan []byte, 32)}
 	badPayload, _ := json.Marshal(map[string]any{
-		"type": "match", "mode": "normal", "ch": "A", "slots": slots,
+		"type": "match", "mode": "normal", "ch": "AB", "slots": slots,
 	})
 	a.handle(bad, badPayload)
 	if bad.room != nil || len(a.rooms) != 1 || len(room.Players) != 2 {
@@ -149,5 +152,15 @@ func TestPublicMatchWaitsForHostStart(t *testing.T) {
 	a.handle(first, []byte(`{"type":"start"}`))
 	if room.Phase != "playing" {
 		t.Fatal("host could not manually start the public match")
+	}
+	// Mobile taps must survive 50ms keyboard-state updates and use the targeted slot.
+	a.handle(first, []byte(`{"type":"cast","selected":4,"aim":1.25}`))
+	a.handle(first, []byte(`{"type":"input","selected":0,"aim":0,"fire":false,"keys":[]}`))
+	a.tick(1.0 / 30)
+	if room.Players[0].Casts != 1 || room.Players[0].LastKind != "homing" {
+		t.Fatal("tap cast was lost or cast the wrong equipped slot")
+	}
+	if math.Abs(room.Players[0].Aim-1.25) > 0.00001 {
+		t.Fatal("one-shot cast used the wrong target angle")
 	}
 }
