@@ -119,8 +119,8 @@ function randomKanjiPool(){return window.MojiRandom.all()}
 function randomEmojiPool(){return ['🔥','⚡','🌸','🛡️','👻','🐉','💥','🌊','❄️','🌙','⭐','💫','🌈','🦊','⚔️','💎','🍀','🎯','🚀','🌀','💖','☄️']}
 function rollOnlineGlyph(i,pool,used){
  const input=$( 'onlineGlyph'+i );if(!input)return false;
- const candidates=pool.filter(ch=>!used.has(ch));if(!candidates.length)return false;
- const ch=candidates[Math.floor(Math.random()*candidates.length)];
+ const ch=pool===window.MojiRandom.all()?window.MojiRandom.roll(used):pool.filter(ch=>!used.has(ch))[Math.floor(Math.random()*pool.filter(ch=>!used.has(ch)).length)];
+ if(!ch)return false;
  input.value=ch;used.add(ch);
  const count=input.closest('.online-slot').querySelector('.slot-strokes');
  count.value=strokeForGlyph(ch);return true;
