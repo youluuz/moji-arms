@@ -1184,7 +1184,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><script defer src="/mobile-input-v70.js"></script>`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script>`
 	return strings.Replace(source, "</head>", additions+"</head>", 1)
 }
 func main() {
