@@ -397,7 +397,7 @@ else {const auto=new URLSearchParams(location.search).get('auto');if(auto==='cre
  if(savedLoadout)setTimeout(()=>connect(auto),80);
  else $('error').textContent='武装5枠を設定してから参加してください。';
 }}
-else if(new URLSearchParams(location.search).get('auto')==='match'){$('joinArea').querySelector('h2').textContent='ランダムマッチで参加';if(savedLoadout)setTimeout(()=>connect('match'),80);else $('error').textContent='先に5枠すべての文字を入力してください。';}
+
 $('begin').onclick=()=>send({type:'start'});$('leave').onclick=$('return').onclick=onlineReturnToLobby;// Slot selection uses event delegation because the server refreshes the cards every tick.
 function chooseOnlineSlot(card){
  if(!card||window.MojiUltMulti?.locked())return;
