@@ -158,6 +158,8 @@ type Player struct {
 	X, Y, HP, Shield    float64
 	Alive, Ready, Fire  bool
 	CastPending         bool
+	PendingSelected     int
+	PendingAim          float64
 	ShieldUntil         float64
 	Slots               []Slot
 	Selected            int
@@ -551,8 +553,8 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		parseInput(m, "selected", &selected)
 		parseInput(m, "aim", &castAim)
 		if selected < 0 || selected >= len(p.Slots) || math.IsNaN(castAim) || math.IsInf(castAim, 0) { return }
-		p.Selected = selected
-		p.Aim = castAim
+		p.PendingSelected = selected
+		p.PendingAim = castAim
 		p.CastPending = true
 	case "input":
 		if room.Phase != "playing" || !p.Alive {
@@ -712,6 +714,7 @@ func (a *Arena) tick(dt float64) {
 			}
 			castNow := p.CastPending
 			p.CastPending = false
+			if castNow { p.Selected = p.PendingSelected; p.Aim = p.PendingAim }
 			if !p.Alive || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
