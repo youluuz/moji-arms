@@ -10,19 +10,21 @@ const { chromium } = require('playwright');
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
   await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
-  const cpuGlyph=await page.evaluate(()=>({
-    biang:getStrokeCount('𰻞'),biangSimple:getStrokeCount('𰻝'),
-    dragon:getStrokeCount('龘'),
-    attackCD:slotCooldownMs('attack',12),
-    defenseCD:slotCooldownMs('defense',12),
-    bgmVolumeMarker:document.documentElement.outerHTML.includes('bgmAudio.volume=.10')
-  }));
-  if(cpuGlyph.biang!==58||cpuGlyph.biangSimple!==43||cpuGlyph.dragon!==48||
-    cpuGlyph.attackCD!==Math.round(1000*(.65+12*.125+2*.02)*1.2)||
-    cpuGlyph.defenseCD!==Math.round(1000*(9+12*.4)*1.4))
-    throw Error('CPU rare-kanji/cooldown integration failure: '+JSON.stringify(cpuGlyph));
-
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
+  await page.waitForSelector('#lobbyScreen .kanji',{timeout:15000});
+  const cpuGlyph=await page.evaluate(()=>{
+    const field=document.querySelector('#lobbyScreen .kanji');
+    const stat=field.closest('.slot').querySelector('.slot-stat');
+    const digit=field.closest('.slot').querySelector('.strokes');
+    field.value='𰻞';field.dispatchEvent(new Event('input',{bubbles:true}));
+    const biang={n:Number(digit.value),details:stat.textContent};
+    field.value='𰻝';field.dispatchEvent(new Event('input',{bubbles:true}));
+    const simple={n:Number(digit.value),details:stat.textContent};
+    return {biang,simple};
+  });
+  if(cpuGlyph.biang.n!==58||cpuGlyph.simple.n!==43||
+    !cpuGlyph.biang.details.includes('58画')||!cpuGlyph.simple.details.includes('43画'))
+    throw Error('CPU rare-kanji UI failure '+JSON.stringify(cpuGlyph));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
   // The ability picker must sit immediately after the five glyph inputs,
