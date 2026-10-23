@@ -309,7 +309,7 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
    t.Run(mode+"_"+kind,func(t *testing.T){
     c:=&Client{send:make(chan []byte,12),pid:"p"}
     p:=&Player{ID:"p",C:c,Alive:true,HP:600,X:900,Y:500,Ultimate:kind,UltimateCharge:float64(ultimateCost(kind)),Keys:map[string]bool{}}
-    other:=&Player{ID:"q",Alive:true,HP:600,X:970,Y:500,Keys:map[string]bool{}}
+    other:=&Player{ID:"q",C:&Client{send:make(chan []byte,12)},Alive:true,HP:600,X:970,Y:500,Keys:map[string]bool{}}
     room:=&Room{Code:"MODE",Phase:"playing",Mode:mode,Theme:"night",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,other}}
     c.room=room
     arena:=&Arena{rooms:map[string]*Room{"MODE":room}}
