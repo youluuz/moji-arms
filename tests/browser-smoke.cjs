@@ -65,7 +65,7 @@ const { chromium } = require('playwright');
      corners:obstacles.filter(o=>o.__arenaLArm).length,
      player:{x:player.x,y:player.y},enemy:{x:enemy.x,y:enemy.y}
    }));
-   if(cover.width!==2100||cover.height!==1200||cover.corners<1)
+   if(cover.width!==2300||cover.height!==1300||cover.corners<1)
      throw Error(mode+' CPU arena/corner cover mismatch: '+JSON.stringify(cover));
    if(cover.player.x<0||cover.enemy.x>cover.width||cover.player.y<0||cover.enemy.y>cover.height)
      throw Error(mode+' CPU spawn outside arena');
