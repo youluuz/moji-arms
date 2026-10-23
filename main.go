@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"log"
 	"math"
+	"regexp"
 	mathrand "math/rand"
 	"net"
 	"net/http"
@@ -40,7 +41,7 @@ import (
 var gameFiles embed.FS
 var dictionary map[string]int
 
-const W, H = 1800.0, 1050.0
+const W, H = 2100.0, 1200.0
 const maxRooms = 150
 
 func init() {
@@ -300,10 +301,10 @@ func (r *Room) elapsed() float64 {
 	return time.Since(r.Started).Seconds() * 1000
 }
 func (r *Room) zone() map[string]float64 {
-	rad := 1150.0
+	rad := 1300.0
 	switch r.Shrink {
 	case "none":
-		rad = 1150
+		rad = 1300
 	case "instant":
 		rad = 180
 	default:
@@ -313,7 +314,7 @@ func (r *Room) zone() map[string]float64 {
 		} else if r.Shrink == "fast" {
 			seconds = 70
 		}
-		rad = math.Max(180, 1150-970*math.Min(1, r.elapsed()/1000/seconds))
+		rad = math.Max(180, 1300-1120*math.Min(1, r.elapsed()/1000/seconds))
 	}
 	return map[string]float64{"x": W / 2, "y": H / 2, "r": rad}
 }
@@ -404,14 +405,19 @@ func validSlots(values []Slot, custom bool) bool {
 	}
 	return true
 }
+// L-shaped cover is represented by two ordinary wall rectangles. The same
+// circleRect collision handles movement, bullets and the online minimap.
 func newObstacles(theme string) []Obstacle {
 	kinds := map[string][]string{"shrine": {"stone", "gate", "pillar"}, "sakura": {"hedge", "fence", "lantern"}, "night": {"wall", "barrier", "crystal"}}[theme]
-	out := make([]Obstacle, 0, 14)
-	for attempts := 0; len(out) < 14 && attempts < 650; attempts++ {
-		style := kinds[len(out)%3]
-		vertical := mathrand.Float64() < .52
+	if len(kinds) == 0 {
+		kinds = []string{"wall", "barrier", "crystal"}
+	}
+	out := make([]Obstacle, 0, 22)
+	for groups, attempts := 0, 0; groups < 16 && attempts < 1000; attempts++ {
+		style := kinds[groups%len(kinds)]
+		corner := groups%4 == 1 // Four L-shaped structures per arena.
 		wid, hei := 110.0+mathrand.Float64()*125, 40.0+mathrand.Float64()*38
-		if vertical {
+		if mathrand.Float64() < .52 {
 			wid = 42 + mathrand.Float64()*40
 			hei = 110 + mathrand.Float64()*140
 		}
@@ -419,39 +425,65 @@ func newObstacles(theme string) []Obstacle {
 			wid = 65 + mathrand.Float64()*23
 			hei = wid
 		}
+		if corner {
+			wid = 175 + mathrand.Float64()*75
+			hei = 165 + mathrand.Float64()*70
+		}
 		x := 105 + mathrand.Float64()*(W-wid-210)
 		y := 105 + mathrand.Float64()*(H-hei-210)
-		if dist(x+wid/2, y+hei/2, W/2, H/2) < 235 {
-			continue
+		parts := []Obstacle{{X: x, Y: y, W: wid, H: hei}}
+		if corner {
+			thickness := 43 + mathrand.Float64()*17
+			orientation := mathrand.Intn(4)
+			wallY, wallX := y, x
+			if orientation >= 2 {
+				wallY = y + hei - thickness
+			}
+			if orientation%2 == 1 {
+				wallX = x + wid - thickness
+			}
+			parts = []Obstacle{
+				{X: x, Y: wallY, W: wid, H: thickness},
+				{X: wallX, Y: y, W: thickness, H: hei},
+			}
 		}
-		// Do not place a wall over a possible player's starting point.
-		// Both standard and custom games use 2–10 players, with an ellipse for spawns.
-		blockedSpawn := false
-		for participants := 2; participants <= 10 && !blockedSpawn; participants++ {
-			for index := 0; index < participants; index++ {
-				a := 2 * math.Pi * float64(index) / float64(participants)
-				px := W/2 + 360*math.Cos(a)
-				py := H/2 + 290*math.Sin(a)
-				if circleRect(px, py, 38, Obstacle{X: x, Y: y, W: wid, H: hei}) {
-					blockedSpawn = true
+		blocked := false
+		for _, part := range parts {
+			// Reserve room near the center and every possible 2-10 player
+			// starting position, including custom mode and instant shrink.
+			if circleRect(W/2, H/2, 235, part) {
+				blocked = true
+				break
+			}
+			for participants := 2; participants <= 10 && !blocked; participants++ {
+				for index := 0; index < participants; index++ {
+					angle := 2 * math.Pi * float64(index) / float64(participants)
+					px := W/2 + 360*math.Cos(angle)
+					py := H/2 + 290*math.Sin(angle)
+					if circleRect(px, py, 38, part) {
+						blocked = true
+						break
+					}
+				}
+			}
+			for _, old := range out {
+				if part.X < old.X+old.W+65 && part.X+part.W > old.X-65 &&
+					part.Y < old.Y+old.H+65 && part.Y+part.H > old.Y-65 {
+					blocked = true
 					break
 				}
 			}
 		}
-		if blockedSpawn {
+		if blocked {
 			continue
 		}
-		overlap := false
-		for _, o := range out {
-			if x < o.X+o.W+65 && x+wid > o.X-65 && y < o.Y+o.H+65 && y+hei > o.Y-65 {
-				overlap = true
-				break
-			}
+		expires := (43 + float64(groups)*4.6 + mathrand.Float64()*3) * 1000
+		for _, part := range parts {
+			part.Style = style
+			part.Expires = expires
+			out = append(out, part)
 		}
-		if overlap {
-			continue
-		}
-		out = append(out, Obstacle{X: x, Y: y, W: wid, H: hei, Style: style, Expires: (43 + float64(len(out))*4.6 + mathrand.Float64()*3) * 1000})
+		groups++
 	}
 	return out
 }
@@ -1185,10 +1217,20 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script>`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script><script defer src="/arena-expansion-v72.js"></script>`
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// Smaller kanji keep their usual rhythm; >10 strokes gain 20ms per extra stroke.
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
+	// Keep the large legacy CPU game in sync with the shared arena dimensions.
+	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
+	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2100")
+	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1200")
+	// Keep CPU spawn and collision-safe obstacle generation centered in the
+	// expanded arena. The large CPU HTML contains these legacy literals.
+	source = regexp.MustCompile(`\b1150\b`).ReplaceAllString(source, "1300")
+	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:755,y:600")
+	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1345,y:600")
+	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(755,600)||near(1345,600)")
 	return strings.Replace(source, "</head>", additions+"</head>", 1)
 }
 func main() {
@@ -1230,7 +1272,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.1", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.2", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1256,7 +1298,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v7.0 / Python不要")
+	fmt.Println("  文字武装 v7.2 / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")

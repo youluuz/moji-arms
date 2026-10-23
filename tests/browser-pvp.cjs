@@ -41,6 +41,14 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const st=await page.evaluate(()=>({id:myId,all:roomState.players.map(p=>({id:p.id,ultimate:p.ultimate,charge:p.ultimateCharge}))}));
      if(!st.all.every(p=>p.ultimate==='roman'&&p.charge===0))throw Error(mode+': ultimate state mismatch '+JSON.stringify(st));
     }
+    const terrain=await host.evaluate(()=>({
+      parts:roomState.obstacles.length,
+      pairs:roomState.obstacles.filter((o,i,all)=>all.some((p,j)=>i!==j && o.expires===p.expires)).length/2,
+      center:roomState.zone
+    }));
+    if(terrain.parts!==20||terrain.pairs!==4||
+       terrain.center.x!==1050||terrain.center.y!==600||terrain.center.r<1200)
+      throw Error(mode+': arena/L-cover mismatch '+JSON.stringify(terrain));
     // A real tap-cast must accrue automatic stroke units on the server.
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
     await host.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge>0,{timeout:15000});
