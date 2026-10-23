@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: moji-arms-online
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 10000
