@@ -243,7 +243,7 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
-	if !strings.Contains(served, "cpuView.w=aspect<1?670:1130") || !strings.Contains(html, "view.w=aspect<1?670:1130") { t.Fatal("battle cameras must use the wider view in all modes") }
+	if !strings.Contains(served, "cpuView.w=aspect<1?730:1250") || !strings.Contains(html, "view.w=aspect<1?730:1250") { t.Fatal("battle cameras must use the wider view in all modes") }
 	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") || !strings.Contains(served, "/arena-expansion-v72.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
