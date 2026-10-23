@@ -62,3 +62,5 @@ jobs:
         run: node tests/browser-smoke.cjs
       - name: Test real two-player online normal and custom matches
         run: node tests/browser-pvp.cjs
+      - name: Test embedded online match in mobile portrait and landscape
+        run: node tests/browser-embedded-pvp.cjs
