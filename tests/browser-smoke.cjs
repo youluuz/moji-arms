@@ -20,6 +20,19 @@ const { chromium } = require('playwright');
   await page.locator('#loadoutPanel [data-ultimate=namepu]').click({force:true});
   const chosen=await page.evaluate(()=>localStorage.getItem('moji_ultimate_choice'));
   if(chosen!=='namepu')throw Error('CPU skill picker not persisted');
+  for(const mode of ['normal','custom']){
+   await page.locator('#modeSelect').selectOption(mode);
+   await page.locator('#shuffleLoadout').click();
+   await page.locator('#start').click();
+   await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
+   await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
+   if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
+   if(!await page.locator('#gameScreen .ultimate-cast').isVisible())throw Error(mode+' CPU ultimate icon is not visible');
+   if(errors.length)throw Error(mode+' CPU match JS errors: '+errors.join('; '));
+   await page.locator('#retreat').click();
+   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
+  }
+  console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
   const multiplayer=await page.goto(base+'/multiplayer.html?embedded=1',{waitUntil:'domcontentloaded',timeout:45000});
