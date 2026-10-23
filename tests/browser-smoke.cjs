@@ -12,6 +12,15 @@ const { chromium } = require('playwright');
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
+  // The ability picker must sit immediately after the five glyph inputs,
+  // not below unrelated lobby settings and action buttons.
+  const soloPosition=await page.evaluate(()=>{
+   const editor=document.getElementById('setup'),picker=editor?.nextElementSibling;
+   return Boolean(editor?.querySelectorAll('input.kanji').length===5 &&
+    picker?.classList.contains('ultimate-widget') &&
+    picker.querySelectorAll('.ultimate-option').length===6);
+  });
+  if(!soloPosition)throw Error('CPU ultimate picker must appear directly below five character slots');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
   if(JSON.stringify(types)!==JSON.stringify([['roman',360],['slow',320],['invincible',340],['dance',340],['invisible',300],['namepu',220]]))throw Error('shared specs mismatch');
@@ -50,6 +59,13 @@ const { chromium } = require('playwright');
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
   if(await page.locator('#joinArea .ultimate-option').count()!==6)throw Error('online must present identical six ultimates');
+  const onlinePosition=await page.evaluate(()=>{
+   const editor=document.querySelector('#joinArea .online-loadout'),picker=editor?.nextElementSibling;
+   return Boolean(editor?.querySelectorAll('#onlineSlots input.online-glyph-input').length===5 &&
+    picker?.classList.contains('ultimate-widget') &&
+    picker.querySelectorAll('.ultimate-option').length===6);
+  });
+  if(!onlinePosition)throw Error('online ultimate picker must appear just below five-character selection section');
   if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='namepu')throw Error('solo/online ultimate choice not shared');
   await page.locator('#joinArea [data-ultimate=roman]').click();
   if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='roman')throw Error('online picker failed');
