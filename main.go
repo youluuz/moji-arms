@@ -1,4 +1,4 @@
-// 文字武装 GLYPH STRIKE v7.0: mobile multi-touch control and arena server.
+// 文字武装 GLYPH STRIKE v7.3: mobile multi-touch control and arena server.
 // No third-party Go modules are needed; go build works offline.
 package main
 
@@ -41,7 +41,7 @@ import (
 var gameFiles embed.FS
 var dictionary map[string]int
 
-const W, H = 2100.0, 1200.0
+const W, H = 2300.0, 1300.0
 const maxRooms = 150
 
 func init() {
@@ -301,10 +301,10 @@ func (r *Room) elapsed() float64 {
 	return time.Since(r.Started).Seconds() * 1000
 }
 func (r *Room) zone() map[string]float64 {
-	rad := 1300.0
+	rad := 1350.0
 	switch r.Shrink {
 	case "none":
-		rad = 1300
+		rad = 1350
 	case "instant":
 		rad = 180
 	default:
@@ -314,7 +314,7 @@ func (r *Room) zone() map[string]float64 {
 		} else if r.Shrink == "fast" {
 			seconds = 70
 		}
-		rad = math.Max(180, 1300-1120*math.Min(1, r.elapsed()/1000/seconds))
+		rad = math.Max(180, 1350-1170*math.Min(1, r.elapsed()/1000/seconds))
 	}
 	return map[string]float64{"x": W / 2, "y": H / 2, "r": rad}
 }
@@ -405,17 +405,57 @@ func validSlots(values []Slot, custom bool) bool {
 	}
 	return true
 }
-// L-shaped cover is represented by two ordinary wall rectangles. The same
-// circleRect collision handles movement, bullets and the online minimap.
+// Each structure is composed of ordinary rectangles, so existing movement,
+// projectile collision, wall rendering and minimap logic work for L, T and U cover.
+func obstacleParts(layout string, x, y, w, h, t float64, orientation int) []Obstacle {
+	rect := func(x, y, w, h float64) Obstacle {
+		return Obstacle{X:x, Y:y, W:w, H:h}
+	}
+	switch layout {
+	case "L":
+		barY, columnX := y, x
+		if orientation >= 2 { barY = y + h - t }
+		if orientation%2 == 1 { columnX = x + w - t }
+		return []Obstacle{rect(x,barY,w,t), rect(columnX,y,t,h)}
+	case "T":
+		switch orientation {
+		case 0:
+			return []Obstacle{rect(x,y,w,t),rect(x+w/2-t/2,y,t,h)}
+		case 1:
+			return []Obstacle{rect(x,y,t,h),rect(x,y+h/2-t/2,w,t)}
+		case 2:
+			return []Obstacle{rect(x,y+h-t,w,t),rect(x+w/2-t/2,y,t,h)}
+		default:
+			return []Obstacle{rect(x+w-t,y,t,h),rect(x,y+h/2-t/2,w,t)}
+		}
+	case "U":
+		switch orientation {
+		case 0:
+			return []Obstacle{rect(x,y,w,t),rect(x,y,t,h),rect(x+w-t,y,t,h)}
+		case 1:
+			return []Obstacle{rect(x,y,t,h),rect(x,y,w,t),rect(x,y+h-t,w,t)}
+		case 2:
+			return []Obstacle{rect(x,y+h-t,w,t),rect(x,y,t,h),rect(x+w-t,y,t,h)}
+		default:
+			return []Obstacle{rect(x+w-t,y,t,h),rect(x,y,w,t),rect(x,y+h-t,w,t)}
+		}
+	}
+	return []Obstacle{rect(x,y,w,h)}
+}
 func newObstacles(theme string) []Obstacle {
 	kinds := map[string][]string{"shrine": {"stone", "gate", "pillar"}, "sakura": {"hedge", "fence", "lantern"}, "night": {"wall", "barrier", "crystal"}}[theme]
-	if len(kinds) == 0 {
-		kinds = []string{"wall", "barrier", "crystal"}
-	}
-	out := make([]Obstacle, 0, 22)
-	for groups, attempts := 0, 0; groups < 16 && attempts < 1000; attempts++ {
+	if len(kinds) == 0 { kinds = []string{"wall", "barrier", "crystal"} }
+	out := make([]Obstacle, 0, 28)
+	// 16 structures: straight, L, straight, T, straight, U, repeated.
+	// 2-part and 3-part pieces share an expiry time and disappear together.
+	for groups, attempts := 0, 0; groups < 16 && attempts < 1400; attempts++ {
 		style := kinds[groups%len(kinds)]
-		corner := groups%4 == 1 // Four L-shaped structures per arena.
+		layout := ""
+		switch groups%6 {
+		case 1: layout = "L"
+		case 3: layout = "T"
+		case 5: layout = "U"
+		}
 		wid, hei := 110.0+mathrand.Float64()*125, 40.0+mathrand.Float64()*38
 		if mathrand.Float64() < .52 {
 			wid = 42 + mathrand.Float64()*40
@@ -425,45 +465,28 @@ func newObstacles(theme string) []Obstacle {
 			wid = 65 + mathrand.Float64()*23
 			hei = wid
 		}
-		if corner {
-			wid = 175 + mathrand.Float64()*75
-			hei = 165 + mathrand.Float64()*70
+		if layout != "" {
+			wid = 175 + mathrand.Float64()*80
+			hei = 165 + mathrand.Float64()*75
 		}
 		x := 105 + mathrand.Float64()*(W-wid-210)
 		y := 105 + mathrand.Float64()*(H-hei-210)
-		parts := []Obstacle{{X: x, Y: y, W: wid, H: hei}}
-		if corner {
-			thickness := 43 + mathrand.Float64()*17
-			orientation := mathrand.Intn(4)
-			wallY, wallX := y, x
-			if orientation >= 2 {
-				wallY = y + hei - thickness
-			}
-			if orientation%2 == 1 {
-				wallX = x + wid - thickness
-			}
-			parts = []Obstacle{
-				{X: x, Y: wallY, W: wid, H: thickness},
-				{X: wallX, Y: y, W: thickness, H: hei},
-			}
-		}
+		thickness := 43 + mathrand.Float64()*17
+		parts := obstacleParts(layout,x,y,wid,hei,thickness,mathrand.Intn(4))
 		blocked := false
 		for _, part := range parts {
-			// Reserve room near the center and every possible 2-10 player
-			// starting position, including custom mode and instant shrink.
-			if circleRect(W/2, H/2, 235, part) {
+			if part.X < 65 || part.Y < 65 || part.X+part.W > W-65 || part.Y+part.H > H-65 ||
+				circleRect(W/2,H/2,235,part) {
 				blocked = true
 				break
 			}
+			// Reserve all spawn circles, not only the currently joined players.
 			for participants := 2; participants <= 10 && !blocked; participants++ {
 				for index := 0; index < participants; index++ {
 					angle := 2 * math.Pi * float64(index) / float64(participants)
 					px := W/2 + 360*math.Cos(angle)
 					py := H/2 + 290*math.Sin(angle)
-					if circleRect(px, py, 38, part) {
-						blocked = true
-						break
-					}
+					if circleRect(px,py,38,part) { blocked = true; break }
 				}
 			}
 			for _, old := range out {
@@ -473,15 +496,14 @@ func newObstacles(theme string) []Obstacle {
 					break
 				}
 			}
+			if blocked { break }
 		}
-		if blocked {
-			continue
-		}
+		if blocked { continue }
 		expires := (43 + float64(groups)*4.6 + mathrand.Float64()*3) * 1000
 		for _, part := range parts {
 			part.Style = style
 			part.Expires = expires
-			out = append(out, part)
+			out = append(out,part)
 		}
 		groups++
 	}
@@ -1223,14 +1245,15 @@ func mobilePatchedIndex(source string) string {
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
 	// Keep the large legacy CPU game in sync with the shared arena dimensions.
 	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
-	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2100")
-	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1200")
+	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?730:1250", 1)
+	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2300")
+	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Keep CPU spawn and collision-safe obstacle generation centered in the
 	// expanded arena. The large CPU HTML contains these legacy literals.
-	source = regexp.MustCompile(`\b1150\b`).ReplaceAllString(source, "1300")
-	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:755,y:600")
-	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1345,y:600")
-	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(755,600)||near(1345,600)")
+	source = regexp.MustCompile(`\b1150\b`).ReplaceAllString(source, "1350")
+	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:825,y:650")
+	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1475,y:650")
+	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(825,650)||near(1475,650)")
 	return strings.Replace(source, "</head>", additions+"</head>", 1)
 }
 func main() {
@@ -1272,7 +1295,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.2", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.3", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1298,7 +1321,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v7.2 / Python不要")
+	fmt.Println("  文字武装 v7.3 / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")
