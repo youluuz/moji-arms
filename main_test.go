@@ -372,7 +372,7 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
  js,e:=gameFiles.ReadFile("public/ultimate-core.js");if e!=nil{t.Fatal(e)}
  content:=string(js)
- for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","guide.hidden=expanded","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'鈍化弾'","M65 17","M38 23h28"} {
+ for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","guide.hidden=expanded","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'鈍化弾'","M65 17","M44 10 65 13","M34 65 29 67"} {
   if !strings.Contains(content,part){t.Errorf("missing ultimate help control or new icon artwork: %s",part)}
  }
  css,e:=gameFiles.ReadFile("public/ultimate-ui.css");if e!=nil{t.Fatal(e)}
