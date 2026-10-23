@@ -59,6 +59,16 @@ const { chromium } = require('playwright');
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
+   await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
+   const cover=await page.evaluate(()=>({
+     width:WORLD_W,height:WORLD_H,
+     corners:obstacles.filter(o=>o.__arenaLArm).length,
+     player:{x:player.x,y:player.y},enemy:{x:enemy.x,y:enemy.y}
+   }));
+   if(cover.width!==2100||cover.height!==1200||cover.corners<1)
+     throw Error(mode+' CPU arena/corner cover mismatch: '+JSON.stringify(cover));
+   if(cover.player.x<0||cover.enemy.x>cover.width||cover.player.y<0||cover.enemy.y>cover.height)
+     throw Error(mode+' CPU spawn outside arena');
    if(!await page.locator('#gameScreen .ultimate-cast').isVisible())throw Error(mode+' CPU ultimate icon is not visible');
    const castCheck=await page.evaluate(()=>{
     if(typeof slots==='undefined'||typeof act!=='function')return 'game functions unavailable';
