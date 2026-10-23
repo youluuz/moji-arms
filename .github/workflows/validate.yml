@@ -58,3 +58,5 @@ jobs:
           exit 1
       - name: Run Android-size, landscape and shared-mode browser smoke
         run: node tests/browser-smoke.cjs
+      - name: Test real two-player online normal and custom matches
+        run: node tests/browser-pvp.cjs
