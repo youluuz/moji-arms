@@ -1260,7 +1260,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script><script defer src="/arena-expansion-v72.js"></script><link rel="stylesheet" href="/ui-polish-v74.css">`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=77"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=77"></script><script defer src="/ultimate-cpu.js?v=77"></script><script defer src="/arena-expansion-v72.js?v=77"></script><link rel="stylesheet" href="/ui-polish-v74.css?v=77">`
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// Attack CT rises slightly for ordinary characters, with extra escalation after 20 and 40 strokes.
 	// Keep stroke values authoritative and avoid fake 12-stroke fallback.
