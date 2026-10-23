@@ -20,7 +20,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const chars=['火','水','木','金','土'];
      for(let k=0;k<5;k++)await page.locator('#onlineGlyph'+k).fill(chars[k]);
      if(mode==='custom')for(let k=0;k<5;k++)await page.locator('.online-slot .slot-strokes').nth(k).fill('12');
-     await page.locator('#joinArea [data-ultimate=roman]').click();
+     await page.locator('#joinArea .ultimate-option[data-ultimate=roman]').click();
      if(i===0)await page.locator('#create').click();
     }
     const host=pages[0],guest=pages[1];
