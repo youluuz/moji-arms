@@ -1245,6 +1245,7 @@ func mobilePatchedIndex(source string) string {
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
 	// Keep the large legacy CPU game in sync with the shared arena dimensions.
 	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
+	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?730:1250", 1)
 	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2300")
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Keep CPU spawn and collision-safe obstacle generation centered in the
@@ -1294,7 +1295,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.2", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.3", "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
