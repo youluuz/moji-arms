@@ -1,0 +1,37 @@
+const { chromium } = require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
+ const errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
+ try {
+  const res=await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
+  if(!res.ok())throw Error('login HTTP '+res.status());
+  await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
+  await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
+  if(!await page.locator('#loginScreen').count())throw Error('missing common login');
+  const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
+  if(JSON.stringify(types)!==JSON.stringify([['roman',360],['slow',320],['invincible',340],['dance',340],['invisible',300],['namepu',220]]))throw Error('shared specs mismatch');
+  await page.locator('#loadoutPanel [data-ultimate=namepu]').click({force:true});
+  const chosen=await page.evaluate(()=>localStorage.getItem('moji_ultimate_choice'));
+  if(chosen!=='namepu')throw Error('CPU skill picker not persisted');
+  if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
+  errors.length=0;
+  const multiplayer=await page.goto(base+'/multiplayer.html?embedded=1',{waitUntil:'domcontentloaded',timeout:45000});
+  if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
+  await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
+  await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
+  if(await page.locator('#joinArea .ultimate-option').count()!==6)throw Error('online must present identical six ultimates');
+  if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='namepu')throw Error('solo/online ultimate choice not shared');
+  await page.locator('#joinArea [data-ultimate=roman]').click();
+  if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='roman')throw Error('online picker failed');
+  if(errors.length)throw Error('PvP page JS error: '+errors.join('; '));
+  // Test both phone orientations without running a real match.
+  await page.setViewportSize({width:844,height:390});
+  await page.waitForTimeout(100);
+  if(errors.length)throw Error('landscape JS error: '+errors.join('; '));
+  console.log('Browser smoke passed: shared login, six CPU skills, six online skills, preference parity, portrait/landscape.');
+ } finally {await browser.close()}
+})().catch(e=>{console.error(e);process.exit(1)});
