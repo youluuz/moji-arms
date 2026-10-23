@@ -473,7 +473,7 @@ func ultimateLaunch(room *Room,p *Player,now float64) {
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
 	case "attack":
-		return .65 + float64(n)*.125
+		return .65 + float64(n)*.125 + math.Max(0, float64(n-10))*.02
 	case "defense":
 		return 9 + float64(n)*.4
 	case "heal":
@@ -1186,6 +1186,9 @@ func getPort(listener net.Listener) int {
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
 	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css"><link rel="stylesheet" href="/ultimate-ui.css"><script defer src="/mobile-input-v70.js"></script><script defer src="/ultimate-core.js"></script><script defer src="/ultimate-cpu.js"></script>`
+	// Match CPU normal/custom attack cooldowns to the authoritative online server.
+	// Smaller kanji keep their usual rhythm; >10 strokes gain 20ms per extra stroke.
+	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)", 1)
 	return strings.Replace(source, "</head>", additions+"</head>", 1)
 }
 func main() {
