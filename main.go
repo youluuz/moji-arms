@@ -1247,8 +1247,8 @@ func mobilePatchedIndex(source string) string {
 	source = strings.ReplaceAll(source, "max=\"40\"", "max=\"84\"")
 	source = strings.ReplaceAll(source, "画数は1〜40", "画数は1〜84")
 	source = strings.ReplaceAll(source, "画数1〜40", "画数1〜84")
-	source = strings.Replace(source, `if(/\\p{Script=Han}/u.test(ch))return 12; // fallback only for unregistered ideographs`,
-		`if(/\\p{Script=Han}/u.test(ch))return null; // unknown ideographs have no invented value`, 1)
+	source = strings.Replace(source, `if(/\p{Script=Han}/u.test(ch))return 12; // fallback only for unregistered ideographs`,
+		`if(/\p{Script=Han}/u.test(ch))return null; // unknown ideographs have no invented value`, 1)
 	source = strings.Replace(source, "bgmAudio.volume=.24", "bgmAudio.volume=.10", 1)
 	// The original HTML only embeds a small demonstration dictionary. Merge the
 	// complete Unihan-based table before any match, then refresh equipped values.
@@ -1261,7 +1261,7 @@ window.MojiStrokeReady=fetch('/strokes.json').then(r=>{if(!r.ok)throw Error('str
    window.MojiRandom.roll=function(exclude){
     for(let attempt=0;attempt<80;attempt++){
      const ch=oldRoll(exclude);
-     if(!/\\p{Script=Han}/u.test(ch)||Number.isInteger(dict[ch]))return ch;
+     if(!/\p{Script=Han}/u.test(ch)||Number.isInteger(dict[ch]))return ch;
     }
     return '火';
    };
