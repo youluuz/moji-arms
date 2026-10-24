@@ -44,6 +44,17 @@ console.log('文字武装 公開ベータ・リリース確認 → '+base.origin
 console.log('※ 無料サービスの初回起動に合わせて最初の応答のみ最大95秒待ちます。');
 const health=await check('/healthz','① Render公開サーバー起動',s=>{try{return JSON.parse(s).ok===true}catch{return false}},{deadline:warmWait});
 if(!health.ok){console.error('ホスティング先が起動していません。Render → Deploys の Live を先に確認してください。');process.exit(1)}
+const healthInfo=JSON.parse(health.body);
+mark('①a 公開ベータの版数',healthInfo.version==='9.4-beta',
+ healthInfo.version||'不明／古いサーバーが動いています');
+if(process.env.EXPECTED_COMMIT?.trim()){
+ const expected=process.env.EXPECTED_COMMIT.trim().toLowerCase();
+ const deployed=String(healthInfo.commit||'').toLowerCase();
+ mark('①b GitHubの指定コミットが本番に反映',deployed.startsWith(expected),
+  deployed?deployed.slice(0,12):'Render上のコミット情報がありません');
+}else if(healthInfo.commit){
+ console.log('🔎 Renderで稼働中のGitコミット：'+healthInfo.commit.slice(0,12));
+}
 const root=await check('/','② ゲームの共通ロビー',s=>s.includes('moji')||s.includes('文字武装'));
 const promo=await check('/about.html','③ 紹介ページ・無料プレイ案内',s=>s.includes('無料でプレイ')&&s.includes('友達にシェア'));
 const privacy=await check('/privacy.html','④ 個人情報・ベータ注意事項',s=>s.includes('プライバシー')&&s.includes('オンライン対戦'));
