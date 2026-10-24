@@ -58,7 +58,7 @@ const { chromium } = require('playwright');
    sticky:getComputedStyle(document.getElementById('mojiSortieDock')).position,
    startInDock:document.getElementById('start')?.closest('#mojiSortieDock')!==null
   }));
-  if(!lobbyExtras.landscape?.includes('横画面推奨')||lobbyExtras.sticky!=='sticky'||!lobbyExtras.startInDock)
+  if(!lobbyExtras.landscape?.includes('横画面推奨')||lobbyExtras.sticky!=='fixed'||!lobbyExtras.startInDock)
    throw Error('Lobby postbox or fixed deployment invalid '+JSON.stringify(lobbyExtras));
   await page.locator('#mojiNoticeButton').click();
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
