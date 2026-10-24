@@ -443,6 +443,8 @@ const { chromium } = require('playwright');
   // Stress maximum CPU count and finish a free-for-all only after EVERY CPU is defeated.
   await page.locator('[data-mode-tile="normal"]').click();
   await page.locator('#cpuBotCount').selectOption('9');
+  // The common login page persists its nickname in this session key.
+  await page.evaluate(()=>sessionStorage.setItem('moji_player_name','蒼月の勇者'));
   await page.locator('#start').click();
   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
   if(await page.evaluate(()=>window.MojiCpuBots.kills())!==0)throw Error('CPU kill count failed to reset on new round');
@@ -467,17 +469,20 @@ const { chromium } = require('playwright');
     totalKills:document.getElementById('cpuResultKills')?.textContent,
     expectedKills:window.MojiCpuBots.kills()};
   });
-  if(finalKill.running||!finalKill.result||!finalKill.winner?.includes('優勝：あなた')||
+  if(finalKill.running||!finalKill.result||!finalKill.winner?.includes('優勝：蒼月の勇者')||
      !finalKill.alive?.includes('生存 1 / 10人')||
      finalKill.expectedKills!==9||!finalKill.totalKills?.includes('合計キル数：9'))
    throw Error('CPU survivors or named winner incorrect after last bot: '+JSON.stringify(finalKill));
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
 
+  console.log('LOGIN_INPUTS',JSON.stringify(await page.locator('#loginScreen input').evaluateAll(es=>es.map(el=>({id:el.id,name:el.name,type:el.type,placeholder:el.placeholder})))));
   console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
   const multiplayer=await page.goto(base+'/multiplayer.html?embedded=1',{waitUntil:'domcontentloaded',timeout:45000});
+  const copiedName=await page.locator('#name').inputValue();
+  if(copiedName!=='蒼月の勇者')throw Error('Online lobby must inherit login nickname: '+copiedName);
   if(!multiplayer.ok())throw Error('PvP HTTP '+multiplayer.status());
   await page.waitForFunction(()=>!!window.MojiUltMulti,{timeout:15000});
   await page.waitForSelector('#joinArea .ultimate-option',{timeout:15000});
