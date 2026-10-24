@@ -26,6 +26,17 @@ const { chromium } = require('playwright');
 
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  // A touch phone may choose its play orientation next to the four mode tiles.
+  const orientationUI=page.locator('#mobileOrientationSetting');
+  if(!await orientationUI.isVisible())throw Error('phone-only portrait/landscape switch is missing');
+  if(await orientationUI.locator('[data-mobile-orientation]').count()!==2)throw Error('phone orientation switch must have two choices');
+  await page.evaluate(()=>window.MojiMobileOrientation.select('landscape',false));
+  if(await orientationUI.locator('[data-mobile-orientation=landscape]').getAttribute('aria-pressed')!=='true'||
+     await page.evaluate(()=>localStorage.getItem('moji_mobile_play_orientation'))!=='landscape')
+   throw Error('landscape mode selection did not persist');
+  await page.evaluate(()=>window.MojiMobileOrientation.select('portrait',false));
+  if(await orientationUI.locator('[data-mobile-orientation=portrait]').getAttribute('aria-pressed')!=='true')
+   throw Error('portrait mode did not restore');
   // Four clickable tiles are the only visible mode controls.
   const modes=page.locator('#modeTiles [data-mode-tile]');
   if(await modes.count()!==4)throw Error('Expected four mode icons only');
@@ -175,7 +186,7 @@ const { chromium } = require('playwright');
      corners:obstacles.filter(o=>o.__arenaLArm).length,
      player:{x:player.x,y:player.y},enemy:{x:enemy.x,y:enemy.y}
    }));
-   if(cover.width!==2300||cover.height!==1300||cover.corners<1)
+   if(cover.width!==Math.round(2300*.975)||cover.height!==Math.round(1300*.975)||cover.corners<1)
      throw Error(mode+' CPU arena/corner cover mismatch: '+JSON.stringify(cover));
    if(cover.player.x<0||cover.enemy.x>cover.width||cover.player.y<0||cover.enemy.y>cover.height)
      throw Error(mode+' CPU spawn outside arena');
@@ -229,6 +240,9 @@ const { chromium } = require('playwright');
   await page.locator('#start').click();
   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
   if(await page.evaluate(()=>window.MojiCpuBots.kills())!==0)throw Error('CPU kill count failed to reset on new round');
+  const maxWorld=await page.evaluate(()=>window.MojiCpuBots.dimensions());
+  if(maxWorld.w!==3450||maxWorld.h!==1950||maxWorld.scale!==1.5)
+   throw Error('10-fighter CPU arena did not scale to 1.5x: '+JSON.stringify(maxWorld));
   const maxParty=await page.evaluate(()=>window.MojiCpuBots.getBots().map(b=>({id:b.id,position:[b.x,b.y],kinds:b.loadout.map(s=>s.kind)})));
   if(maxParty.length!==9||new Set(maxParty.map(b=>b.id)).size!==9||
      !maxParty.every(b=>b.position.every(Number.isFinite)))
