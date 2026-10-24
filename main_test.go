@@ -46,7 +46,7 @@ func TestBattleCountdownSpawnsAndKillCredit(t *testing.T) {
  room:=c1.room
  a.handle(c1,[]byte(`{"type":"start"}`))
  if room.Phase!="countdown" {t.Fatal("online round must open with countdown")}
- if room.zone()["r"]<1300 {t.Fatal("countdown unexpectedly shrank safe zone")}
+ if room.zone()["r"]<1350*mapScale(2)-1 {t.Fatal("countdown unexpectedly shrank safe zone")}
  if room.state()["countdownLeft"].(float64)<2.0 {t.Fatal("expected visible 3-second server countdown")}
  if math.Hypot(room.Players[0].X-room.Players[1].X,room.Players[0].Y-room.Players[1].Y)<900 {t.Fatal("initial spawns still too close")}
  a.tick(.033)
@@ -100,7 +100,7 @@ func TestStrokesAndCooldown(t *testing.T) {
 	}
 }
 func TestZoneAndRooms(t *testing.T) {
-	room := &Room{Shrink: "none", Phase: "playing", Started: time.Now().Add(-120 * time.Second)}
+	room := &Room{Shrink: "none", Phase: "playing", Started: time.Now().Add(-120 * time.Second),Players:[]*Player{{ID:"A"}, {ID:"B"}}}
 	if room.zone()["r"] != 1350 {
 		t.Fatal("no shrink")
 	}
@@ -125,26 +125,27 @@ func TestZoneAndRooms(t *testing.T) {
 
 // Protect players from spawning inside walls for any supported lobby size.
 func TestObstacleSpawnSafety(t *testing.T) {
-	for _, theme := range []string{"shrine", "sakura", "night"} {
-		for trial := 0; trial < 20; trial++ {
-			obs := newObstacles(theme)
-			if len(obs) < 8 {
-				t.Fatalf("too few obstacles (%s): %d", theme, len(obs))
-			}
-			for count := 2; count <= 10; count++ {
-				for i := 0; i < count; i++ {
-					angle := 2 * math.Pi * float64(i) / float64(count)
-					px := W/2 + 360*math.Cos(angle)
-					py := H/2 + 290*math.Sin(angle)
-					for _, o := range obs {
-						if circleRect(px, py, 22, o) {
-							t.Fatalf("spawn intersects obstacle (%s,players=%d)", theme, count)
-						}
-					}
-				}
-			}
-		}
-	}
+ for _,theme:=range []string{"shrine","sakura","night"} {
+  for count:=2;count<=10;count++ {
+   scale:=mapScale(count)
+   w,h:=mapDimensions(count)
+   for trial:=0;trial<4;trial++ {
+    obstacles:=newObstaclesSized(theme,w,h,count,"normal")
+    if len(obstacles)<7 {t.Fatalf("not enough cover %s/%d",theme,count)}
+    for i:=0;i<count;i++ {
+     angle:=2*math.Pi*float64(i)/float64(count)
+     px:=w/2+600*scale*math.Cos(angle)
+     py:=h/2+380*scale*math.Sin(angle)
+     for _,o:=range obstacles {
+      if circleRect(px,py,22,o) {t.Fatalf("spawn overlaps cover: %s/%d at %0.1f,%0.1f",theme,count,px,py)}
+     }
+    }
+    for _,o:=range obstacles {
+     if o.X<65||o.Y<65||o.X+o.W>w-65||o.Y+o.H>h-65 {t.Fatalf("cover escapes %s/%d: %+v",theme,count,o)}
+    }
+   }
+  }
+ }
 }
 
 func TestNormalSlotsAllowSingleGrapheme(t *testing.T) {
@@ -357,7 +358,7 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
-	if !strings.Contains(served, "cpuView.w=aspect<1?730:1250") || !strings.Contains(html, "view.w=aspect<1?730:1250") { t.Fatal("battle cameras must use the wider view in all modes") }
+	if !strings.Contains(served, "cpuView.w=aspect<1?730:1250") || !strings.Contains(html, "view.w=Math.min(worldW,aspect<1?730:1250)") { t.Fatal("battle cameras must use the wider view in all modes") }
 	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") || !strings.Contains(served, "/arena-expansion-v72.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
@@ -394,8 +395,8 @@ func TestExpandedArenaAndVariedCover(t *testing.T) {
 	for _, theme := range []string{"shrine","sakura","night"} {
 		for trial:=0;trial<8;trial++ {
 			walls:=newObstacles(theme)
-			if len(walls)!=26 {
-				t.Fatalf("%s layout %d generated %d pieces, expected 26",theme,trial,len(walls))
+			if len(walls)!=16 {
+				t.Fatalf("%s layout %d generated %d pieces, expected 16 in a small 2-player map",theme,trial,len(walls))
 			}
 			structures:=make(map[float64][]Obstacle)
 			for _, o:=range walls {
@@ -404,7 +405,7 @@ func TestExpandedArenaAndVariedCover(t *testing.T) {
 				}
 				structures[o.Expires]=append(structures[o.Expires],o)
 			}
-			if len(structures)!=16 {t.Fatalf("%s has %d structures instead of 16",theme,len(structures))}
+			if len(structures)!=10 {t.Fatalf("%s has %d structures instead of 10",theme,len(structures))}
 			dual,triple:=0,0
 			for _,parts:=range structures {
 				switch len(parts) {
@@ -425,7 +426,7 @@ func TestExpandedArenaAndVariedCover(t *testing.T) {
 					if !touchesAnother {t.Fatal("obstacle pieces do not meet")}
 				}
 			}
-			if dual!=6 || triple!=2 {
+			if dual!=4 || triple!=1 {
 				t.Fatalf("%s compound variety wrong: 2-part=%d 3-part=%d",theme,dual,triple)
 			}
 		}
@@ -452,7 +453,7 @@ func TestExpandedArenaCPUAndOnlineAssets(t *testing.T) {
 	}
 	online, err := gameFiles.ReadFile("public/multiplayer.html")
 	if err != nil { t.Fatal(err) }
-	for _,mark:=range []string{"Math.min(2300-view.w","Math.min(1300-view.h","view.h=Math.min(1300","o.x/2300*mmw","o.y/1300*mmh","cx.strokeRect(45,45,2210,1210)"} {
+	for _,mark:=range []string{"Math.min(Math.max(0,worldW-view.w)","Math.min(Math.max(0,worldH-view.h)","view.h=Math.min(worldH","o.x/worldW*mmw","o.y/worldH*mmh","cx.strokeRect(45,45,worldW-90,worldH-90)"} {
 		if !strings.Contains(string(online),mark) {t.Errorf("online camera/minimap mismatch: %s",mark)}
 	}
 }
