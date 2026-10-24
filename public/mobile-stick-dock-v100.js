@@ -35,13 +35,19 @@
  }
  function init(){
   upgrade();
-  const observer=new MutationObserver(upgrade);
+  let queued=false;
+  const observer=new MutationObserver(()=>{
+   if(!queued){
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;upgrade()});
+   }
+  });
   observer.observe(document.body,{attributes:true,attributeFilter:['class']});
-  // The old CPU canvas/joystick can be recreated at the match boundary.
-  // Observe additions only, not per-frame text or combat state.
+  // The CPU joystick is sometimes created only after the body enters
+  // in-match; additions may occur deep inside the game canvas wrapper.
   for(const selector of ['#gameScreen','#gameArea']){
    const screen=document.querySelector(selector);
-   if(screen)observer.observe(screen,{childList:true});
+   if(screen)observer.observe(screen,{childList:true,subtree:true});
   }
   window.MojiStickDock={upgrade};
  }
