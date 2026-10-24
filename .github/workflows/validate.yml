@@ -25,6 +25,8 @@ jobs:
           node --check public/ultimate-core.js
           node --check public/ultimate-cpu.js
           node --check public/ultimate-multi.js
+          node --check public/roman-effects-v97.js
+          node --check scripts/public-release-check.mjs
           node --check public/mobile-input-v70.js
           node tests/input-safety.cjs
           node --check public/arena-expansion-v72.js
@@ -65,3 +67,5 @@ jobs:
         run: node tests/browser-pvp.cjs
       - name: Test embedded online match in mobile portrait and landscape
         run: node tests/browser-embedded-pvp.cjs
+      - name: Check public-beta deployment paths and WebSocket on test server
+        run: node scripts/public-release-check.mjs http://127.0.0.1:8083
