@@ -1,0 +1,179 @@
+/* 文字武装 v10.1 — improved visual contrast in the FIVE-GLYPH equipment editor.
+   Applies after all older styles; never moves fields, hides game controls, or
+   changes weapon data. Deliberately opaque surfaces avoid backdrop camouflage. */
+:root{
+ --equip-surface:#101f34;
+ --equip-card:#273f5d;
+ --equip-input:#091525;
+ --equip-line:#8baacc;
+ --equip-text:#f7fbff;
+ --equip-muted:#d6e6f8;
+ --equip-gold:#ffe0a3;
+ --equip-focus:#ffdf89;
+}
+/* Full editor: make the area itself visibly distinct from the lobby. */
+#lobbyScreen #setup,
+#lobbyScreen #loadoutPanel,
+#joinArea .online-loadout,
+#waitArea #roomLoadoutArea .online-loadout{
+ min-width:0;max-width:100%;box-sizing:border-box;
+ background:linear-gradient(165deg,#192f4b 0%,#0a1a2d 100%)!important;
+ border:2px solid #7499bd!important;
+ border-radius:16px!important;
+ box-shadow:0 8px 24px #020a1580,inset 0 1px #bcdfff24!important;
+}
+#lobbyScreen #loadoutPanel{padding:clamp(10px,2vw,20px)!important}
+#lobbyScreen #setup{
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:clamp(6px,1vw,11px)!important;padding:clamp(8px,1.4vw,13px)!important;
+}
+/* Separate cards and a distinct gold "active editing" glow. */
+#lobbyScreen #setup .slot,
+#joinArea #onlineSlots .online-slot,
+#waitArea #onlineSlots .online-slot{
+ position:relative;box-sizing:border-box;min-width:0;
+ background:linear-gradient(175deg,#2b4565 0%,#1b304c 100%)!important;
+ color:var(--equip-text)!important;
+ border:2px solid #83a5c7!important;
+ border-radius:13px!important;
+ padding:clamp(7px,1vw,12px)!important;
+ box-shadow:0 3px 14px #020a155c,inset 0 1px #d9eeff12!important;
+ overflow:visible!important;
+}
+#lobbyScreen #setup .slot:focus-within,
+#joinArea #onlineSlots .online-slot:focus-within,
+#waitArea #onlineSlots .online-slot:focus-within{
+ background:linear-gradient(170deg,#354f6d,#203752)!important;
+ border-color:var(--equip-focus)!important;
+ box-shadow:0 0 0 2px #ffdf895c,0 6px 17px #030c1b90!important;
+}
+/* All forms get legible headings even on a dim phone display. */
+#lobbyScreen #setup .slot label,
+#lobbyScreen #setup .slot .label,
+#joinArea #onlineSlots .online-slot label,
+#waitArea #onlineSlots .online-slot label{
+ display:block;
+ max-width:100%;min-width:0;
+ font-size:clamp(11px,1vw,13px)!important;
+ font-weight:900!important;line-height:1.5!important;
+ color:var(--equip-gold)!important;
+ text-shadow:0 1px #071525!important;
+ margin:3px 0 5px!important;
+ white-space:normal!important;
+}
+#lobbyScreen #setup .slot>label:first-child,
+#joinArea #onlineSlots .online-slot>label:first-child,
+#waitArea #onlineSlots .online-slot>label:first-child{
+ background:#091c33!important;
+ border:1px solid #668aad!important;
+ border-radius:7px!important;
+ padding:3px 6px!important;
+ text-align:center!important;
+ margin-bottom:9px!important;
+}
+/* More than a contrast tweak: large editable glyphs form the focal point. */
+#lobbyScreen #setup .slot input.kanji,
+#lobbyScreen #setup .slot input[type="text"],
+#joinArea #onlineSlots input.online-glyph-input,
+#waitArea #onlineSlots input.online-glyph-input{
+ display:block!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ min-height:58px!important;height:auto!important;
+ background:var(--equip-input)!important;
+ color:#fffdf4!important;
+ font-size:clamp(25px,3vw,35px)!important;
+ font-weight:950!important;line-height:1.2!important;
+ text-align:center!important;
+ border:2px solid #c1dbf4!important;border-radius:11px!important;
+ box-shadow:inset 0 2px 10px #0008,0 2px 0 #ffffff0f!important;
+ text-shadow:0 1px 4px #0006!important;
+ padding:8px 4px!important;
+ opacity:1!important;
+ -webkit-text-fill-color:#fffdf4!important;
+}
+#lobbyScreen #setup .slot input.kanji::placeholder,
+#lobbyScreen #setup .slot input[type="text"]::placeholder,
+#onlineSlots input.online-glyph-input::placeholder{
+ color:#b7c9dc!important;opacity:1!important;
+ -webkit-text-fill-color:#b7c9dc!important;
+ font-size:clamp(12px,1.5vw,15px)!important;
+}
+/* Numbers, role selects and even readonly stroke count should not disappear. */
+#lobbyScreen #setup .slot input.strokes,
+#lobbyScreen #setup .slot input[type="number"],
+#joinArea #onlineSlots .slot-strokes,
+#waitArea #onlineSlots .slot-strokes,
+#lobbyScreen #setup .slot select,
+#joinArea #onlineSlots select.online-kind,
+#waitArea #onlineSlots select.online-kind{
+ display:block;box-sizing:border-box;
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ min-height:44px!important;
+ background:#0d2036!important;
+ color:#f9fdff!important;
+ -webkit-text-fill-color:#f9fdff!important;
+ border:2px solid #92b2d2!important;
+ border-radius:9px!important;
+ font-size:clamp(13px,1.5vw,16px)!important;
+ font-weight:850!important;
+ text-align:center!important;
+ padding:7px 5px!important;
+ opacity:1!important;
+ font-variant-numeric:tabular-nums!important;
+}
+#lobbyScreen #setup .slot input[readonly],
+#onlineSlots .online-slot input[readonly]{
+ background:#172e46!important;
+ color:#e8f4ff!important;
+ -webkit-text-fill-color:#e8f4ff!important;
+ opacity:1!important;
+}
+#lobbyScreen #setup .slot input:focus-visible,
+#lobbyScreen #setup .slot select:focus-visible,
+#onlineSlots .online-slot input:focus-visible,
+#onlineSlots .online-slot select:focus-visible{
+ outline:3px solid var(--equip-focus)!important;
+ outline-offset:1px!important;
+ border-color:#ffe7af!important;
+ box-shadow:0 0 0 4px #ffdf8944,inset 0 2px 7px #0006!important;
+}
+#onlineSlots .online-slot .slot-random{
+ display:block;
+ min-height:39px!important;
+ border:1px solid #9bc0de!important;
+ border-radius:8px!important;
+ color:#f4faff!important;
+ background:#335578!important;
+ font-size:12px!important;font-weight:850!important;
+ white-space:normal!important;line-height:1.35!important;
+}
+/* Keep quantitative previews distinct from inputs. */
+#onlineSlots .moji-setup-stat{
+ background:#0b1d33!important;
+ border:1px solid #688da9!important;
+ border-left:3px solid var(--weapon-accent,#b7e988)!important;
+ border-radius:8px!important;
+ min-height:45px;
+}
+#onlineSlots .moji-setup-stat strong{font-size:clamp(11px,1.1vw,13px)!important}
+#onlineSlots .moji-setup-stat span{color:#d9eaff!important}
+/* Preserve a full-size responsive form without horizontal page overflow. */
+@media(max-width:820px){
+ #lobbyScreen #setup{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ #lobbyScreen #setup .slot:last-child:nth-child(odd){grid-column:1/-1}
+ #lobbyScreen #setup .slot,
+ #onlineSlots .online-slot{padding:9px 8px!important}
+ #lobbyScreen #setup .slot input.kanji,
+ #lobbyScreen #setup .slot input[type="text"],
+ #onlineSlots input.online-glyph-input{font-size:29px!important;min-height:54px!important}
+}
+@media(max-width:390px){
+ #lobbyScreen #setup{gap:6px!important;padding:7px!important}
+ #lobbyScreen #setup .slot,
+ #onlineSlots .online-slot{padding:7px 5px!important;border-width:1.5px!important}
+ #lobbyScreen #setup .slot label,#onlineSlots .online-slot label{font-size:11px!important}
+ #lobbyScreen #setup .slot select,#onlineSlots select.online-kind{font-size:12px!important;padding:6px 2px!important}
+}
+@media (prefers-reduced-motion:reduce){
+ #lobbyScreen #setup .slot,#onlineSlots .online-slot{transition:none!important}
+}
