@@ -4,7 +4,7 @@
 .moji-weapon-gallery>p{margin:0 0 10px;font-size:11px;color:#b5d4f7;line-height:1.4}
 .moji-weapon-gallery-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
 .moji-preview{border:1px solid #466586;border-radius:10px;background:#142c46;min-width:0;padding:6px;color:#f1f7ff}
-.moji-preview[data-kind="attack"]{--shot:#9ac9ff}
+.moji-preview[data-kind="attack"]{--shot:#e2ff79}
 .moji-preview[data-kind="pierce"]{--shot:#ffd4a2}
 .moji-preview[data-kind="homing"]{--shot:#9cfff0}
 .moji-preview[data-kind="defense"]{--shot:#ddc3ff}
