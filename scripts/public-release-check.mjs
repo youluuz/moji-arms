@@ -61,6 +61,12 @@ const privacy=await check('/privacy.html','④ 個人情報・ベータ注意事
 const multi=await check('/multiplayer.html','⑤ オンライン対戦ロビー',s=>s.includes('roomCode')&&s.includes('WebSocket')||s.includes('roomCode')&&s.includes('sock'));
 const roman=await check('/roman-effects-v97.js','⑥ ロマン砲の最新版エフェクト',s=>s.includes('drawImpact')&&s.includes('drawShot')&&!s.includes("fillText('撃破"));
 const icon=await check('/mojibusou-icon.png','⑦ ゲームのアイコン画像',(_,res)=>res.headers.get('content-type')?.includes('image/')===true,{method:'HEAD'});
+const notices=await check('/notices.json','⑦a お知らせ配信',s=>{
+ try{return JSON.parse(s).notices.some(n=>n.title.includes('横画面')&&n.body.length>0)}
+ catch{return false}
+});
+const dock=await check('/mobile-stick-dock-v100.js','⑦b モバイル操作欄',s=>s.includes('moji-map-with-stick')&&s.includes('cpuMoveZone')&&s.includes('touchControls'));
+const css=await check('/lobby-refresh-v100.css','⑦c ロビー表示刷新',s=>s.includes('moji-notice-overlay')&&s.includes('moji-sortie-dock'));
 if(root.ok)mark('⑧ トップページで最新版を参照',root.body.includes('roman-effects-v97.js'),root.body.includes('roman-effects-v97.js')?'ロマン砲v97読み込み':'更新前のHTMLです');
 if(multi.ok)mark('⑨ オンライン側で最新版を参照',multi.body.includes('roman-effects-v97.js'),multi.body.includes('roman-effects-v97.js')?'ロマン砲v97読み込み':'更新前のHTMLです');
 
