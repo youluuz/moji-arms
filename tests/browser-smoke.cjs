@@ -268,12 +268,16 @@ const { chromium } = require('playwright');
     await new Promise(resolve=>setTimeout(resolve,115));
     const afterHoming=player.hp;
     bullets.length=0;
+    // A direct ordinary weapon hit must still deal damage. Using the actual
+    // damage routine avoids a flaky spatial hit when AI movement advances
+    // between two animation frames.
     const straight={x:player.x,y:player.y,vx:0,vy:0,n:9,owner:'e',sourceId:bot.id,life:2,
       ch:'火',homing:false,pierce:false};
-    bullets.push(straight);
-    await new Promise(resolve=>setTimeout(resolve,115));
+    const savedShield=player.shield,savedShieldEnd=player.shieldEnd;
+    player.shield=0;player.shieldEnd=0;
+    damage(player,54,performance.now(),false,straight);
     const afterStraight=player.hp;
-    bullets.length=0;player.hp=originalHP;
+    bullets.length=0;player.hp=originalHP;player.shield=savedShield;player.shieldEnd=savedShieldEnd;
     return {afterHoming,afterStraight,active:window.MojiCpuUltimateState.invisibleActive()};
    });
    if(invisibleHoming.afterHoming!==600||
