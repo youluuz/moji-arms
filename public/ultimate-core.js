@@ -2,12 +2,12 @@
 (function(){
 'use strict';
 const defs=[
- {id:'roman',name:'ロマン砲',cost:320,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
- {id:'slow',name:'鈍化弾',cost:280,icon:'鈍',color:'#9bbcff',tip:'狙った相手を減速',target:true},
- {id:'invincible',name:'無敵',cost:300,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
- {id:'dance',name:"Let's DANCE",cost:300,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
- {id:'invisible',name:'透明化',cost:260,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
- {id:'namepu',name:'ナメプ',cost:180,icon:'😐',color:'#e9ff85',tip:'5秒間真顔で踊り続ける',target:false}
+ {id:'roman',name:'ロマン砲',cost:300,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
+ {id:'slow',name:'鈍化弾',cost:260,icon:'鈍',color:'#9bbcff',tip:'狙った相手を減速',target:true},
+ {id:'invincible',name:'無敵',cost:280,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
+ {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
+ {id:'invisible',name:'透明化',cost:240,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
+ {id:'namepu',name:'ナメプ',cost:160,icon:'😐',color:'#e9ff85',tip:'5秒間真顔で踊り続ける',target:false}
 ];
 const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
 // Accessible, mobile-readable explanations shared by all four battle modes.
