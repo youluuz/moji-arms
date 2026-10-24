@@ -8,6 +8,20 @@ function boot(){
  // Keep glyph examples/help with the five character inputs, then place the
  // six ultimate choices immediately below this character-selection section.
  glyphSection.insertAdjacentElement('afterend',pick.root);
+ // Keep both existing five-slot random buttons with the loadout editor even
+ // after that editor is mounted into a multiplayer room. They now appear
+ // immediately before "必殺技を選択" rather than in its top heading.
+ const randomAll=document.getElementById('randomAll');
+ const randomEmoji=document.getElementById('randomEmoji');
+ if(randomAll||randomEmoji){
+  const randomBar=document.createElement('div');
+  randomBar.className='moji-loadout-random-actions';
+  randomBar.id='onlineBulkRandomBar';
+  randomBar.setAttribute('role','group');
+  randomBar.setAttribute('aria-label','武装5枠のまとめてランダム設定');
+  for(const button of [randomAll,randomEmoji])if(button)randomBar.append(button);
+  glyphSection.append(randomBar);
+ }
  const battle=U.attachUI(document.querySelector('#gameArea .game-wrap'));battle.showBattle(true);
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
