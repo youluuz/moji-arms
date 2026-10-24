@@ -54,14 +54,14 @@ if(root.ok)mark('⑧ トップページで最新版を参照',root.body.includes
 if(multi.ok)mark('⑨ オンライン側で最新版を参照',multi.body.includes('roman-effects-v97.js'),multi.body.includes('roman-effects-v97.js')?'ロマン砲v97読み込み':'更新前のHTMLです');
 
 // Real browser-compatible same-origin WS handshake; immediately close without joining.
-// Note: Node v22 has WebSocket built-in and can send the Origin header.
+// Node v22 supports WebSocket out of the box; browsers send Origin automatically.
 async function checkSocket(){
  if(typeof WebSocket!=='function'){mark('⑩ WebSocketハンドシェイク',false,'Node 22+ が必要');return}
  const wsUrl=new URL('/ws',base);
  wsUrl.protocol=base.protocol==='https:'?'wss:':'ws:';
  try{
   const state=await new Promise((resolve,reject)=>{
-   const ws=new WebSocket(wsUrl.href,{headers:{Origin:base.origin}});
+   const ws=new WebSocket(wsUrl.href);
    const timer=setTimeout(()=>{ws.close();reject(Error('10秒以内に接続できません'))},10_000);
    ws.addEventListener('open',()=>{clearTimeout(timer);ws.close(1000);resolve('接続成功')},{once:true});
    ws.addEventListener('error',()=>{clearTimeout(timer);reject(Error('WebSocket接続失敗'))},{once:true});
