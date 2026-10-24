@@ -230,3 +230,25 @@ body.online-battle #gameArea #movePad{
  #onlineSlots .moji-setup-stat span{font-size:10px}
  #onlineSlots .moji-setup-stat small{font-size:9px}
 }
+
+/* v9.7: Save/ready ALWAYS sits directly to the right of Start, including
+   phone portrait. Quit takes a quieter third position or its own next row. */
+#waitArea .room-ready-actions{
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+ gap:9px;align-items:stretch;margin:13px 0 10px;
+}
+#waitArea .room-ready-actions #begin,#waitArea .room-ready-actions #saveRoomLoadout{
+ width:100%;min-width:0;min-height:47px;padding:9px 8px;
+ font-size:clamp(11px,1.3vw,14px);line-height:1.3;white-space:normal;
+}
+#waitArea .room-ready-actions #saveRoomLoadout{background:linear-gradient(120deg,#c9f7e4,#65dbad);color:#112b29;border-color:#bcfce0}
+#waitArea .room-ready-actions #leave{min-height:47px;padding:9px 15px}
+#waitArea #roomEditStatus{display:block;min-height:19px;margin:2px 0 6px}
+#waitArea .slot-random{font-size:11px!important;min-height:34px}
+@media(max-width:700px){
+ #waitArea .room-ready-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #waitArea .room-ready-actions #leave{grid-column:1/-1;min-height:37px}
+ #waitArea .room-ready-actions #begin,#waitArea .room-ready-actions #saveRoomLoadout{
+  min-height:48px;padding:7px 4px;font-size:11px
+ }
+}
