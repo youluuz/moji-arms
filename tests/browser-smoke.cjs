@@ -172,9 +172,11 @@ const { chromium } = require('playwright');
   if(discoVisual.discoVisible<150||discoVisual.shotVisible<250||
      !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
    throw Error('Visual disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
-  const preview=await page.evaluate(()=>[...document.querySelectorAll('#mojiWeaponPreview .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
+  const preview=await page.evaluate(()=>[...document.querySelectorAll('#abilityGuide .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
   if(preview.length!==5||preview[0].mark!=='●'||preview[3].mark!=='◆'||preview[4].mark!=='◎'||!preview.every(p=>p.stats.includes('CT')))
-   throw Error('Solo prematch weapon trajectory and stats previews missing '+JSON.stringify(preview));
+   throw Error('Solo integrated usage/effect guide missing weapon trajectory and stats '+JSON.stringify(preview));
+  if(await page.locator('#mojiWeaponPreview').count()!==0 || await page.locator('#abilityGuide').evaluate(el=>el.open))
+   throw Error('Solo attack preview must be inside the folded ability use/effect guide, not an independent panel');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
   if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',275],['invincible',280],['dance',280],['invisible',240],['namepu',160]]))throw Error('shared specs mismatch');
