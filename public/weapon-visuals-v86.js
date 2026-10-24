@@ -177,7 +177,7 @@ function bootstrap(){
  lobby?.addEventListener('click',()=>setTimeout(preMatchSolo,0),true);
  online?.addEventListener('input',preMatchOnline,true);
  online?.addEventListener('change',preMatchOnline,true);
- if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);const editor=document.querySelector('#joinArea');editor?.addEventListener('click',scheduled,true);}
+ if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);document.querySelector('#joinArea')?.addEventListener('click',scheduled,true);document.querySelector('#waitArea')?.addEventListener('click',scheduled,true);online.addEventListener('click',()=>setTimeout(preMatchOnline,0),true);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap,{once:true});else bootstrap();
 window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,preMatchSolo,preMatchOnline,syncSoloBattle};
