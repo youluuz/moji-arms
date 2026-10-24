@@ -5,7 +5,7 @@ const kinds=['attack','defense','heal','pierce','homing'];
 const samples=['炎','氷','雷','風','光','影','剣','盾','星','龍','月','桜','嵐','薔','鐵','龘'];
 const bots=[]; // Keep the same array for cover-generation collision checks.
 window.enemies=bots;
-let match=-1, chosenCount=1, initialized=false;
+let match=-1, chosenCount=1, initialized=false, roundStartAt=0, playerKills=0;
 const roll=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=roll(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
 function alive(){return bots.filter(b=>b.hp>0);}
@@ -40,32 +40,35 @@ function equip(bot,i){
  bot.nextDecision=0;bot.intent=roll(5);bot.speed=125+roll(31);
  bot.ready=0;bot.guardReady=0;bot.targetId=null;
 }
-function spawnPosition(i,total,now){
- const cx=900,cy=525,instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
- const radius=instant?113:Math.min(390,240+total*11);
- for(let attempts=0;attempts<110;attempts++){
-  const a=(i+.36*Math.random())*Math.PI*2/total + attempts*.26;
-  const r=instant?75+Math.random()*75:radius+Math.random()*45;
-  const x=Math.max(45,Math.min(WORLD_W-45,cx+Math.cos(a)*r));
-  const y=Math.max(45,Math.min(WORLD_H-45,cy+Math.sin(a)*r));
-  const blockers=[player,...bots];
-  if(blockers.some(o=>Math.hypot(o.x-x,o.y-y)<67))continue;
-  if(obstacles.some(o=>now-startTime<o.expires&&circleRect(x,y,29,o)))continue;
+function spawnPosition(index,total,now,ignorePlayer=false){
+ // Wider, collision-checked initial positions across the playable map.
+ // The instant-safe-zone variant must remain within its 180-unit radius.
+ const instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
+ const cx=instant?900:1150,cy=instant?525:650;
+ const rx=instant?136:750,ry=instant?136:430;
+ for(let attempt=0;attempt<115;attempt++){
+  const angle=(index/total)*Math.PI*2+attempt*.12;
+  const x=Math.max(40,Math.min(WORLD_W-40,cx+rx*Math.cos(angle)));
+  const y=Math.max(40,Math.min(WORLD_H-40,cy+ry*Math.sin(angle)));
+  const blockers=[...bots,...(ignorePlayer?[]:[player])];
+  if(blockers.some(o=>Math.hypot(o.x-x,o.y-y)<(instant?48:135)))continue;
+  if(obstacles.some(o=>now-startTime<o.expires&&circleRect(x,y,30,o)))continue;
   return {x,y};
  }
- return {x:Math.max(30,Math.min(WORLD_W-30,cx+Math.cos(i*2.4)*150)),y:Math.max(30,Math.min(WORLD_H-30,cy+Math.sin(i*2.4)*150))};
+ // Fallback remains inside bounds / the safe zone even on crowded maps.
+ const angle=index/total*Math.PI*2;
+ return {x:cx+Math.cos(angle)*(instant?115:630),y:cy+Math.sin(angle)*(instant?115:345)};
 }
 function startRound(token,now){
  bots.length=0;
  chosenCount=countSetting();
+ playerKills=0;roundStartAt=now+3000;
  if(typeof enemy==='undefined'||!enemy)return;
- if(typeof zoneSetting!=='undefined'&&zoneSetting==='instant'){
-  // Legacy CPU spawn is outside the initial small safety circle.
-  const pos=spawnPosition(0,chosenCount+1,now);enemy.x=pos.x;enemy.y=pos.y;
- }
+ const own=spawnPosition(0,chosenCount+1,now,true);player.x=own.x;player.y=own.y;
+ const first=spawnPosition(1,chosenCount+1,now);enemy.x=first.x;enemy.y=first.y;
  equip(enemy,0);bots.push(enemy);
  for(let i=1;i<chosenCount;i++){
-  const pos=spawnPosition(i,chosenCount+1,now);
+  const pos=spawnPosition(i+1,chosenCount+1,now);
   const bot={x:pos.x,y:pos.y,hp:MAX_HP,speed:140,shield:0,shieldEnd:0,r:19};
   equip(bot,i);bots.push(bot);
  }
@@ -140,13 +143,29 @@ function boot(){
  initialized=true;
  setupPicker();
  const hud=document.querySelector('#gameScreen .hud .hud-line span');
+ const arena=document.querySelector('#gameScreen .arena-shell');
+ if(arena&&!document.getElementById('cpuKillScore')){
+  arena.insertAdjacentHTML('beforeend','<div id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</div><div id="cpuBattleCountdown" class="match-countdown" role="status" aria-live="polite" hidden>3</div>');
+ }
  const other=document.querySelectorAll('#gameScreen .hud .hud-line>span:first-child')[1];
  if(other)other.innerHTML='<span id="cpuCountLive">◆ CPU 残り 1 / 1体</span>';
  const oldDraw=draw;
  draw=function(now){
   oldDraw(now);
   if(match!==matchToken||!running&&!bots.length)return;
+  const score=document.getElementById('cpuKillScore');
+  if(score)score.textContent='⚔ キル '+playerKills;
   const cx=ctx;cx.save();cx.textAlign='center';cx.textBaseline='middle';
+  // Original first CPU labeled 敵 uses a separate drawing path. Give it
+  // the same visible overhead HP bar as the additional enemies.
+  if(enemy.hp>0){
+   const x=enemy.x-cam.x,y=enemy.y-cam.y;
+   if(x>=-60&&y>=-60&&x<=cpuView.w+60&&y<=cpuView.h+60){
+    cx.fillStyle='#142032';cx.fillRect(x-31,y-46,62,8);
+    cx.fillStyle='#ff88a5';cx.fillRect(x-30,y-45,60*Math.max(0,enemy.hp/MAX_HP),6);
+    cx.strokeStyle='#ffe1ea';cx.lineWidth=1;cx.strokeRect(x-31,y-46,62,8);
+   }
+  }
   for(const bot of bots.slice(1)){
    if(bot.hp<=0)continue;
    const x=bot.x-cam.x,y=bot.y-cam.y;
@@ -178,7 +197,10 @@ function boot(){
    const absorbed=Math.min(actor.shield,amount);actor.shield-=absorbed;amount-=absorbed;
   }
   const old=actor.hp;actor.hp=Math.max(0,actor.hp-amount);
-  if(rest[0]?.owner==='p')battleDamage+=Math.max(0,old-actor.hp);
+  if(rest[0]?.owner==='p'){
+   battleDamage+=Math.max(0,old-actor.hp);
+   if(old>0&&actor.hp<=0)playerKills++;
+  }
   if(rest[0]?.ultimate==='slow'&&actor.hp>0)actor.slowUntil=now+3000;
   if(actor.hp<=0 && !alive().length && running){
    running=false;
@@ -191,6 +213,13 @@ function boot(){
   let dt=Math.min(Math.max(0,(now-last)/1000),.05);last=now;
   if(running){
    if(match!==token){match=token;startRound(token,now);}
+   const countdown=document.getElementById('cpuBattleCountdown');
+   if(now<roundStartAt){
+    if(countdown){countdown.hidden=false;countdown.textContent=String(Math.max(1,Math.ceil((roundStartAt-now)/1000)));}
+    draw(now);
+    requestAnimationFrame(t=>loop(t,token));return;
+   }
+   if(countdown)countdown.hidden=true;
    // Global dance stops ALL CPU attacks, bullets and damage, not only the human.
    if(window.MojiCpuUltimateState?.danceActive?.()){
     draw(now);requestAnimationFrame(t=>loop(t,token));return;
@@ -242,7 +271,7 @@ function boot(){
   draw(now);
   if(running)requestAnimationFrame(t=>loop(t,token));
  };
- window.MojiCpuBots={getBots:()=>bots,count:countSetting,lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
+ window.MojiCpuBots={getBots:()=>bots,count:countSetting,kills:()=>playerKills,countdownLeft:()=>Math.max(0,(roundStartAt-performance.now())/1000),lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
