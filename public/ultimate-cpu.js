@@ -46,7 +46,7 @@ function boot(){
   damage=function(actor,amount,now,...rest){
    const t=performance.now();
    if(t<danceUntil || (actor===player && t<immortalUntil))return;
-   if(rest[0]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0].pierceRoman=true}
+   if(rest[1]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0]=true}
    return oldDamage.call(this,actor,amount,now,...rest);
   };
  }
