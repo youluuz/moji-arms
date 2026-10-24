@@ -18,7 +18,7 @@
  function apply(){
   document.body.classList.toggle('mobile-pref-landscape',mobile()&&value==='landscape');
   document.body.classList.toggle('mobile-pref-portrait',mobile()&&value==='portrait');
-  document.documentElement.dataset.mobileOrientation=value;
+  document.documentElement.dataset.mojiScreenPreference=value;
   for(const b of document.querySelectorAll('[data-mobile-orientation]')){
    b.setAttribute('aria-pressed',String(b.dataset.mobileOrientation===value));
   }
