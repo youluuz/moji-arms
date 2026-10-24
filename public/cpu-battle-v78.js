@@ -77,12 +77,15 @@ function startRound(token,now){
 function rivals(bot){
  return [player,...alive()].filter(x=>x!==bot&&x.hp>0);
 }
-function chooseTarget(bot){
+function chooseTarget(bot,now){
  const options=rivals(bot);
  if(!options.length)return null;
- // Occasional random selection prevents all CPUs from always targeting the human.
- if(Math.random()<.46)return options[roll(options.length)];
- return options.reduce((a,b)=>Math.hypot(bot.x-a.x,bot.y-a.y)<Math.hypot(bot.x-b.x,bot.y-b.y)?a:b);
+ // Hold a target briefly to avoid frame-by-frame direction jitter.
+ if(bot.target && bot.target.hp>0 && now<(bot.retargetAt||0))return bot.target;
+ bot.target=Math.random()<.46?options[roll(options.length)]:
+  options.reduce((a,b)=>Math.hypot(bot.x-a.x,bot.y-a.y)<Math.hypot(bot.x-b.x,bot.y-b.y)?a:b);
+ bot.retargetAt=now+900+roll(1250);
+ return bot.target;
 }
 function botAction(bot,target,now){
  const available=bot.loadout.filter(s=>now>=s.ready);
@@ -192,7 +195,7 @@ function boot(){
    const mag=Math.hypot(vx,vy)||1;
    moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
    for(const bot of alive()){
-    const target=chooseTarget(bot);if(!target)continue;
+    const target=chooseTarget(bot,now);if(!target)continue;
     const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
     const approach=d<170?-1:d>310?1:0;
     moveActor(bot,dx/d*approach*bot.speed*dt,dy/d*approach*bot.speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
