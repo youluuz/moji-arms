@@ -340,6 +340,17 @@ const { chromium } = require('playwright');
   await page.setViewportSize({width:844,height:390});
   await page.waitForTimeout(100);
   if(errors.length)throw Error('landscape JS error: '+errors.join('; '));
+  // Exercise the actual click listener, not only the selector API.
+  const orientationClick=await page.evaluate(()=>{
+   const landscape=document.querySelector('[data-mobile-orientation=landscape]');
+   const portrait=document.querySelector('[data-mobile-orientation=portrait]');
+   landscape.click();
+   const selected=landscape.getAttribute('aria-pressed')==='true'&&localStorage.getItem('moji_mobile_play_orientation')==='landscape';
+   portrait.click();
+   return {selected,restored:portrait.getAttribute('aria-pressed')==='true'&&localStorage.getItem('moji_mobile_play_orientation')==='portrait'};
+  });
+  if(!orientationClick.selected||!orientationClick.restored)
+   throw Error('Actual orientation preference switch click failed '+JSON.stringify(orientationClick));
   console.log('Browser smoke passed: shared login, six CPU skills, six online skills, preference parity, portrait/landscape.');
  } finally {await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
