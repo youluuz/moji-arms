@@ -208,3 +208,104 @@ body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
  .moji-battle-howto{top:5px;left:45%;padding:3px 6px;font-size:8.5px}
  .moji-battle-howto small{font-size:7.5px}
 }
+
+/* v9.3 — The ultimate lives in a sixth, reserved equipment cell instead of
+   hovering above the map or overlapping the last ordinary weapon. All six
+   controls are independently tappable even in mobile landscape. */
+#gameScreen #weapons.moji-six-slot-row,
+body.online-battle #gameArea #cards.moji-six-slot-row{
+ display:grid!important;
+ grid-template-columns:repeat(6,minmax(0,1fr))!important;
+ gap:clamp(2px,.7vw,7px)!important;
+ align-items:stretch!important;
+ box-sizing:border-box!important;
+ max-width:100%!important;width:100%!important;
+}
+#gameScreen #weapons.moji-six-slot-row>.weapon,
+body.online-battle #gameArea #cards.moji-six-slot-row>.card{
+ min-width:0!important;max-width:100%!important;
+ width:100%!important;box-sizing:border-box!important;
+ overflow:hidden!important;
+}
+#gameScreen #weapons.moji-six-slot-row>.moji-ultimate-inline,
+body.online-battle #gameArea #cards.moji-six-slot-row>.moji-ultimate-inline{
+ position:relative!important;top:auto!important;right:auto!important;
+ bottom:auto!important;left:auto!important;
+ z-index:1!important;display:flex!important;
+ align-items:stretch!important;justify-content:center!important;
+ min-width:0!important;max-width:100%!important;width:100%!important;
+ height:100%!important;margin:0!important;padding:0!important;
+ align-self:stretch!important;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-battle,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-battle{
+ position:static!important;top:auto!important;right:auto!important;
+ bottom:auto!important;left:auto!important;transform:none!important;
+ display:flex!important;align-items:center!important;
+ justify-content:center!important;gap:0!important;
+ width:100%!important;max-width:100%!important;
+ height:100%!important;padding:0!important;margin:0!important;
+ pointer-events:none;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-cast,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-cast{
+ position:relative!important;inset:auto!important;
+ box-sizing:border-box!important;margin:0!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ height:100%!important;min-height:65px!important;
+ padding:3px 1px!important;border:2px solid #d4ae60!important;
+ border-radius:9px!important;overflow:hidden!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:0!important;
+ pointer-events:auto!important;touch-action:manipulation!important;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-icon,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-icon{
+ flex:0 0 auto!important;min-height:0!important;
+ width:clamp(27px,5vw,44px)!important;
+ height:clamp(27px,5vw,44px)!important;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-icon svg,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-icon svg{
+ display:block!important;width:100%!important;height:100%!important;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-left,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-left{
+ display:block!important;max-width:100%!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;
+ white-space:nowrap!important;text-align:center!important;
+ font-size:clamp(7px,1.25vw,10px)!important;
+ line-height:1.25!important;
+}
+#gameScreen #weapons.moji-six-slot-row .ultimate-state,
+body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-state{
+ display:none!important;
+}
+@media(max-width:680px){
+ #gameScreen #weapons.moji-six-slot-row,
+ body.online-battle #gameArea #cards.moji-six-slot-row{
+  gap:2px!important;padding:2px 1px!important
+ }
+ #gameScreen #weapons.moji-six-slot-row .ultimate-cast,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-cast{
+  min-height:60px!important
+ }
+ #gameScreen #weapons.moji-six-slot-row .ultimate-icon,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-icon{
+  width:32px!important;height:32px!important
+ }
+}
+@media(max-height:520px) and (orientation:landscape){
+ #gameScreen #weapons.moji-six-slot-row .ultimate-cast,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-cast{
+  min-height:46px!important;height:100%!important
+ }
+ #gameScreen #weapons.moji-six-slot-row .ultimate-icon,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-icon{
+  width:26px!important;height:26px!important
+ }
+ #gameScreen #weapons.moji-six-slot-row .ultimate-left,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-left{
+  font-size:8px!important
+ }
+}
