@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      expected_commit:
+        description: 'Renderへ反映したGitコミットの先頭7〜12文字（任意）'
+        required: false
+        type: string
+        default: ''
 jobs:
   public-check:
     runs-on: ubuntu-latest
@@ -30,4 +35,5 @@ jobs:
         env:
           PUBLIC_BASE_URL: ${{ inputs.public_url }}
           PAGES_URL: ${{ inputs.pages_url }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: node scripts/public-release-check.mjs "$PUBLIC_BASE_URL"
