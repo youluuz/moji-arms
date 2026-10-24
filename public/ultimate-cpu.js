@@ -30,7 +30,7 @@ function boot(){
   immortalUntil=invisibleUntil=slowUntil=namepuUntil=danceUntil=0;specialBullets.clear();
   lastActive=true;banner.hidden=true;prevEnemyHP=600;
  }
- function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5}
+ function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
  function canAct(){return !aiming && performance.now()>=namepuUntil && performance.now()>=danceUntil }
  // Wrap the actual successful-cast accounting; spamming a cooling slot earns no charge.
  if(typeof recordCast==='function'){
