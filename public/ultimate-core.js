@@ -3,7 +3,7 @@
 'use strict';
 const defs=[
  {id:'roman',name:'ロマン砲',cost:320,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
- {id:'slow',name:'鈍化弾',cost:275,icon:'鈍',color:'#9bbcff',tip:'狙った相手を減速',target:true},
+ {id:'slow',name:'硬化弾',cost:275,icon:'硬',color:'#85eaff',tip:'命中した相手を3秒間硬直',target:true},
  {id:'invincible',name:'無敵',cost:280,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
  {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
  {id:'invisible',name:'透明化',cost:240,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
@@ -16,13 +16,13 @@ const guides={
   role:'高火力・照準型',short:'超火力',
   summary:'オーラをまとった「ロマン砲」を放つ。命中した相手は、無敵中を除きシールドや残りHPに関係なく即死する。',
   usage:'必殺技ボタンを押して構え、5秒以内に戦場の狙いたい位置をタップ／クリック。照準を決めた後、1秒の発射前スタンを経て発射。',
-  caution:'照準確定後の1秒は移動も通常武装もできない。構え中も通常武装は使えない。障害物を貫通せず、外すと大きな隙になる。5秒過ぎると最後の照準方向へ自動発射。'
+  caution:'照準確定後の1秒は移動も通常武装もできない。構え中も通常武装は使えない。弾速はやや遅めで障害物を貫通せず、外すと大きな隙になる。5秒過ぎると最後の照準方向へ自動発射。'
  },
  slow:{
-  role:'妨害・照準型',short:'減速',
-  summary:'鈍化弾を当てて60ダメージを与え、相手の移動速度を4.5秒間低下させる（従来より1.5秒延長）。',
+  role:'拘束・照準型',short:'3秒硬直',
+  summary:'硬化弾が命中すると60ダメージを与え、相手を3秒間完全に硬直させる。硬直中は移動・通常攻撃・必殺技が使えない。',
   usage:'ロマン砲と同じ2段階操作。必殺技ボタンを押して構え、戦場の狙った位置をタップ／クリックして発射。5秒経つと自動発射。',
-  caution:'構え中は移動可能だが通常武装は使えない。相手が無敵や有効な防御をしている間は速度低下を防がれる。'
+  caution:'構え中は移動可能だが通常武装は使えない。通常の防御・シールドを貫通して硬直させるが、無敵中の相手にはダメージも硬直も効かない。障害物は貫通しない。'
  },
  invincible:{
   role:'防御・即時発動',short:'完全防御',
@@ -54,7 +54,7 @@ let widgetSerial=0;
 // Illustrated SVG icons: each ability has its own motif, with art and a readable emblem.
 const motifs={
  roman:'<g stroke-linejoin="round" stroke-linecap="round"><g transform="rotate(-24 48 49)"><path d="M8 40H19V58H8Z" fill="#36404b" stroke="#bbc3c8" stroke-width="2.4"/><path d="M16 35H68L75 39V60L68 64H16Z" fill="#566b42" stroke="#e2c07d" stroke-width="3"/><path d="M20 38H65L70 41V47H20Z" fill="#859565" opacity=".8"/><path d="M25 36V63M58 36V63" stroke="#2e3238" stroke-width="8"/><path d="M25 36V63M58 36V63" stroke="#e7ad54" stroke-width="3"/><path d="M65 32H83L89 37V63L83 68H65L70 61V39Z" fill="#c18337" stroke="#ffe1a1" stroke-width="3"/><path d="M78 37L88 40V60L78 63Z" fill="#293642" stroke="#fbc671" stroke-width="2"/><ellipse cx="81" cy="50" rx="5.6" ry="11" fill="#ff852e" stroke="#ffe9aa" stroke-width="1.6"/><path d="M83 44L91 39 87 48 96 51 86 55 90 61 82 57" fill="#ffb347" stroke="#ffefb4" stroke-width="1.3"/><path d="M33 63H48L52 79H37Z" fill="#303a45" stroke="#e1ac62" stroke-width="2.5"/><path d="M38 69L47 68" stroke="#a1a8ab" stroke-width="2"/><path d="M48 63L61 63 58 69H54" fill="none" stroke="#f3d29b" stroke-width="3"/><path d="M35 27H53V35H35Z" fill="#2b3a48" stroke="#ffce71" stroke-width="2.3"/><path d="M41 28V24H48V28" fill="none" stroke="#ffdb91" stroke-width="2"/><path d="M19 45H55" stroke="#dbe4b3" stroke-width="2.2" opacity=".65"/><path d="M10 45V53" stroke="#ffce89" stroke-width="2.2"/></g><path d="M84 17L91 12M85 25L95 25M76 12L77 6" stroke="#ffb352" stroke-width="3"/><circle cx="89" cy="20" r="2" fill="#ffe6a6"/></g>',
- slow:'<g stroke-linecap="round" stroke-linejoin="round"><path d="M44 10 65 13 60 44 57 59Q57 65 68 68L79 74Q82 79 76 83H40Q34 83 33 77L37 53Z" fill="#b9d9ed" stroke="#f4faff" stroke-width="3"/><path d="M42 20 64 22M39 52 59 54" stroke="#5b84bc" stroke-width="3"/><path d="M35 57 59 59 59 67 34 65Z" fill="#263e79" stroke="#d7edff" stroke-width="2.5"/><path d="M34 65 29 67 27 72" fill="none" stroke="#a8d4fd" stroke-width="5"/><path d="M32 67 26 70M30 72 24 75" fill="none" stroke="#1b2c59" stroke-width="2"/><circle cx="20" cy="73" r="14" fill="#3a4e8e" stroke="#d7edff" stroke-width="3"/><circle cx="16" cy="68" r="5" fill="#9dc5fa" opacity=".75"/><path d="M48 75H75" fill="none" stroke="#eefaff" stroke-width="2"/><path d="M18 48 11 48M16 56 6 59" fill="none" stroke="#aac5fa" stroke-width="3"/></g>',
+ slow:'<g stroke-linejoin="round" stroke-linecap="round"><path d="M12 47H27M8 39H22M11 55H24" stroke="#a4ebff" stroke-width="3" opacity=".85"/><circle cx="27" cy="48" r="10" fill="#3b91d5" stroke="#ebffff" stroke-width="3"/><path d="M31 35L40 29 37 42 45 48 36 56 40 66 29 61" fill="#faffff" stroke="#b8f8ff" stroke-width="2.5"/><path d="M43 16 72 19 87 40 80 69 58 80 36 65 35 34Z" fill="#45b6de" opacity=".36" stroke="#b0faff" stroke-width="4"/><path d="M43 16 56 37 35 34M72 19 56 37 87 40M35 34 57 61 36 65M57 61 80 69 87 40M58 80 57 61" fill="none" stroke="#d3faff" stroke-width="2" opacity=".85"/><circle cx="59" cy="42" r="7" fill="#eaffff"/><path d="M49 54Q59 47 69 54L69 68H49Z" fill="#eefcff" stroke="#265879" stroke-width="2.5"/><path d="M57 57V63M62 57V63" stroke="#2c6892" stroke-width="2"/><path d="M45 11 47 5M68 13 74 7M82 24 90 20" fill="none" stroke="#aff9ff" stroke-width="3"/></g>',
  invincible:'<circle cx="48" cy="48" r="37" fill="none" stroke="#fff5bc" stroke-width="6"/><circle cx="48" cy="48" r="30" fill="#fff0af" opacity=".17"/><path d="m48 9 15 27-15 31-15-31Z" fill="#ffdd72" opacity=".64"/>',
  dance:'<path d="M25 49V20l26-9v31M51 42V18l24-7v38" fill="none" stroke="#ffd4f4" stroke-width="7"/><circle cx="18" cy="57" r="10" fill="#f372c4"/><circle cx="44" cy="48" r="10" fill="#f372c4"/><circle cx="67" cy="57" r="10" fill="#ffd568"/><path d="m17 83 9-10 11 10M63 79 73 68" stroke="#fff" stroke-width="4"/>',
  invisible:'<path d="M9 48Q48 1 87 48Q48 94 9 48Z" fill="#78dcf5" opacity=".55" stroke="#dcfdff" stroke-width="4"/><circle cx="48" cy="48" r="19" fill="#1b617b" stroke="#efffff" stroke-width="3"/><path d="M20 81 79 13" stroke="#fff" stroke-width="6"/>',
