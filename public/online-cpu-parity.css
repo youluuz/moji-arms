@@ -168,3 +168,33 @@ body.online-battle #gameArea #onlineBattleScoreboard #onlineStatus{
   padding:1px 2px!important;font-size:9px!important;line-height:1.1!important
  }
 }
+
+/* v9.3: Concentric joystick. Both rings use exactly the same origin.
+   The thumb animates; the pad never jumps to a different touch coordinate. */
+body.online-battle #gameArea #touchControls{
+ --moji-zone-size:144px;--moji-pad-size:112px;
+ --moji-zone-left:8px;--moji-zone-bottom:7px;
+}
+body.online-battle #gameArea #moveZone{
+ left:var(--moji-zone-left)!important;bottom:var(--moji-zone-bottom)!important;
+ top:auto!important;right:auto!important;
+ width:var(--moji-zone-size)!important;height:var(--moji-zone-size)!important;
+ border-radius:50%!important;clip-path:circle(50% at 50%)!important;
+ box-sizing:border-box!important;
+}
+body.online-battle #gameArea #movePad{
+ left:calc(var(--moji-zone-left) + (var(--moji-zone-size) - var(--moji-pad-size))/2)!important;
+ bottom:calc(var(--moji-zone-bottom) + (var(--moji-zone-size) - var(--moji-pad-size))/2)!important;
+ top:auto!important;right:auto!important;
+ width:var(--moji-pad-size)!important;height:var(--moji-pad-size)!important;
+ box-sizing:border-box!important;
+}
+@media(max-width:360px){
+ body.online-battle #gameArea #touchControls{--moji-zone-size:124px;--moji-pad-size:88px}
+}
+@media(max-height:520px) and (any-pointer:coarse){
+ body.online-battle #gameArea #touchControls{--moji-zone-size:112px;--moji-pad-size:88px}
+}
+@media(orientation:landscape) and (max-height:480px){
+ body.online-battle #gameArea #touchControls{--moji-pad-size:86px}
+}
