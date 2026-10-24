@@ -162,7 +162,10 @@ function rollOnlineGlyph(i,pool,used){
  if(!ch)return false;
  input.value=ch;used.add(ch);
  const count=input.closest('.online-slot').querySelector('.slot-strokes');
- count.value=strokeForGlyph(ch);return true;
+ // In custom rooms, the manually chosen stroke value must stay unchanged:
+ // the button shuffles ONLY the character, not its kind or custom power.
+ if(setup.mode!=='custom'||!count.value.trim())count.value=strokeForGlyph(ch);
+ return true;
 }
 $('randomAll').addEventListener('click',async()=>{
  await strokesReady;
@@ -190,7 +193,8 @@ $('onlineSlots').addEventListener('focusin',e=>{if(e.target.matches('.online-gly
 document.querySelector('.glyph-examples').addEventListener('click',e=>{
  const button=e.target.closest('[data-sample]');if(!button)return;
  const input=$('onlineGlyph'+lastGlyphSlot);input.value=button.dataset.sample;
- input.closest('.online-slot').querySelector('.slot-strokes').value=strokeForGlyph(input.value);
+ const customCount=input.closest('.online-slot').querySelector('.slot-strokes');
+ if(setup.mode!=='custom'||!customCount.value.trim())customCount.value=strokeForGlyph(input.value);
  $('error').textContent='枠'+(lastGlyphSlot+1)+'に「'+input.value+'」を設定しました。';
  input.focus();
 });
