@@ -369,7 +369,11 @@ func (r *Room) state() map[string]any {
 		}
 		char:=p.Ch
         if now<p.NamepuUntil {char="😐"}
-        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"romanWindupLeft":math.Max(0,p.UltimateWindupUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"hardenedLeft":math.Max(0,p.HardenedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind})
+        entry := map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"romanWindupLeft":math.Max(0,p.UltimateWindupUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"hardenedLeft":math.Max(0,p.HardenedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind}
+        // The waiting room sends the AUTHORITATIVE saved five-slot loadout.
+        // Do not stream the larger equipment arrays during combat at 30 Hz.
+        if r.Phase == "lobby" { entry["slots"] = p.Slots }
+        players = append(players, entry)
 	}
 	bullets := make([]map[string]any, 0, len(r.Bullets))
 	for _, b := range r.Bullets {
@@ -702,7 +706,9 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			player.Fire = false
 			player.CastPending = false
 			player.Keys = map[string]bool{}
-			player.Ready = true
+			// Replays require explicit confirmation: do not silently launch with
+			// the loadout from the previous match while a user is editing.
+			player.Ready = false
 		}
 		room.broadcast()
 	case "setup":
