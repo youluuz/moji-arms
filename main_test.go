@@ -744,13 +744,27 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
   if math.Abs(slotCooldown(kind,15)-base*1.4)>.000001 {t.Fatalf("%s cooldown should be multiplied by 1.4",kind)}
  }
 }
+func TestWeaponPreviewStylesAndDamageSummary(t *testing.T){
+ js,e:=gameFiles.ReadFile("public/weapon-visuals-v86.js");if e!=nil{t.Fatal(e)}
+ css,e:=gameFiles.ReadFile("public/weapon-visuals-v86.css");if e!=nil{t.Fatal(e)}
+ for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","n*6","n*4"} {
+  if !strings.Contains(string(js),token){t.Errorf("missing projectile or weapon metric: %s",token)}
+ }
+ if !strings.Contains(string(css),"body.online-battle #gameArea .combat-hp.rival{display:none!important}") ||
+    !strings.Contains(string(css),"#gameScreen .hud") {t.Fatal("must retain own HP only in solo and online")}
+ if !strings.Contains(mobilePatchedIndex("<html><head></head><body></body></html>"),"weapon-visuals-v86.js") {
+  t.Fatal("legacy solo page did not import weapon previews")
+ }
+}
+
 func TestOnlineCombatScreenMatchesCPUScreenshotLayout(t *testing.T) {
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  css,e:=gameFiles.ReadFile("public/online-cpu-parity.css");if e!=nil{t.Fatal(e)}
- for _,marker:=range []string{"online-cpu-parity.css","id=\"selfName\"","id=\"enemyName\"","id=\"enemyBar\"","id=\"battleAnnounce\"","class=\"battle-zone-info\"","id=\"zoneSize\"","class=\"game-wrap arena-shell\"","id=\"cards\" class=\"cards weaponrow\"","drawHandle=requestAnimationFrame(draw)"} {
+ for _,marker:=range []string{"online-cpu-parity.css","weapon-visuals-v86.js","id=\"selfName\"","id=\"selfBar\"","id=\"battleAnnounce\"","class=\"battle-zone-info\"","id=\"zoneSize\"","class=\"game-wrap arena-shell\"","id=\"cards\" class=\"cards weaponrow\"","drawHandle=requestAnimationFrame(draw)"} {
   if !strings.Contains(string(online),marker) {t.Errorf("CPU-style online battle markup missing %s",marker)}
  }
- for _,marker:=range []string{"#gameArea .combat-hp.rival .hp-fill","#gameArea .weaponrow","#gameArea .arena-shell","#gameArea .battle-meta"} {
+ if strings.Contains(string(online),`id="enemyBar"`) || strings.Contains(string(online),`id="enemyHP"`) {t.Fatal("top-right opponent HP must be removed")}
+ for _,marker:=range []string{"#gameArea .weaponrow","#gameArea .arena-shell","#gameArea .battle-meta"} {
   if !strings.Contains(string(css),marker) {t.Errorf("CPU-style online battle CSS missing %s",marker)}
  }
  if slotCooldown("attack",58)<=slotCooldown("attack",40)+5 {t.Fatal("58-stroke glyph attack must have notably longer cooldown")}
