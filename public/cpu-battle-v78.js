@@ -177,6 +177,7 @@ function boot(){
   if(match!==matchToken||!running&&!bots.length)return;
   const score=document.getElementById('cpuKillScore');
   if(score)score.textContent='⚔ キル '+playerKills;
+  window.MojiWeaponVisual?.syncSoloBattle(typeof slots==='undefined'?[]:slots);
   const cx=ctx;cx.save();cx.textAlign='center';cx.textBaseline='middle';
   // Original first CPU labeled 敵 uses a separate drawing path. Give it
   // the same visible overhead HP bar as the additional enemies.
@@ -218,6 +219,10 @@ function boot(){
    if(bot.hp<=0)continue;
    cx.fillStyle='#ff9cad';cx.beginPath();cx.arc(mx+bot.x/WORLD_W*mw,my+bot.y/WORLD_H*mh,3.2,0,Math.PI*2);cx.fill();
   }
+  // Draw a recognizable silhouette around the fired character itself.
+  // Redraw atop legacy bare-character shots without changing collision behavior.
+  if(window.MojiWeaponVisual)for(const bullet of bullets)
+   window.MojiWeaponVisual.drawProjectile(cx,{...bullet,x:bullet.x-cam.x,y:bullet.y-cam.y});
   cx.restore();
   updateHpDisplay();
  };
