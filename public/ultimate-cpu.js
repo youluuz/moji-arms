@@ -109,11 +109,13 @@ function boot(){
   }
   if(now<namepuUntil||now<danceUntil){
    window.MojiWeaponVisual?.drawMirrorBall(c,x,y-126,now);
+   window.MojiWeaponVisual?.drawDanceAura(c,x,y,now);
    c.font='bold 26px sans-serif';c.fillStyle='#ffe49a';c.fillText(now<namepuUntil?'😐':'♪ ♫ ♪',x,y-76+Math.sin(now/135)*6);
    c.font='bold 21px sans-serif';c.fillText('♪',x-30,y-55);c.fillText('♫',x+29,y-50);
-   if(now<danceUntil&&typeof enemy!=='undefined'){
+   if(now<danceUntil&&typeof enemy!=='undefined'&&enemy.hp>0){
     const ex=enemy.x-cam.x,ey=enemy.y-cam.y;
     window.MojiWeaponVisual?.drawMirrorBall(c,ex,ey-126,now);
+    window.MojiWeaponVisual?.drawDanceAura(c,ex,ey,now);
     c.font='bold 25px sans-serif';c.fillText('♪ ♫ ♪',ex,ey-76+Math.sin(now/135)*7);
     c.font='bold 19px sans-serif';c.fillText('♬',ex-27,ey-55);c.fillText('♪',ex+28,ey-54);
    }
@@ -145,7 +147,7 @@ function boot(){
   if(usedNamepu&&result.classList.contains('show')&&typeof player!=='undefined'&&player.hp>0){
    result.classList.add('ultimate-namepu-victory');
    const title=document.getElementById('resultTitle');
-   if(!result.dataset.ultimateNamepu){result.dataset.ultimateNamepu='1';title.textContent=U.victoryPhrase()}
+   if(!result.dataset.ultimateNamepu){result.dataset.ultimateNamepu='1';title.textContent='🏆 優勝：あなた｜'+U.victoryPhrase()}
   }else if(!result.classList.contains('show')){result.classList.remove('ultimate-namepu-victory');delete result.dataset.ultimateNamepu}
   graphics(now);requestAnimationFrame(tick);
  }
