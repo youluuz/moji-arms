@@ -188,7 +188,7 @@ function preMatchOnline(){
   let area=guide.querySelector('.moji-weapon-help');
   if(!area){
    area=document.createElement('section');area.className='moji-weapon-help';
-   area.innerHTML='<h3>武装の使い方・効果と発射イメージ</h3><p>● 青＝通常弾　◆ オレンジ＝貫通弾　◎ 水色＝追尾弾。戦闘中も同じ形で表示されます。</p><div class="moji-weapon-gallery-grid"></div>';
+   area.innerHTML='<h3>武装の使い方・効果と発射イメージ</h3><p>● 黄緑＝通常弾　◆ オレンジ＝貫通弾　◎ 水色＝追尾弾。戦闘中も同じ形で表示されます。</p><div class="moji-weapon-gallery-grid"></div>';
    guide.append(area);
   }
   const grid=area.querySelector('.moji-weapon-gallery-grid');
