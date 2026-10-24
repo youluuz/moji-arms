@@ -5,6 +5,14 @@ function boot(){
  if(!window.MojiUlt||!document.getElementById('weapons')||!document.getElementById('field'))return;
  const U=window.MojiUlt, lobby=document.getElementById('loadoutPanel'),shell=document.querySelector('#gameScreen .arena-shell');
  const pick=U.attachUI(lobby),battle=U.attachUI(shell);battle.showBattle(true);
+ // Six clearly separated equipment cells: five ordinary glyph weapons and
+ // one ultimate. Never position the cast button on top of the arena/cards.
+ const weaponRow=document.getElementById('weapons');
+ if(weaponRow){
+  weaponRow.classList.add('moji-six-slot-row');
+  battle.root.classList.add('moji-ultimate-inline');
+  weaponRow.append(battle.root);
+ }
  // Put ultimate selection directly after the five glyph/slot editor, not at
  // the bottom of the entire lobby (where settings and entry actions live).
  const glyphSlots=document.getElementById('setup');
