@@ -1,0 +1,102 @@
+/* v10.0 - Lobby / online room readability refresh. DOM/control order unchanged.
+   Stronger visual hierarchy, 44px+ touch targets, no clipped mode cards, and
+   a sticky sortie action so the Start button never disappears while scrolling. */
+#lobbyScreen{--moji-panel:#152c46;--moji-highlight:#ffdda0}
+#lobbyScreen .moji-lobby-topbar{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:12px;min-width:0;padding:11px 14px;margin:0 0 10px;
+ border:1px solid #577c9e;border-radius:13px;
+ background:linear-gradient(110deg,#102944,#182d45);
+ box-shadow:0 5px 16px #06162666;
+}
+#lobbyScreen #mojiLaunchInfo{flex:1;min-width:0;max-width:100%;color:#dbf6f4;
+ font-size:clamp(11px,1.4vw,14px);font-weight:850;text-decoration:none;
+ line-height:1.5;overflow-wrap:anywhere}
+#lobbyScreen #mojiLaunchInfo:hover{color:#ffe2a4}
+#lobbyScreen #mojiNoticeButton{position:relative;flex:0 0 auto;min-height:46px;
+ display:flex;gap:5px;align-items:center;justify-content:center;padding:7px 13px;
+ border:1px solid #d5b779;border-radius:12px;background:linear-gradient(145deg,#354965,#172d48);
+ color:#ffe8b8;box-shadow:0 0 14px #f0b75b22;font-size:12px;font-weight:900;cursor:pointer}
+#lobbyScreen #mojiNoticeButton [aria-hidden=true]{font-size:23px}
+#lobbyScreen .moji-unread{position:absolute;right:-5px;top:-9px;
+ padding:1px 5px;border-radius:6px;background:#e6ad4f;color:#1f2632;font-size:9px;font-weight:1000}
+#lobbyScreen .moji-mobile-landscape-tip{display:none}
+#lobbyScreen .moji-sortie-dock{
+ position:sticky;bottom:0;z-index:110;
+ width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:8px;padding:9px 15px max(9px,env(safe-area-inset-bottom));
+ margin:12px 0 0;border:1px solid #c19a60;border-radius:13px 13px 0 0;
+ background:linear-gradient(110deg,#13263eec,#2a344aec);
+ box-shadow:0 -8px 25px #06121fc4;backdrop-filter:blur(12px)
+}
+#lobbyScreen .moji-sortie-text{font-size:12px;font-weight:850;color:#f6d89a}
+#lobbyScreen #mojiSortieDock #start{
+ position:static!important;display:inline-flex!important;align-items:center;justify-content:center;
+ min-width:min(53vw,250px);min-height:52px!important;margin:0!important;
+ padding:9px 22px!important;box-sizing:border-box!important;
+ border:1px solid #f8da9b;border-radius:12px;
+ background:linear-gradient(115deg,#ffe4a9,#d2a65e)!important;color:#161f31!important;
+ font-weight:950!important;font-size:clamp(14px,2.4vw,17px)!important;
+ box-shadow:0 6px 18px #e8ba5633;cursor:pointer
+}
+#lobbyScreen #mojiSortieDock #start:disabled{opacity:.55;cursor:not-allowed}
+#lobbyScreen .panel,#lobbyScreen #battleSettings,#joinArea.panel,#waitArea.panel{
+ border-radius:16px;box-shadow:0 8px 26px #0715264d;
+}
+#lobbyScreen #modeTiles{max-width:100%;min-width:0;gap:8px!important}
+#lobbyScreen #modeTiles [data-mode-tile]{
+ min-width:0;box-sizing:border-box;border-radius:12px;overflow-wrap:anywhere;
+ min-height:66px;line-height:1.3;border-color:#647d9c;
+}
+#lobbyScreen #modeTiles [aria-pressed=true]{outline:2px solid #ffdc9f;outline-offset:0}
+#lobbyScreen .setting,#lobbyScreen .slot,#waitArea .online-slot{
+ min-width:0;overflow-wrap:anywhere;
+}
+#lobbyScreen input,#lobbyScreen select,#waitArea input,#waitArea select{
+ max-width:100%;min-width:0;box-sizing:border-box;
+}
+#lobbyScreen .panel summary,#waitArea details summary{min-height:37px;line-height:1.5}
+#waitArea,#joinArea{background:linear-gradient(150deg,#19314d,#0e1d32)!important;
+ border:1px solid #6081a1!important}
+#waitArea #roomLoadoutArea{background:linear-gradient(150deg,#18314d,#102339)!important;
+ border-color:#6a8ea9!important}
+#waitArea .online-slot{border-color:#5d819f!important;background:linear-gradient(175deg,#233e59,#142740)!important}
+#waitArea #roomWeaponSummary{border-color:#a78e69!important}
+#waitArea .room-ready-actions{position:sticky;top:0;z-index:12;
+ background:#102a43ee;border:1px solid #557999;border-radius:12px;
+ padding:8px;backdrop-filter:blur(9px)}
+.moji-notice-overlay:not([hidden]){display:flex}
+.moji-notice-overlay[hidden]{display:none!important}
+.moji-notice-overlay{position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;
+ padding:16px;background:#020b17d9;backdrop-filter:blur(9px)}
+.moji-notice-dialog{width:min(530px,100%);max-height:min(80dvh,650px);display:flex;flex-direction:column;
+ background:linear-gradient(140deg,#1f3752,#0b1c33);border:1px solid #dbb87a;border-radius:18px;
+ box-shadow:0 22px 70px #0009;color:#f1f7ff;padding:16px;overflow:hidden}
+.moji-notice-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.moji-notice-head h2{font-size:18px;color:#ffe2a7;margin:0}
+.moji-notice-head button{width:44px;height:44px;padding:0!important;font-size:27px!important;border:1px solid #859ab4;border-radius:9px;background:#233954;color:white;cursor:pointer}
+.moji-notice-description{font-size:12px;color:#b9d4ec;margin:5px 0 10px}
+.moji-notice-items{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+.moji-notice-item{padding:12px 13px;margin:8px 0;border:1px solid #577996;border-radius:10px;background:#102640}
+.moji-notice-item small{color:#a5c7dd;font-size:11px}
+.moji-notice-item h3{margin:3px 0 6px;font-size:15px;color:#ffe3ab}
+.moji-notice-item p{font-size:13px;line-height:1.7;color:#d6e7f4;white-space:pre-wrap;margin:0}
+@media(max-width:700px){
+ #lobbyScreen .moji-lobby-topbar{padding:7px 8px;gap:5px}
+ #lobbyScreen #mojiNoticeButton{padding:6px 7px;min-width:53px;min-height:45px;flex-direction:column;font-size:10px;gap:0}
+ #lobbyScreen .moji-mobile-landscape-tip{display:block;color:#ffe4ad;
+  font-size:11px;font-weight:850;line-height:1.5;background:#243451;
+  padding:8px 10px;border:1px solid #a08b6e;border-radius:9px;margin:5px 0 10px}
+ #lobbyScreen .moji-sortie-dock{padding:7px 9px max(7px,env(safe-area-inset-bottom))}
+ #lobbyScreen .moji-sortie-text{font-size:10px}
+ #lobbyScreen #mojiSortieDock #start{min-height:50px!important;min-width:43vw;padding:7px 11px!important;font-size:13px!important}
+ #lobbyScreen #modeTiles{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #lobbyScreen #modeTiles [data-mode-tile]{width:100%;min-width:0;min-height:63px}
+ #waitArea .room-ready-actions{padding:5px;gap:5px;top:0}
+ #waitArea .online-loadout,#joinArea .online-loadout{padding:9px}
+ #waitArea .online-slots,#joinArea .online-slots{min-width:0}
+}
+@media(max-height:460px) and (orientation:landscape){
+ #lobbyScreen .moji-sortie-dock{padding:4px 8px}
+ #lobbyScreen #mojiSortieDock #start{min-height:40px!important}
+}
