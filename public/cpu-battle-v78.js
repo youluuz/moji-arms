@@ -100,15 +100,18 @@ function chooseTarget(bot,now){
  return bot.target;
 }
 function botAction(bot,target,now){
- if(now<bot.hardenUntil)return; // A hardened enemy cannot cast, attack, heal, or guard.
- const available=bot.loadout.filter(s=>now>=s.ready);
+ const hardened=now<bot.hardenUntil;
+ // Feet and offensive equipment are locked; self-heal and shield stay available.
+ const available=bot.loadout.filter(s=>now>=s.ready&&(!hardened||s.kind==='heal'||s.kind==='defense'));
  if(!available.length)return;
  const urgent=bot.hp<MAX_HP*.55&&available.find(s=>s.kind==='heal');
  const risky=bullets.some(b=>b.sourceId!==bot.id&&Math.hypot(bot.x-b.x,bot.y-b.y)<140);
  const guard=risky&&available.find(s=>s.kind==='defense');
  const attacks=available.filter(s=>!['defense','heal'].includes(s.kind));
- let action=urgent||guard||(attacks.length?attacks[roll(attacks.length)]:null);
- if(!action&&risky)action=available.find(s=>s.kind==='defense');
+ let action=hardened
+  ? (urgent||(bot.hp<MAX_HP&&available.find(s=>s.kind==='heal'))||guard||available.find(s=>s.kind==='defense'))
+  : (urgent||guard||(attacks.length?attacks[roll(attacks.length)]:null));
+ if(!action&&!hardened&&risky)action=available.find(s=>s.kind==='defense');
  if(!action)return;
  const n=action.n;
  action.ready=now+slotCooldownMs(action.kind,n);
@@ -233,7 +236,7 @@ function boot(){
    battleDamage+=Math.max(0,old-actor.hp);
    if(old>0&&actor.hp<=0)playerKills++;
   }
-  if(rest[0]?.ultimate==='slow'&&actor.hp>0){actor.hardenUntil=now+3000;actor.nextDecision=Math.max(actor.nextDecision,actor.hardenUntil)}
+  if(rest[0]?.ultimate==='slow'&&actor.hp>0){actor.hardenUntil=now+3000;actor.nextDecision=Math.min(actor.nextDecision||now,now+250)}
   if(actor.hp<=0 && !alive().length && running){
    running=false;
    document.getElementById('status').textContent='🏆 勝利！ すべてのCPUを撃破！';
@@ -262,13 +265,15 @@ function boot(){
    const mag=Math.hypot(vx,vy)||1;
    moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
    for(const bot of alive()){
-    if(now<bot.hardenUntil)continue; // No movement or AI actions during the full three seconds.
-    const target=chooseTarget(bot,now);if(!target)continue;
-    const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
-    const approach=d<170?-1:d>310?1:0;
-    const speed=bot.speed;
-    moveActor(bot,dx/d*approach*speed*dt,dy/d*approach*speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
-    if(now>=bot.nextDecision){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
+    const hardened=now<bot.hardenUntil;
+    const target=hardened?null:chooseTarget(bot,now);
+    if(!hardened&&target){
+     const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
+     const approach=d<170?-1:d>310?1:0;
+     const speed=bot.speed;
+     moveActor(bot,dx/d*approach*speed*dt,dy/d*approach*speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
+    }
+    if(now>=bot.nextDecision&&(hardened||target)){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
    }
    const elapsed=(now-startTime)/1000;
    zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:
