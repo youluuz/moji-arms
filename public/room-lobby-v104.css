@@ -1,0 +1,181 @@
+/* v10.4 — waiting-room redesign aligned with the main lobby.
+   Scoped to join/wait areas: never change the online battle canvas. */
+:root{--room-bg:#11263e;--room-panel:#18334f;--room-line:#6788a9;
+ --room-sky:#c9e8ff;--room-gold:#ffdfa0}
+body:not(.online-battle) #joinArea,
+body:not(.online-battle) #waitArea{
+ max-width:1080px;margin-inline:auto;
+ background:linear-gradient(150deg,#19334f 0%,#101f35 75%)!important;
+ border:1px solid #6688aa!important;border-radius:17px!important;
+ color:#f0f7ff;box-shadow:0 14px 32px #0005;
+}
+body:not(.online-battle) #joinArea{padding:clamp(13px,2vw,24px)!important}
+body:not(.online-battle) #joinArea .online-eyebrow{
+ color:#a5d9ff!important;letter-spacing:.15em;font-weight:950
+}
+body:not(.online-battle) #joinArea>h2,
+body:not(.online-battle) #waitArea>h2{
+ color:#ffe3aa;font-weight:900;letter-spacing:.015em;margin:4px 0 9px;
+ font-size:clamp(19px,2.8vw,25px);line-height:1.5
+}
+body:not(.online-battle) #joinArea>.muted,
+body:not(.online-battle) #waitArea>p.muted{
+ color:#c4deee;line-height:1.7;font-size:13px
+}
+body:not(.online-battle) #joinArea .grid{
+ gap:12px;align-items:stretch;margin-top:15px
+}
+body:not(.online-battle) #joinArea .grid>div{
+ padding:12px;border-radius:12px;background:#102842;
+ border:1px solid #577b9c;min-width:0
+}
+body:not(.online-battle) #joinArea label,
+body:not(.online-battle) #waitArea label{
+ color:#d2eaff;font-size:12px;font-weight:850
+}
+body:not(.online-battle) #joinArea input,
+body:not(.online-battle) #waitArea input,
+body:not(.online-battle) #joinArea select,
+body:not(.online-battle) #waitArea select{
+ background:#091b30;color:#f5faff;border:1.5px solid #91b5d4;
+ border-radius:9px;min-width:0;max-width:100%;min-height:42px
+}
+body:not(.online-battle) #joinArea input:focus-visible,
+body:not(.online-battle) #waitArea input:focus-visible,
+body:not(.online-battle) #joinArea button:focus-visible,
+body:not(.online-battle) #waitArea button:focus-visible{
+ outline:3px solid #ffdfa0;outline-offset:2px
+}
+body:not(.online-battle) #joinArea button,
+body:not(.online-battle) #waitArea button{
+ border-radius:10px;font-weight:850;min-height:44px;
+}
+body:not(.online-battle) #joinArea button.primary,
+body:not(.online-battle) #waitArea button.primary{
+ background:linear-gradient(125deg,#ffe1a3,#c99749);
+ border:1px solid #ffe4b3;color:#17253b
+}
+body:not(.online-battle) #joinArea .online-match-choice{
+ border-radius:10px;padding:9px;background:#203955;
+ border:1px solid #6689ad
+}
+body:not(.online-battle) #joinArea .online-private-choice{
+ background:#1d3653;border:1px solid #6787a8;border-radius:10px;
+ padding:9px;margin-top:10px
+}
+body:not(.online-battle) #joinArea .online-private-choice>summary{
+ color:#ffdfaa;font-weight:850;cursor:pointer;line-height:1.55
+}
+body:not(.online-battle) #joinArea .online-loadout,
+body:not(.online-battle) #waitArea #roomLoadoutArea{
+ background:linear-gradient(155deg,#1c3956,#11283f)!important;
+ border:1px solid #6b91b0!important;border-radius:14px!important;
+ padding:clamp(10px,1.5vw,16px)!important
+}
+body:not(.online-battle) #waitArea{
+ padding:clamp(12px,2vw,23px)!important
+}
+body:not(.online-battle) #waitArea>h2::before{
+ content:"ONLINE ROOM / WAITING LOBBY";display:block;
+ font-size:10px;line-height:1.3;font-weight:900;letter-spacing:.15em;
+ color:#90d0ff
+}
+body:not(.online-battle) #waitArea #code{
+ display:inline-flex;align-items:center;justify-content:center;
+ font-size:clamp(17px,2.5vw,22px);font-weight:950;letter-spacing:.15em;
+ padding:6px 12px;border-radius:10px;background:#3b3b4d!important;
+ color:#ffe4a4;border:1px solid #e1b86a;overflow-wrap:anywhere
+}
+body:not(.online-battle) #waitArea #roster{
+ padding:10px 12px;border:1px solid #6384a6;border-radius:11px;
+ background:#112b43;color:#e5f6ff;min-height:45px;
+ font-size:13px;font-weight:750;line-height:1.7;overflow-wrap:anywhere;
+ margin:10px 0
+}
+body:not(.online-battle) #waitArea .room-ready-actions{
+ display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;
+ border:1px solid #6487a9!important;
+ border-radius:12px;padding:10px!important;
+ background:#102941f0!important;backdrop-filter:blur(10px);
+ position:sticky;top:4px;z-index:20;margin:14px 0!important
+}
+body:not(.online-battle) #waitArea .room-ready-actions>button{
+ flex:1 1 165px;min-width:0;min-height:47px;padding:9px 12px;
+ white-space:normal;line-height:1.25
+}
+body:not(.online-battle) #waitArea #begin{
+ flex-grow:1.3;box-shadow:0 4px 12px #b8833e22;
+}
+body:not(.online-battle) #waitArea #begin:disabled{
+ opacity:.65;box-shadow:none
+}
+body:not(.online-battle) #waitArea #leave{
+ flex-grow:.5;background:#273b52;border-color:#8aa6be;color:#ebf5ff
+}
+body:not(.online-battle) #waitArea #roomLoadoutArea{
+ margin:12px 0!important
+}
+body:not(.online-battle) #waitArea #roomLoadoutArea>h3{
+ color:#ffe1a5;font-size:18px;margin-bottom:4px
+}
+body:not(.online-battle) #waitArea .online-slot{
+ background:#25415e!important;border:1px solid #88aace!important;
+ border-radius:10px;padding:8px;min-width:0
+}
+body:not(.online-battle) #waitArea .online-slot label,
+body:not(.online-battle) #waitArea .online-slot .muted{
+ color:#d9ebfa
+}
+body:not(.online-battle) #waitArea .online-slot input:not([type=checkbox]){
+ background:#091a2d!important;border:2px solid #bbd9f0!important;
+ color:white!important;min-height:44px
+}
+body:not(.online-battle) #waitArea .moji-room-weapon{
+ background:linear-gradient(180deg,#254361,#162a43)!important;
+ border-color:#6889a7!important
+}
+body:not(.online-battle) #waitArea .online-invite{
+ margin:14px 0 10px!important;padding:12px!important;gap:10px;
+ background:linear-gradient(120deg,#243e5b,#132c44)!important;
+ border:1px solid #b29768!important;border-radius:12px;
+ align-items:end
+}
+body:not(.online-battle) #waitArea .online-invite label{
+ font-size:14px;color:#ffe2aa
+}
+body:not(.online-battle) #waitArea #inviteUrl{
+ font-size:12px;line-height:1.4;min-height:46px
+}
+body:not(.online-battle) #waitArea #copyInvite{
+ min-height:46px;padding-inline:16px
+}
+body:not(.online-battle) #waitArea .online-guide{
+ border:1px solid #607e9c!important;background:#152f49!important;
+ border-radius:10px
+}
+body:not(.online-battle) #waitArea .online-guide summary{
+ color:#ffdfa1;font-weight:900;min-height:36px
+}
+@media(max-width:700px){
+ body:not(.online-battle) #joinArea,
+ body:not(.online-battle) #waitArea{padding:10px!important;border-radius:12px!important}
+ body:not(.online-battle) #joinArea .grid{grid-template-columns:1fr;gap:8px}
+ body:not(.online-battle) #joinArea .grid>div{padding:9px}
+ body:not(.online-battle) #waitArea .room-ready-actions{padding:7px!important;gap:6px}
+ body:not(.online-battle) #waitArea .room-ready-actions>button{
+  flex:1 1 calc(50% - 6px);font-size:12px;min-height:44px;padding:7px 5px
+ }
+ body:not(.online-battle) #waitArea .room-ready-actions>#leave{
+  flex:0 1 95px;min-width:75px
+ }
+ body:not(.online-battle) #waitArea #code{font-size:17px;letter-spacing:.08em}
+ body:not(.online-battle) #waitArea .online-invite{align-items:stretch}
+ body:not(.online-battle) #waitArea #copyInvite{width:100%}
+ body:not(.online-battle) #waitArea #roomLoadoutArea{padding:9px!important}
+ body:not(.online-battle) #waitArea .online-slots{gap:6px}
+ body:not(.online-battle) #waitArea .online-slot{padding:6px}
+}
+@media(max-width:390px){
+ body:not(.online-battle) #waitArea .room-ready-actions>button{font-size:11px}
+ body:not(.online-battle) #waitArea .room-ready-actions>#leave{flex:1 1 100%}
+}
