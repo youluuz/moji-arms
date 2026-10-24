@@ -92,33 +92,22 @@ const { chromium } = require('playwright');
   await page.locator('#shuffleLoadout').click();
   await page.locator('#createRoomNow').click();
   await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
-  await page.waitForTimeout(1600);
-  console.log('ONLINE_ROOM_CREATE_DIAG',JSON.stringify({
-   errors,
-   child:await page.evaluate(()=>{
-    const frame=document.getElementById('onlineFrame'),w=frame?.contentWindow,d=frame?.contentDocument;
-    if(!w||!d)return {frameExists:!!frame,src:frame?.src};
-    return {src:frame.src,readyState:d.readyState,
-     joinedCode:d.getElementById('code')?.textContent,
-     error:d.getElementById('error')?.textContent,
-     waitError:d.getElementById('waitError')?.textContent,
-     onlineSlots:[...d.querySelectorAll('.online-glyph-input')].map(el=>el.value),
-     joinTitle:d.querySelector('#joinArea h2')?.textContent,
-     waitShown:d.getElementById('waitArea')?.style.display,
-     wsOpen:w.sock?.readyState,phase:w.roomState?.phase,code:w.roomState?.code,
-     onlineLoading:d.getElementById('joinArea')?.style.display};
-   })
-  }));
   await page.waitForFunction(()=>{
-   const iframe=document.getElementById('onlineFrame');
-   try{return iframe.contentWindow?.roomState?.phase==='lobby'&&/^[A-Z0-9]{6}$/.test(iframe.contentWindow.roomState.code)}catch(_){return false}
+   const frame=document.getElementById('onlineFrame'),doc=frame?.contentDocument;
+   if(!doc)return false;
+   const wait=doc.getElementById('waitArea'),code=doc.getElementById('code')?.textContent?.trim()||'';
+   // This UI is updated only after the server acknowledges a real room.
+   return wait?.style.display==='block'&&/^[A-Z0-9]{6}$/.test(code);
   },null,{timeout:16000});
-  const roomCreated=await page.evaluate(()=>({
-   roomCode:document.getElementById('onlineFrame')?.contentWindow?.roomState?.code,
-   playerCount:document.getElementById('onlineFrame')?.contentWindow?.roomState?.players?.length,
-   roomTitle:document.getElementById('onlineFrame')?.contentWindow?.document?.getElementById('waitArea')?.querySelector('h2')?.textContent
-  }));
-  if(roomCreated.playerCount!==1||!roomCreated.roomTitle?.includes('ルーム'))
+  const roomCreated=await page.evaluate(()=>{
+   const d=document.getElementById('onlineFrame').contentDocument;
+   return {roomCode:d.getElementById('code')?.textContent?.trim(),
+    roster:d.getElementById('roster')?.textContent,
+    invite:d.getElementById('inviteUrl')?.value,
+    roomTitle:d.getElementById('waitArea')?.querySelector('h2')?.textContent};
+  });
+  if(!/^[A-Z0-9]{6}$/.test(roomCreated.roomCode)||!roomCreated.roster?.length||
+     !roomCreated.invite?.includes(roomCreated.roomCode)||!roomCreated.roomTitle?.includes('ルーム'))
    throw Error('Dock create-room click failed to actually create a room '+JSON.stringify(roomCreated));
   await page.locator('#closeOnline').click();
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:9000});
