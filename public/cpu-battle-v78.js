@@ -300,7 +300,9 @@ function boot(){
     const hitWall=!b.pierce&&obstacles.some(o=>now-startTime<o.expires&&circleRect(b.x,b.y,7,o));
     if(hitWall){bullets.splice(i,1);continue}
     // All CPUs are independent enemies, including CPU-vs-CPU friendly-fire.
-    const targets=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId);
+    // Invisibility defeats every homing projectile, even one already in flight.
+    // Direct-fire, piercing and ordinary projectiles are still dangerous.
+    const targets=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&!(b.homing&&a===player&&window.MojiCpuUltimateState?.invisibleActive?.()));
     const hit=targets.find(a=>a.hp>0&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+9);
     if(hit){damage(hit,b.n*DAMAGE_PER_STROKE,now,b.pierce,b);bullets.splice(i,1);}
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
