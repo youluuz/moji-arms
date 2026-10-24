@@ -4,6 +4,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/sha1"
@@ -1331,7 +1333,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=93"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=94"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=93"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=2"><script defer src="/weapon-visuals-v86.js?v=92"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=93"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=94"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=93"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=2"><script defer src="/weapon-visuals-v86.js?v=92"></script><script defer src="/launch-nav.js?v=1"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1446,7 +1448,11 @@ window.MojiStrokeReady=Promise.all([
 	// Omit dead first CPU from the original one-opponent renderer.
 	source = strings.Replace(source, "drawMarker(player,avatarChar,false);drawMarker(enemy,'敵',true);", "drawMarker(player,avatarChar,false);if(enemy.hp>0)drawMarker(enemy,'敵',true);", 1)
 	source = strings.Replace(source, "miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');", "miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');if(enemy.hp>0)miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');", 1)
-	return strings.Replace(source, "</head>", additions+fullscreenBridge+"</head>", 1)
+	// Make the playable root discoverable and give social shares a title, summary
+	// and verified GitHub-hosted cover image even while the free Render app sleeps.
+	source = regexp.MustCompile(`(?is)<title>.*?</title>`).ReplaceAllString(source, "<title>文字武装 | 1文字が武器になる無料ブラウザ対戦ゲーム</title>")
+	const promotion = `<meta name="description" content="漢字・絵文字・記号を装備して戦う無料ブラウザゲーム、文字武装。CPU戦とオンライン最大10人対戦に対応。インストール不要。"><meta property="og:type" content="website"><meta property="og:title" content="文字武装 | その一文字が、最強の武器。"><meta property="og:description" content="好きな5つの文字を武装して、生き残れ。無料・ブラウザで楽しむ文字バトル。"><meta property="og:image" content="https://raw.githubusercontent.com/youluuz/moji-arms/main/public/mojibusou-icon.png"><meta name="twitter:card" content="summary">`
+	return strings.Replace(source, "</head>", promotion+additions+fullscreenBridge+"</head>", 1)
 }
 func main() {
 	var internet, noBrowser bool
@@ -1480,6 +1486,14 @@ func main() {
 	if e != nil { log.Fatal("CPU lobby could not load:", e) }
 	mobileIndex := mobilePatchedIndex(string(originalIndex))
 	if mobileIndex == string(originalIndex) { log.Fatal("CPU lobby HTML has no </head> injection point") }
+	// Precompress the several-MB legacy HTML only once at startup. This saves
+	// the free service's shared bandwidth and speeds first-page transfers.
+	var compressed bytes.Buffer
+	gz, e := gzip.NewWriterLevel(&compressed, gzip.BestSpeed)
+	if e != nil { log.Fatal(e) }
+	if _, e = gz.Write([]byte(mobileIndex)); e != nil { log.Fatal(e) }
+	if e = gz.Close(); e != nil { log.Fatal(e) }
+	compressedIndex := compressed.Bytes()
 	mux := http.NewServeMux()
 	mux.Handle("/ws", http.HandlerFunc(websocketHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -1497,7 +1511,15 @@ func main() {
 		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
 			w.Header().Set("Cache-Control", "no-cache")
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			http.ServeContent(w, r, "index.html", time.Time{}, strings.NewReader(mobileIndex))
+			w.Header().Set("Vary", "Accept-Encoding")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && r.Header.Get("Range") == "" {
+				w.Header().Set("Content-Encoding", "gzip")
+				w.Header().Set("Content-Length", strconv.Itoa(len(compressedIndex)))
+				if r.Method != http.MethodHead { _, _ = w.Write(compressedIndex) }
+			} else {
+				http.ServeContent(w, r, "index.html", time.Time{}, strings.NewReader(mobileIndex))
+			}
 			return
 		}
 		if strings.HasSuffix(r.URL.Path, ".html") || strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") {
