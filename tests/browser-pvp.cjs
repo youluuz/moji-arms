@@ -53,6 +53,17 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const state=await page.evaluate(()=>({waiting:document.body.classList.contains('online-waiting'),entryHidden:getComputedStyle(document.getElementById('joinArea')).display==='none',code:roomState?.code}));
      if(!state.waiting||!state.entryHidden||state.code!==code)throw Error(mode+': did not auto-switch to joined room: '+JSON.stringify(state));
     }
+    // The ordinary-ability guide has an explicit down arrow when closed and up arrow when open.
+    const weaponHelp=host.locator('#waitArea details.online-guide');
+    if(!(await weaponHelp.locator('summary').innerText()).includes('▼')||!(await weaponHelp.locator('summary').innerText()).includes('開く'))
+     throw Error(mode+': ordinary weapon help lacks clear expand affordance');
+    await weaponHelp.locator('summary').click();
+    if(!await weaponHelp.evaluate(el=>el.open)||
+       !(await weaponHelp.locator('summary').innerText()).includes('▲')||
+       !(await weaponHelp.locator('summary').innerText()).includes('閉じる'))
+     throw Error(mode+': ordinary weapon guide did not visibly open');
+    await weaponHelp.locator('summary').click();
+    if(await weaponHelp.evaluate(el=>el.open))throw Error(mode+': ordinary weapon guide did not close');
     // Both phones must be able to edit weapons and ultimate after joining the room.
     for(const p of pages){
      if(!await p.locator('#waitArea #roomLoadoutMount #onlineGlyph0').isVisible()||
