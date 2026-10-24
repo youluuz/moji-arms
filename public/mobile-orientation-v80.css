@@ -1,0 +1,26 @@
+/* v8.0: mobile-only battle orientation preference beside four mode icons. */
+.mobile-orientation-setting{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;padding:10px 12px;margin:9px 0 12px;border:1px solid #547a9c;border-radius:12px;background:#172b43;color:#e7f4ff}
+.mobile-orientation-setting[hidden]{display:none!important}
+.mobile-orientation-title{font-size:12px;font-weight:900;white-space:nowrap}
+.mobile-orientation-switch{display:flex;gap:4px;padding:4px;border:1px solid #66809d;background:#081a2c;border-radius:11px}
+.mobile-orientation-switch button{min-height:41px;padding:8px 14px;font:inherit;font-size:13px;font-weight:850;color:#cbdbea;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;touch-action:manipulation}
+.mobile-orientation-switch button[aria-pressed="true"]{background:linear-gradient(115deg,#f2d590,#d0a75d)!important;border-color:#ffeab5!important;color:#172339!important}
+.mobile-orientation-switch button:focus-visible{outline:3px solid #fff1b9;outline-offset:2px}
+#mobileOrientationStatus{flex-basis:100%;font-size:11px;line-height:1.5;color:#b8d3ed}
+body.mobile-pref-landscape.in-match #gameScreen .battle-meta,
+body.mobile-pref-landscape.online-battle #gameArea .battle-meta{font-size:11px}
+body.mobile-pref-landscape.in-match #gameScreen .arena-shell,
+body.mobile-pref-landscape.online-battle #gameArea .arena-shell{min-height:0}
+@media (max-width:700px){
+ .mobile-orientation-setting{flex-direction:column;align-items:stretch;margin-top:10px;padding:9px}
+ .mobile-orientation-switch{width:100%}
+ .mobile-orientation-switch button{flex:1;padding:9px 4px}
+ body.mobile-pref-landscape.in-match #gameScreen .weapon,
+ body.mobile-pref-landscape.online-battle #gameArea .weapon{min-height:0}
+}
+@media (max-height:520px) and (orientation:landscape){
+ body.mobile-pref-landscape.in-match #gameScreen .arena-shell,
+ body.mobile-pref-landscape.online-battle #gameArea .arena-shell{flex:1 1 auto!important}
+ body.mobile-pref-landscape.online-battle #gameArea .weaponrow{flex-basis:52px!important}
+ body.mobile-pref-landscape.in-match #gameScreen .weapon{min-height:45px!important}
+}
