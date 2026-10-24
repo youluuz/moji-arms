@@ -287,17 +287,21 @@ type Player struct {
 	UltimateSerial int
 	LastUltimate string
 	NamepuUsed bool
+ Spectating bool
 }
 type Room struct {
 	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
 	Started                                                 time.Time
 	Public                                                  bool
 	StartedPlayers int
+ Spectators []*Spectator
 	Players                                                 []*Player
 	Obstacles                                               []Obstacle
 	Bullets                                                 []Bullet
 	DanceUntil                                              float64
 }
+// Spectators have no Player object: no HP, slots, hitbox or input authority.
+type Spectator struct { ID, Name string; C *Client }
 type Client struct {
 	conn    net.Conn
 	read    *bufio.Reader
@@ -349,9 +353,8 @@ func (r *Room) broadcast() {
 	if e != nil {
 		return
 	}
-	for _, p := range r.Players {
-		p.C.enqueue(buf)
-	}
+	for _, p := range r.Players { p.C.enqueue(buf) }
+ for _, watcher := range r.Spectators {watcher.C.enqueue(buf)}
 }
 func (r *Room) state() map[string]any {
 	now := float64(time.Now().UnixNano()) / 1e9
@@ -384,7 +387,9 @@ func (r *Room) state() map[string]any {
 		win = r.Winner
 	}
 	w,h:=r.dimensions()
-	return map[string]any{"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(r.combatants())}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
+ spectatorCount:=len(r.Spectators)
+ for _, fighter:=range r.Players {if fighter.Spectating {spectatorCount++}}
+	return map[string]any{"spectators":spectatorCount,"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(r.combatants())}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -590,7 +595,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 	defer a.mu.Unlock()
 	// "match" joins an open public lobby (oldest first) or creates one.
 	// A public lobby never starts automatically; only its host can press Start.
-	if (typ == "create" || typ == "join" || typ == "match") && c.room == nil {
+	if (typ == "create" || typ == "join" || typ == "match" || typ=="watch") && c.room == nil {
 		var room *Room
 		createdRoom := false
 		if typ == "match" {
@@ -636,14 +641,29 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			room = &Room{Code: code, Mode: mode, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Public: typ == "match", Message: message, Obstacles: newObstacles(theme)}
 			a.rooms[code] = room
 			createdRoom = true
-		} else if typ == "join" {
+		} else if typ == "join" || typ=="watch" {
 			var code string
 			parseInput(m, "code", &code)
 			room = a.find(strings.ToUpper(strings.TrimSpace(code)))
-			if room == nil || room.Phase != "lobby" || len(room.Players) >= 10 {
-				c.message(map[string]string{"type": "error", "message": "ルームが見つからない、試合中、または満員です"})
-				return
-			}
+			if room == nil {
+    c.message(map[string]string{"type":"error","message":"ルームが見つかりません"});return
+   }
+   // Invite links can be opened mid-match. The new connection receives
+   // read-only snapshots, never enters the active player roster.
+   if room.Phase=="playing"||room.Phase=="countdown" {
+    if len(room.Spectators)>=40 {c.message(map[string]string{"type":"error","message":"観戦枠が満員です"});return}
+    var name string;parseInput(m,"name",&name)
+    name=strings.TrimSpace(name);if name=="" {name="観戦者"}
+    rs:=[]rune(name);if len(rs)>16{name=string(rs[:16])}
+    id:=randomCode(12)
+    room.Spectators=append(room.Spectators,&Spectator{ID:id,Name:name,C:c})
+    c.room=room;c.pid=id
+    c.message(map[string]any{"type":"joined","id":id,"code":room.Code,"mode":room.Mode,"spectator":true})
+    room.broadcast();return
+   }
+   if room.Phase!="lobby"||typ=="watch"||len(room.Players)>=10 {
+    c.message(map[string]string{"type":"error","message":"試合開始前の参加には5枠の装備が必要です。試合中は観戦できます"});return
+   }
 		}
 		// A room can only be created or joined with a complete, valid five-slot loadout.
 		// Validate here, not only in the separate legacy setup event, so direct
@@ -687,10 +707,13 @@ func (a *Arena) handle(c *Client, raw []byte) {
 	}
 	room := c.room
 	p := a.byID(room, c.pid)
-	if p == nil {
-		return
-	}
+ if p==nil {return} // Spectator: never accept player input/abilities.
 	switch typ {
+ case "spectate":
+   if room.Phase=="playing" && !p.Alive {
+     p.Spectating=true;p.Fire=false;p.CastPending=false
+     p.Keys=map[string]bool{};room.broadcast()
+   }
 	case "editing":
 		if room.Phase != "lobby" { return }
 		p.Ready = false
@@ -710,6 +733,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			// Replays require explicit confirmation: do not silently launch with
 			// the loadout from the previous match while a user is editing.
 			player.Ready = false
+   player.Spectating=false
 		}
 		room.broadcast()
 	case "setup":
@@ -771,6 +795,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.Selected = 0
 			pp.Casts = 0
 			pp.Kills = 0
+   pp.Spectating=false
 			pp.ActionSerial = 0
 			pp.LastKind = ""
 			pp.Fire = false
@@ -854,9 +879,16 @@ func (a *Arena) disconnected(c *Client) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	room := c.room
-	if room == nil {
-		return
-	}
+	if room == nil {return}
+ // A spectator leaving never eliminates an active player or ends a match.
+ if a.byID(room,c.pid)==nil {
+  watchers:=make([]*Spectator,0,len(room.Spectators))
+  for _,w:=range room.Spectators {if w.ID!=c.pid {watchers=append(watchers,w)}}
+  room.Spectators=watchers
+  if len(room.Players)==0 {delete(a.rooms,room.Code)} else {room.broadcast()}
+  c.room=nil;c.pid=""
+  return
+ }
 	newPlayers := make([]*Player, 0, len(room.Players))
 	for _, p := range room.Players {
 		if p.ID != c.pid {
@@ -871,6 +903,8 @@ func (a *Arena) disconnected(c *Client) {
 		}
 	}
 	if len(room.Players) == 0 {
+  // The last fighter left; do not retain an orphaned spectator-only room.
+  for _,w:=range room.Spectators {w.C.room=nil;w.C.pid="";w.C.message(map[string]string{"type":"error","message":"ホストが退出したためルームが終了しました"})}
 		delete(a.rooms, room.Code)
 	} else {
 		if room.Phase == "playing" {
