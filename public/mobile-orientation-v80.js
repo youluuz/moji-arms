@@ -37,8 +37,9 @@
   // fullscreen. Try from a real click, never assume success if rejected.
   if(fromClick&&mobile()&&screen.orientation&&typeof screen.orientation.lock==='function'){
    try{
-    if(!document.fullscreenElement&&document.fullscreenEnabled)
-     await document.documentElement.requestFullscreen();
+    // Do not unexpectedly force fullscreen while the user is choosing a mode.
+    // Some browsers permit an orientation lock directly; others require
+    // a manual device rotation (or a later explicit fullscreen action).
     await screen.orientation.lock(value);
    }catch(_){/* Physical rotation remains available on iOS and other browsers. */}
    updateStatus();
