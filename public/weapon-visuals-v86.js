@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const types={
- attack:{name:'通常攻撃',short:'直進弾',marker:'●',note:'まっすぐ飛ぶ通常弾',color:'#82baff'},
+ attack:{name:'通常攻撃',short:'直進弾',marker:'●',note:'まっすぐ飛ぶ通常弾',color:'#dbff70'},
  pierce:{name:'貫通',short:'貫通弾',marker:'◆',note:'壁・シールドを貫く',color:'#ffbb74'},
  homing:{name:'ホーミング',short:'追尾弾',marker:'◎',note:'相手を追いかけて曲がる',color:'#86f4e7'},
  defense:{name:'防御',short:'シールド',marker:'⬡',note:'受けるダメージを軽減',color:'#c6adff'},
@@ -28,11 +28,11 @@ function drawProjectile(cx,b){
  if(!b||b.special)return false;
  const kind=b.homing?'homing':b.pierce?'pierce':'attack';
  const own=b.owner==='p'||b.owner==='self'||b.own===true;
- const colors={attack:'#80b7ff',pierce:'#ffc077',homing:'#8af5e8'};
+ const colors={attack:'#dfff72',pierce:'#ffc077',homing:'#8af5e8'};
  cx.save();cx.translate(b.x,b.y);cx.scale(1.14,1.14);cx.lineWidth=2.7;cx.lineJoin='round';
  cx.shadowColor=colors[kind];cx.shadowBlur=14;
  if(kind==='attack'){
-  cx.fillStyle='#225591';cx.strokeStyle='#b5deff';
+  cx.fillStyle='#4d661c';cx.strokeStyle='#edff8b';
   cx.beginPath();cx.arc(0,0,21,0,Math.PI*2);cx.fill();cx.stroke();
  }else if(kind==='pierce'){
   cx.fillStyle='#85501d';cx.strokeStyle='#ffdb9b';
