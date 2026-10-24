@@ -906,6 +906,9 @@ func hit(p *Player, damage float64, pierce bool, now float64) {
 // The server alone decides when a knock-out earns a player a kill.
 // Environmental deaths and already-dead targets never award credit.
 func hitFromBullet(room *Room, target *Player, bullet Bullet, now float64) {
+ // Invisibility completely breaks homing lock, including bullets launched before activation.
+ // Ordinary non-homing attacks still damage an invisible fighter.
+ if bullet.Homing && now<target.InvisibleUntil {return}
  wasAlive:=target.Alive
  if bullet.Special=="roman" { // A landed Roman Cannon instantly defeats every non-invincible player, regardless of shield.
   hit(target,target.HP,true,now)
@@ -1090,7 +1093,7 @@ func (a *Arena) tick(dt float64) {
 			}
 			struck := false
 			for _, p := range room.Players {
-				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < func() float64 { if b.Special=="roman" { return 43 }; return 30 }() {
+				if p.ID != b.Owner && p.Alive && !(b.Homing && now<p.InvisibleUntil) && dist(p.X, p.Y, b.X, b.Y) < func() float64 { if b.Special=="roman" { return 43 }; return 30 }() {
 					protected := now<p.InvincibleUntil || now<room.DanceUntil
 					if now>=room.DanceUntil {hitFromBullet(room,p,b,now)}
 					if b.Special=="slow" && !protected {p.HardenedUntil=now+3;p.Fire=false;p.CastPending=false}
