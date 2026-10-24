@@ -120,7 +120,7 @@ function guide(b,target,dt){
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
 function projectileTarget(b){
- const candidates=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&a.hp>0);
+ const candidates=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&a.hp>0&&(a!==player||!window.MojiCpuUltimateState?.invisibleActive?.()));
  if(!candidates.length)return null;
  return candidates.reduce((a,c)=>Math.hypot(c.x-b.x,c.y-b.y)<Math.hypot(a.x-b.x,a.y-b.y)?c:a);
 }
