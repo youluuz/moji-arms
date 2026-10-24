@@ -14,6 +14,9 @@ function boot(){
  const heard=new Map();
  let held=false;
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;document.querySelector('#gameArea .game-wrap').append(banner);
+ const hardenBanner=document.createElement('div');hardenBanner.className='ultimate-aiming-banner';hardenBanner.hidden=true;
+ hardenBanner.style.cssText='background:#11374df2;color:#d7fcff;border-color:#a4f5ff;top:22%;';
+ document.querySelector('#gameArea .game-wrap').append(hardenBanner);
  function select(id){
   if(!U.byId[id])return;
   chosen=id;try{localStorage.setItem('moji_ultimate_choice',id)}catch(e){}
@@ -24,15 +27,16 @@ function boot(){
  battle.cast.addEventListener('click',e=>{
   e.preventDefault();
   const p=roomState?.players?.find(p=>p.id===myId);
-  if(!p||roomState.phase!=='playing'||p.ultimateSpent||p.ultimateCharge<(U.byId[p.ultimate]||U.byId.roman).cost)return;
+  if(!p||roomState.phase!=='playing'||p.hardenedLeft>0||p.ultimateSpent||p.ultimateCharge<(U.byId[p.ultimate]||U.byId.roman).cost)return;
   send({type:'ultimate'});
  });
  function locked(){
   const p=roomState?.players?.find(p=>p.id===myId);
-  return Boolean(p&&(p.ultimateAiming||p.namepuLeft>0||p.danceLeft>0));
+  return Boolean(p&&(p.ultimateAiming||p.hardenedLeft>0||p.namepuLeft>0||p.danceLeft>0));
  }
  function onFieldPointer(e){
   const p=roomState?.players?.find(p=>p.id===myId);
+  if(p?.hardenedLeft>0)return true;
   if(!p?.ultimateAiming)return false;
   // Aiming consumes only the battlefield tap, not joystick or equipment controls.
   if(e.pointerType==='mouse'&&e.button!==0)return true;
@@ -51,6 +55,8 @@ function boot(){
    battle.show(own.ultimate,own.ultimateCharge,own.ultimateSpent,own.ultimateAiming,own.ultimateAimLeft);
    banner.hidden=!own.ultimateAiming;
    if(!banner.hidden)banner.textContent=def.name+' 照準中・残り'+Math.ceil(own.ultimateAimLeft)+'秒';
+   hardenBanner.hidden=!(own.hardenedLeft>0);
+   if(!hardenBanner.hidden)hardenBanner.textContent='🔒 硬直中・残り'+own.hardenedLeft.toFixed(1)+'秒（移動・攻撃不可）';
    for(const p of m.players){
     const serial=p.ultimateSerial||0,last=heard.get(p.id)||0;
     if(serial>last && p.lastUltimate)U.play(p.lastUltimate);
@@ -71,9 +77,16 @@ function boot(){
     c.font='bold 25px sans-serif';c.fillStyle='#ffebaa';c.shadowColor='#f7a6dd';c.shadowBlur=11;
     c.fillText(p.namepuLeft>0?'😐 ♪ ♫':'♪ ♫ ♪',p.x,p.y-59+Math.sin(t/145)*7);
    }
+   if(p.hardenedLeft>0){
+    c.fillStyle='#73d9ff48';c.strokeStyle='#b7f6ff';c.lineWidth=3;c.shadowColor='#9feaff';c.shadowBlur=12;
+    c.beginPath();c.moveTo(p.x-29,p.y-25);c.lineTo(p.x+20,p.y-30);c.lineTo(p.x+33,p.y-4);
+    c.lineTo(p.x+24,p.y+30);c.lineTo(p.x-25,p.y+26);c.lineTo(p.x-33,p.y-5);c.closePath();c.fill();c.stroke();
+    c.shadowBlur=0;c.fillStyle='#ecffff';c.font='bold 14px sans-serif';
+    c.fillText('🔒 硬直 '+p.hardenedLeft.toFixed(1)+'秒',p.x,p.y-67);
+   }
    if(p.ultimateAiming){
     c.font='900 20px Georgia,serif';c.fillStyle='#ffe3a7';c.shadowColor='#ffb360';c.shadowBlur=14;
-    c.fillText(p.ultimate==='roman'?'ロマン砲':'鈍化弾',p.x,p.y-64);
+    c.fillText(p.ultimate==='roman'?'ロマン砲':'硬化弾',p.x,p.y-64);
    }
    c.restore();
   }
