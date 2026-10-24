@@ -31,7 +31,19 @@
 4. `docs/index.html` の「無料でプレイ」のリンク先は想定Render URLを設定済み。**Renderの実際の公開URLが異なる場合は必ず置き換える**。本体では `/about.html` も利用できる。
 5. GitHub Pagesは無料の広告・説明ページであり、**オンラインルームはそこで直接稼働しない**。プレイボタンでRenderへ移動する設計。
 
-## C. 公開前の最低限の動作確認（手動）
+## C. GitHubから無料のリリース検証（今回追加）
+GitHub Actions の **[Verify public game launch](https://github.com/youluuz/moji-arms/actions/workflows/public-release.yml)** を開き、**Run workflow** を押してください。**毎回の変更では実行されず、公開前に必要なときだけ手動で起動する**ので、無料枠を使いすぎないようにできます。
+
+- `public_url`：Renderの **Dashboard → 公開URL** に表示された実際のURLを貼る（`moji-arms-online.onrender.com` は未確認の候補）。
+- `pages_url`：GitHub Pagesで表示されている正式URL。まだ有効化していなければ空欄。
+- `expected_commit`：Renderに反映させたいGitHubコミットの先頭7〜12文字（任意）。入力した場合は、実際に稼働するGitのコミットと一致するか確認。
+- チェック内容：`/healthz` の成功と公開版数 `9.4-beta`、トップページ、紹介ページ、プライバシー、オンラインロビー、最新版ロマン砲エフェクト、アイコン、トップ・オンライン双方の読み込み参照、WebSocket接続、オプションでPagesからのプレイ先。
+- **全部緑ならHTTP/WebSocketの一次確認は完了。** ただし別Wi-Fiの2台による対戦、スマホ実機の操作、ルーム再戦は別途手動確認が必要。
+- **赤ならSNS正式告知はしない。** ログのどの項目が赤かで、RenderのLive状態・ソースとデプロイのズレ・Pagesリンク先を確認する。
+
+ローカルPCで確認したい場合は Node.js 22 以降を使い、`node scripts/public-release-check.mjs https://実際の公開URL` を実行できます。追加のnpmパッケージや有料サービスは不要です。
+
+## D. 公開前の最低限の動作確認（手動）
 - [ ] Renderが**Live**、HTTPS、`/healthz` OK、`/` にロビー表示
 - [ ] `/about.html` ・ `/privacy.html` ・アイコンが開く
 - [ ] CPU戦（通常/カスタム）、武装5スロット、回復と必殺技、残り人数/キル数が動く
@@ -40,9 +52,9 @@
 - [ ] Render URLとPagesのゲームリンクが一致し、プレイボタンが迷子にならない
 - [ ] 問題なければSNSへ投稿。公開が不安定なら「公開ベータ」「接続しづらい場合あり」と明記
 
-## D. 不具合が発覚した場合
+## E. 不具合が発覚した場合
 `https://github.com/youluuz/moji-arms/actions` の検証結果、Render `Deploys / Logs`、画面のブラウザコンソールで確認。問題が出たときはSNSの正式発表を延期し、Renderの前の正常デプロイへ戻す。無料枠にはロールバック保持数の制限がある。
 
 ## 維持・次の一手
-改善要望はGitHub Issuesへ、公開にあたっては [PROMOTION_KIT.md](./PROMOTION_KIT.md) の無料宣伝テンプレートを活用。
+改善要望・バグ報告は [公開ベータの不具合フォーム](https://github.com/youluuz/moji-arms/issues/new/choose) へ（GitHubログインが必要、部屋コードなどの個人情報は非公開にすること）。、公開にあたっては [PROMOTION_KIT.md](./PROMOTION_KIT.md) の無料宣伝テンプレートを活用。
 参考： [Render Free](https://render.com/docs/free) / [Render Blueprint YAML](https://render.com/docs/blueprint-spec) / [GitHub Pages 設定](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
