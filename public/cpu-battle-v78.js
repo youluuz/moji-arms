@@ -302,6 +302,10 @@ function boot(){
       const game=document.getElementById('gameScreen');
       game?.classList.remove('hidden');game?.classList.add('active');
       document.getElementById('resultScreen')?.classList.add('hidden');
+      // The legacy CPU result is actually #result.show, not #resultScreen.
+      // Dismiss it so its backdrop cannot intercept spectator controls.
+      const result=document.getElementById('result');
+      if(result){result.classList.remove('show');result.setAttribute('aria-hidden','true');}
       document.body.classList.add('in-match','cpu-spectating');
       const controls=document.createElement('div');controls.id='cpuWatchControls';
       controls.innerHTML='<button type="button" id="cpuWatchPrev">◀ 前</button><span id="cpuWatchTarget">👁 観戦中</span><button type="button" id="cpuWatchNext">次 ▶</button><button type="button" id="cpuWatchExit">ロビーへ戻る</button>';
