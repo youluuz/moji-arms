@@ -14,7 +14,7 @@ function boot(){
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
- let immortalUntil=0,invisibleUntil=0,slowUntil=0,namepuUntil=0,danceUntil=0;
+ let immortalUntil=0,invisibleUntil=0,namepuUntil=0,danceUntil=0;
  // v7.8 CPU opponents respect player invisibility and global dance freeze.
  window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil};
  let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
@@ -27,7 +27,7 @@ function boot(){
  choose(chosen);
  function reset(){
   charge=0;spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
-  immortalUntil=invisibleUntil=slowUntil=namepuUntil=danceUntil=0;specialBullets.clear();
+  immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();
   lastActive=true;banner.hidden=true;prevEnemyHP=600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
@@ -59,8 +59,8 @@ function boot(){
   const now=performance.now();
   const launch=()=>{
    if(!isReady())return;
-   const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?650:610),vy:Math.sin(angle)*(id==='roman'?650:610),
-    n:(id==='roman'?600:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
+   const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?590:610),vy:Math.sin(angle)*(id==='roman'?590:610),
+    n:(id==='roman'?600:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'硬化弾',homing:false,pierce:false,ultimate:id};
    bullets.push(bullet);specialBullets.add(bullet);
    if(id==='roman')battleShots++;
   };
@@ -131,18 +131,11 @@ function boot(){
   if(!active&&lastActive)lastActive=false;
   if(active){
    if(aiming&&now>=aimUntil){aiming=false;fire(chosen,aimAngle)}
-   if(slowUntil&&now>=slowUntil){if(!window.MojiCpuBots)enemy.speed=135;slowUntil=0}
    // CPU opponent cannot acquire a target while player is invisible.
    if(invisibleUntil>now){enemy.ready=Math.max(enemy.ready||0,now+120);}
-   // Invisible player remains faintly traceable to the user; the CPU opponent loses targeting.
-   // The existing projectile hit pipeline removes bullets; detect confirmed enemy hits.
-   for(const b of [...specialBullets]){
-    if(bullets.includes(b))continue;
-    if(b.ultimate==='slow'&&typeof enemy!=='undefined'&&Math.hypot(b.x-enemy.x,b.y-enemy.y)<enemy.r+36){
-     slowUntil=now+4500;if(!window.MojiCpuBots)enemy.speed=135*.65;
-    }
-    specialBullets.delete(b);
-   }
+   // Projectiles that hit terrain must not apply hardening. Only actual hit
+   // collision inside cpu-battle-v78.js awards the hardening effect.
+   for(const b of [...specialBullets])if(!bullets.includes(b))specialBullets.delete(b);
   }
   battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-now)/1000));
   banner.hidden=!active||!aiming;if(!banner.hidden)banner.textContent=curr().name+' 照準中・残り'+Math.ceil(Math.max(0,aimUntil-now)/1000)+'秒';
