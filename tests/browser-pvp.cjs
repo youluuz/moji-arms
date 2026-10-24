@@ -28,6 +28,12 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     }
     const host=pages[0],guest=pages[1];
     await host.waitForFunction(()=>!!roomState && roomState.phase==='lobby',{timeout:15000});
+    const mobileChoice=host.locator('#mobileOrientationSetting');
+    if(!await mobileChoice.isVisible()||await mobileChoice.locator('[data-mobile-orientation]').count()!==2)
+     throw Error(mode+': embedded online phone orientation switch missing');
+    await host.evaluate(()=>window.MojiMobileOrientation.select('landscape',false));
+    if(await mobileChoice.locator('[data-mobile-orientation=landscape]').getAttribute('aria-pressed')!=='true')
+     throw Error(mode+': online portrait/landscape preference did not apply');
     const code=await host.locator('#code').innerText();
     if(!/^[A-Z0-9]{6}$/.test(code))throw Error(mode+': bad invite code '+code);
     if(mode==='normal'){
@@ -74,6 +80,10 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     if(!await host.locator('#begin').isEnabled())throw Error(mode+': host start disabled');
     await host.locator('#begin').click();
     await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='countdown',{timeout:12000})));
+    const scaled=await host.evaluate(()=>roomState.world);
+    if(scaled.w!==1840||scaled.h!==1040||scaled.scale!==.8)
+     throw Error(mode+': two-player map should be 0.8x '+JSON.stringify(scaled));
+
     for(const p of pages){
       const state=await p.evaluate(()=>({
        phase:roomState.phase,seconds:roomState.countdownLeft,
@@ -103,6 +113,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         cssLoaded:[...document.styleSheets].some(x=>x.href?.includes('online-cpu-parity.css')),
         announcement:document.getElementById('battleAnnounce')?.textContent};
      });
+     const liveWorld=await page.evaluate(()=>({server:roomState.world,source:draw.toString()}));
+     if(!liveWorld.source.includes('worldW')||!liveWorld.source.includes('worldH')||liveWorld.source.includes('/2300*mmw')||liveWorld.source.includes('/1300*mmh'))
+      throw Error(mode+': online map/minimap still assumes fixed dimensions');
      if(!parity.twinHP||!parity.stacked||!parity.ownName||!parity.enemyName||
         !parity.cssLoaded||!parity.bg.includes('gradient')||parity.announcement!=='戦闘開始！')
       throw Error(mode+': match UI does not follow reference CPU screenshot '+JSON.stringify(parity));
