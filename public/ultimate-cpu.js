@@ -31,7 +31,7 @@ function boot(){
   lastActive=true;banner.hidden=true;prevEnemyHP=600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
- function canAct(){return !aiming && performance.now()>=namepuUntil && performance.now()>=danceUntil }
+ function canAct(){return !aiming && performance.now()>=windupUntil && performance.now()>=namepuUntil && performance.now()>=danceUntil }
  // Wrap the actual successful-cast accounting; spamming a cooling slot earns no charge.
  if(typeof recordCast==='function'){
   const oldRecord=recordCast;
@@ -46,6 +46,7 @@ function boot(){
   damage=function(actor,amount,now,...rest){
    const t=performance.now();
    if(t<danceUntil || (actor===player && t<immortalUntil))return;
+   if(rest[0]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0].pierceRoman=true}
    return oldDamage.call(this,actor,amount,now,...rest);
   };
  }
@@ -59,11 +60,11 @@ function boot(){
   const launch=()=>{
    if(!isReady())return;
    const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?650:610),vy:Math.sin(angle)*(id==='roman'?650:610),
-    n:(id==='roman'?420:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
+    n:(id==='roman'?600:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'鈍化弾',homing:false,pierce:false,ultimate:id};
    bullets.push(bullet);specialBullets.add(bullet);
    if(id==='roman')battleShots++;
   };
-  if(id==='roman')windupUntil=now+400, setTimeout(()=>{if(performance.now()>=windupUntil)launch();},400);
+  if(id==='roman')windupUntil=now+1000, setTimeout(()=>{if(performance.now()>=windupUntil)launch();},1000);
   else launch();
  }
  function chooseUltimate(){
@@ -73,10 +74,10 @@ function boot(){
    aiming=true;aimUntil=now+5000;
    aimAngle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
   }else switch(chosen){
-   case 'invincible':immortalUntil=now+1800;break;
+   case 'invincible':immortalUntil=now+2800;break;
    case 'dance':danceUntil=now+2000;break;
-   case 'invisible':invisibleUntil=now+3000;break;
-   case 'namepu':namepuUntil=now+5000;usedNamepu=true;break;
+   case 'invisible':invisibleUntil=now+4000;break;
+   case 'namepu':namepuUntil=now+5500;usedNamepu=true;break;
   }
  }
  battle.cast.addEventListener('click',e=>{e.preventDefault();chooseUltimate()});
@@ -130,7 +131,7 @@ function boot(){
   if(!active&&lastActive)lastActive=false;
   if(active){
    if(aiming&&now>=aimUntil){aiming=false;fire(chosen,aimAngle)}
-   if(slowUntil&&now>=slowUntil){enemy.speed=135;slowUntil=0}
+   if(slowUntil&&now>=slowUntil){if(!window.MojiCpuBots)enemy.speed=135;slowUntil=0}
    // CPU opponent cannot acquire a target while player is invisible.
    if(invisibleUntil>now){enemy.ready=Math.max(enemy.ready||0,now+120);}
    // Invisible player remains faintly traceable to the user; the CPU opponent loses targeting.
@@ -138,7 +139,7 @@ function boot(){
    for(const b of [...specialBullets]){
     if(bullets.includes(b))continue;
     if(b.ultimate==='slow'&&typeof enemy!=='undefined'&&Math.hypot(b.x-enemy.x,b.y-enemy.y)<enemy.r+36){
-     slowUntil=now+3000;enemy.speed=135*.65;
+     slowUntil=now+4500;if(!window.MojiCpuBots)enemy.speed=135*.65;
     }
     specialBullets.delete(b);
    }
