@@ -154,19 +154,30 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
      if(!await page.locator('#gameArea .battle-head').isVisible()||!await page.locator('#cards .card.weapon').count())throw Error(mode+': CPU-style battle HUD not rendered');
      const touchUI=await page.evaluate(()=>{
-      const box=q=>document.querySelector(q)?.getBoundingClientRect();
-      const ult=box('#gameArea .ultimate-cast'),arena=box('#gameArea .game-wrap');
-      const cards=box('#cards'),hint=document.querySelector('#gameArea .moji-battle-howto');
-      const ratio=document.querySelector('#arena').width/view.w;
-      return {inside:!!ult&&!!arena&&ult.left>=arena.left-2&&ult.right<=arena.right+2&&ult.bottom<=arena.bottom+2,
-       separate:!!ult&&!!cards&&ult.bottom<=cards.top+2,
+      const cards=document.getElementById('cards'),rects=[
+       ...cards.querySelectorAll(':scope > .card[data-slot]'),
+       cards.querySelector(':scope > .moji-ultimate-inline .ultimate-cast')
+      ].map(el=>el?.getBoundingClientRect());
+      const intersect=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
+       Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
+      const zone=document.getElementById('moveZone').getBoundingClientRect();
+      const pad=document.getElementById('movePad').getBoundingClientRect();
+      const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
+      const z=center(zone),v=center(pad);
+      const hint=document.querySelector('#gameArea .moji-battle-howto');
+      return {slots:rects.length,sameRow:rects.every(r=>r&&Math.abs(r.top-rects[0].top)<9),
+       noOverlap:rects.every((r,i)=>r&&rects.slice(i+1).every(s=>s&&!intersect(r,s))),
+       centered:Math.hypot(z.x-v.x,z.y-v.y)<2,zoneRound:Math.abs(zone.width-zone.height)<2,
+       widthSafe:rects.every(r=>r&&r.width>28&&r.left>=-2&&r.right<=innerWidth+2),
        hint:hint?.textContent||'',pointerSafe:hint&&getComputedStyle(hint).pointerEvents==='none',
-       ratio};
+       ratio:document.querySelector('#arena').width/view.w,
+       attackColor:window.MojiWeaponVisual.types.attack.color};
      });
-     if(!touchUI.inside||!touchUI.separate||
+     if(touchUI.slots!==6||!touchUI.sameRow||!touchUI.noOverlap||
+        !touchUI.centered||!touchUI.zoneRound||!touchUI.widthSafe||
         !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
-        touchUI.ratio>1.55)
-      throw Error(mode+': mobile ultimate overlaps glyph slots, help missing or canvas too heavy '+JSON.stringify(touchUI));
+        touchUI.ratio>1.55||touchUI.attackColor!=='#dbff70')
+      throw Error(mode+': non-overlapping six slots, concentric joystick or lime attack missing '+JSON.stringify(touchUI));
      // Check the screenshot-defining structure, not just a decorative header.
      const parity=await page.evaluate(()=>{
       const box=q=>document.querySelector(q).getBoundingClientRect();
