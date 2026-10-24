@@ -1450,6 +1450,12 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
 		"const turnRate=d<130?4.5:d<280?3.6:2.7;", 1)
+	// The fixed dock no longer contains the old optional room-code field.
+	// Its legacy create handler must not throw when that removed node is absent.
+	// Room creation uses an empty code; join links still supply a real code.
+	source = strings.Replace(source,
+		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());",
+		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode')?.value.trim()||'');", 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))", 1)
 	for _, pair := range [][2]string{
