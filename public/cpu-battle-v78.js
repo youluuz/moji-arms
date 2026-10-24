@@ -315,6 +315,12 @@ function boot(){
       document.getElementById('cpuWatchNext').onclick=()=>shift(1);
       document.getElementById('cpuWatchExit').onclick=()=>document.getElementById('retreat')?.click();
       down=false;keys={};queuedCast=null;running=true;
+      // Update the spectator badge and chosen target immediately rather than
+      // waiting for the next canvas frame on throttled mobile devices.
+      const watcher=document.getElementById('cpuSpectatorCount');
+      if(watcher)watcher.textContent='👁 観戦 1';
+      const targetLabel=document.getElementById('cpuWatchTarget');
+      if(targetLabel&&cpuSpectateTarget)targetLabel.textContent='👁 観戦中：CPU '+(Number(cpuSpectateTarget.id?.split('-')[1]||0)+1);
       requestAnimationFrame(t=>loop(t,matchToken));
      };
      document.getElementById('cpuChooseLobby').onclick=()=>{chooser.remove();document.getElementById('retreat')?.click();};
