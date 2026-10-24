@@ -309,3 +309,58 @@ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-state{
   font-size:8px!important
  }
 }
+
+/* v9.5: controls are a compact bar OUTSIDE the battlefield, so they never
+   conceal the map, enemies, projectiles or minimap. This is a flex/grid child
+   directly before .arena-shell, rather than an absolutely positioned overlay. */
+#gameScreen .moji-battle-howto.moji-outside-map,
+body.online-battle #gameArea .moji-battle-howto.moji-outside-map{
+ position:relative!important;top:auto!important;left:auto!important;
+ right:auto!important;bottom:auto!important;transform:none!important;
+ z-index:auto!important;pointer-events:none!important;
+ display:flex!important;align-self:stretch!important;
+ box-sizing:border-box!important;justify-content:center!important;
+ flex:0 0 auto!important;width:100%!important;max-width:100%!important;
+ margin:2px 0 5px!important;padding:4px 8px!important;
+ min-height:29px!important;line-height:1.22!important;
+ background:#172c45!important;border:1px solid #6f97b77a!important;
+ border-radius:8px!important;text-align:center!important;
+ font-size:clamp(10px,1.1vw,12px)!important;white-space:normal!important;
+}
+#gameScreen .moji-battle-howto.moji-outside-map small,
+body.online-battle #gameArea .moji-battle-howto.moji-outside-map small{
+ color:#b6d9f4!important;font-size:clamp(8px,1vw,10px)!important;
+ line-height:1.14!important;
+}
+@media(max-width:640px), (max-height:520px){
+ #gameScreen .moji-battle-howto.moji-outside-map,
+ body.online-battle #gameArea .moji-battle-howto.moji-outside-map{
+  gap:1px!important;margin:1px 0 3px!important;padding:2px 4px!important;
+  min-height:23px!important;font-size:9px!important;
+ }
+ #gameScreen .moji-battle-howto.moji-outside-map small,
+ body.online-battle #gameArea .moji-battle-howto.moji-outside-map small{
+  font-size:8px!important
+ }
+}
+@media(max-height:410px) and (orientation:landscape){
+ #gameScreen .moji-battle-howto.moji-outside-map,
+ body.online-battle #gameArea .moji-battle-howto.moji-outside-map{
+  flex-direction:row!important;flex-wrap:wrap!important;
+  column-gap:10px!important;min-height:19px!important;margin:0 0 2px!important;
+  padding:2px 3px!important;font-size:8px!important
+ }
+ #gameScreen .moji-battle-howto.moji-outside-map small,
+ body.online-battle #gameArea .moji-battle-howto.moji-outside-map small{font-size:8px!important}
+}
+/* Kill tally shown with the winner, never painted on the field. */
+.moji-result-kills{
+ display:block!important;text-align:center!important;
+ width:fit-content;max-width:96%;margin:8px auto 10px!important;
+ padding:8px 17px!important;border:1px solid #e7be72!important;
+ border-radius:12px!important;background:#473420ed!important;
+ color:#fff1ba!important;box-shadow:0 0 16px #db9e4140!important;
+ font-size:clamp(14px,2.3vw,21px)!important;font-weight:950!important;
+ letter-spacing:.03em;line-height:1.25;white-space:nowrap;
+}
+@media(max-height:520px){.moji-result-kills{margin:4px auto 6px!important;padding:5px 10px!important;font-size:13px!important}}
