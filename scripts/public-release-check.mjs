@@ -45,7 +45,7 @@ console.log('※ 無料サービスの初回起動に合わせて最初の応答
 const health=await check('/healthz','① Render公開サーバー起動',s=>{try{return JSON.parse(s).ok===true}catch{return false}},{deadline:warmWait});
 if(!health.ok){console.error('ホスティング先が起動していません。Render → Deploys の Live を先に確認してください。');process.exit(1)}
 const healthInfo=JSON.parse(health.body);
-mark('①a 公開ベータの版数',healthInfo.version==='9.4-beta',
+mark('①a 公開ベータの版数',healthInfo.version==='10.0-beta',
  healthInfo.version||'不明／古いサーバーが動いています');
 if(process.env.EXPECTED_COMMIT?.trim()){
  const expected=process.env.EXPECTED_COMMIT.trim().toLowerCase();
