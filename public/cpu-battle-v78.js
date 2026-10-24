@@ -202,6 +202,18 @@ function boot(){
    cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*bot.hp/MAX_HP,5);
    cx.restore();
   }
+  // Full-map dance: each additional CPU also gets a disco ball and notes.
+  // The original enemy already receives the same overlay from ultimate-cpu.js.
+  if(window.MojiCpuUltimateState?.danceActive?.()){
+   for(const bot of bots.slice(1)){
+    if(bot.hp<=0)continue;
+    const x=bot.x-cam.x,y=bot.y-cam.y;
+    if(x<-90||y<-160||x>cpuView.w+90||y>cpuView.h+90)continue;
+    window.MojiWeaponVisual?.drawMirrorBall(cx,x,y-126,now);
+    cx.save();cx.fillStyle='#ffebaa';cx.font='bold 24px sans-serif';
+    cx.shadowColor='#f7a6dd';cx.shadowBlur=11;cx.fillText('♪ ♫ ♪',x,y-76+Math.sin(now/135)*7);cx.restore();
+   }
+  }
   // Stun visuals over EVERY CPU, including the first enemy drawn by the legacy renderer.
   for(const bot of bots){
    if(bot.hp<=0||!(bot.hardenUntil>now))continue;
@@ -211,7 +223,7 @@ function boot(){
    cx.beginPath();cx.moveTo(x-25,y-24);cx.lineTo(x+17,y-29);cx.lineTo(x+29,y-4);
    cx.lineTo(x+22,y+28);cx.lineTo(x-22,y+24);cx.lineTo(x-30,y-3);cx.closePath();cx.fill();cx.stroke();
    cx.shadowBlur=0;cx.fillStyle='#ecffff';cx.font='bold 13px sans-serif';
-   cx.fillText('🔒 硬直 '+((bot.hardenUntil-now)/1000).toFixed(1)+'秒',x,y-61);cx.restore();
+   cx.fillText('🔒 硬直 '+((bot.hardenUntil-now)/1000).toFixed(1)+'秒',x,y-80);cx.restore();
   }
   // Overlay additional enemies on the existing CPU battle minimap.
   const mw=cpuView.w<700?110:145,mh=cpuView.w<700?66:82,mx=cpuView.w-mw-12,my=10;
