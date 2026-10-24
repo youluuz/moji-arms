@@ -82,6 +82,21 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      throw Error(mode+': consolidated weapon previews are hidden even when usage/effects help is open');
     await weaponHelp.locator('summary').click();
     if(await weaponHelp.evaluate(el=>el.open))throw Error(mode+': ordinary weapon guide did not close');
+    // Waiting room action placement: ready is directly to Start's RIGHT,
+    // and each single-slot button only shuffles that one glyph.
+    for(const p of pages){
+     const buttons=await p.evaluate(()=>{
+      const start=document.getElementById('begin');
+      const ready=document.getElementById('saveRoomLoadout');
+      const a=start.getBoundingClientRect(),b=ready.getBoundingClientRect();
+      const labels=[...document.querySelectorAll('#roomLoadoutMount .slot-random')].map(x=>x.textContent.trim());
+      return {inSameRow:Math.abs(a.top-b.top)<6,readyToRight:b.left>=a.right-2,
+       buttonsAdjacent:start.nextElementSibling===ready,labels};
+     });
+     if(!buttons.inSameRow||!buttons.readyToRight||!buttons.buttonsAdjacent||
+        buttons.labels.length!==5||buttons.labels.some(label=>label!=='🎲 文字ランダム'))
+      throw Error(mode+': waiting-room ready placement or random label wrong '+JSON.stringify(buttons));
+    }
     // The two original randomizers sit immediately ABOVE the ultimate choices,
     // including when the editable loadout moves into the waiting room.
     for(const p of pages){
@@ -333,6 +348,42 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       outcomeHidden:!document.getElementById('onlineOutcome').classList.contains('show')}));
     if(back.code!==code||back.players!==1||!back.editor||!back.outcomeHidden)
      throw Error(mode+': did not retain same room after battle '+JSON.stringify(back));
+
+    // Replay must not silently use the previous battle's stale slot objects.
+    // Save an edited first weapon, bring back a real second player, and cast
+    // with the edited weapon AFTER starting the second actual network match.
+    const replayBefore=await host.evaluate(()=>({
+     ready:roomState.players.find(p=>p.id===myId)?.ready,
+     serverFirst:roomState.players.find(p=>p.id===myId)?.slots?.[0]?.ch,
+     clientFirst:activeSetup.slots[0].ch
+    }));
+    if(replayBefore.ready!==false||replayBefore.serverFirst!==replayBefore.clientFirst)
+     throw Error(mode+': rematch must restore server loadout and require fresh ready '+JSON.stringify(replayBefore));
+    await host.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
+    if(mode==='custom')await host.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').fill('19');
+    const updatedN=mode==='custom'?19:2;
+    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+(n*6),updatedN,{timeout:8000});
+    await host.locator('#saveRoomLoadout').click();
+    await host.waitForFunction(n=>{
+     const p=roomState?.players.find(p=>p.id===myId);
+     return p?.ready===true&&p.slots?.[0]?.ch==='イ'&&p.slots?.[0]?.n===n&&
+      activeSetup.slots[0].ch==='イ'&&activeSetup.slots[0].n===n&&
+      document.querySelector('#roomEditStatus')?.textContent.includes('保存しました');
+    },updatedN,{timeout:15000});
+    await guest.goto(base+'/multiplayer.html?embedded=1&room='+code,{waitUntil:'domcontentloaded'});
+    await guest.waitForFunction(()=>roomState?.phase==='lobby'&&roomState?.players.length===2,{timeout:15000});
+    await host.waitForFunction(()=>roomState?.players.length===2&&document.getElementById('begin')?.disabled===false,{timeout:15000});
+    await host.locator('#begin').click();
+    await host.waitForFunction(()=>roomState?.phase==='playing',{timeout:15000});
+    const updatedCard=await host.evaluate(()=>({
+     glyph:document.querySelector('#cards .card[data-slot="0"] .wchar')?.textContent,
+     metric:document.querySelector('#cards .card[data-slot="0"] .weapon-output')?.textContent,
+     n:activeSetup.slots[0].n
+    }));
+    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+(updatedN*6)||updatedCard.n!==updatedN)
+     throw Error(mode+': replay HUD did not reflect saved server equipment '+JSON.stringify(updatedCard));
+    await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
+    await host.waitForFunction(n=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge===n,updatedN,{timeout:15000});
     if(errors.length)throw Error(errors.join('; '));
     console.log('PVP live room '+mode+' passed: two mobile browsers, joined room '+code+', manual start, 5 slots, six-skill UI, server charge='+charge);
    }finally{await Promise.all(contexts.map(c=>c.close()))}
