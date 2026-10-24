@@ -159,6 +159,8 @@ const { chromium } = require('playwright');
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click({force:true});
   const chosen=await page.evaluate(()=>localStorage.getItem('moji_ultimate_choice'));
   if(chosen!=='namepu')throw Error('CPU skill picker not persisted');
+  // Use the real player invisibility ability in both CPU match variants.
+  await page.locator('#loadoutPanel .ultimate-option[data-ultimate=invisible]').click();
   for(const mode of ['normal','custom']){
    await page.locator('[data-mode-tile="'+mode+'"]').click();
    await page.locator('#cpuBotCount').selectOption('3');
@@ -254,11 +256,37 @@ const { chromium } = require('playwright');
    if(castCheck!=='ok')throw Error(mode+' CPU charge simulation: '+castCheck);
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-cast')?.classList.contains('ready'),{timeout:10000});
    await page.locator('#gameScreen .ultimate-cast').click();
-   await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent==='使用済',{timeout:9000});
+   await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent==='使用済'&&window.MojiCpuUltimateState?.invisibleActive?.(),{timeout:9000});
+   // Hit-test an actual player protected by their activated invisibility.
+   const invisibleHoming=await page.evaluate(async()=>{
+    const originalHP=player.hp;
+    player.hp=600;bullets.length=0;
+    const bot=window.MojiCpuBots.getBots()[0];
+    const homing={x:player.x,y:player.y,vx:0,vy:0,n:14,owner:'e',sourceId:bot.id,life:2,
+      ch:'追',homing:true,pierce:false};
+    bullets.push(homing);
+    const targetIsInvisible=projectileTarget(homing)===player;
+    await new Promise(resolve=>setTimeout(resolve,115));
+    const afterHoming=player.hp;
+    bullets.length=0;
+    const straight={x:player.x,y:player.y,vx:0,vy:0,n:9,owner:'e',sourceId:bot.id,life:2,
+      ch:'火',homing:false,pierce:false};
+    bullets.push(straight);
+    await new Promise(resolve=>setTimeout(resolve,115));
+    const afterStraight=player.hp;
+    bullets.length=0;player.hp=originalHP;
+    return {targetIsInvisible,afterHoming,afterStraight,active:window.MojiCpuUltimateState.invisibleActive()};
+   });
+   if(invisibleHoming.targetIsInvisible||invisibleHoming.afterHoming!==600||
+      !(invisibleHoming.afterStraight<invisibleHoming.afterHoming)||!invisibleHoming.active)
+    throw Error(mode+' invisibility failed to break homing without granting normal-bullet immunity: '+JSON.stringify(invisibleHoming));
    if(errors.length)throw Error(mode+' CPU match JS errors: '+errors.join('; '));
    await page.locator('#retreat').click();
    await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
   }
+
+  // Restore persisted selection used by the downstream online lobby parity test.
+  await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click();
 
   // Real parent-page regression: the online iframe must cover the FULL CPU battle viewport,
   // not retain the lobby's small embedded frame. Test portrait AND landscape.
