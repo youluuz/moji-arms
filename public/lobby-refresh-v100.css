@@ -21,9 +21,10 @@
 #lobbyScreen .moji-unread{position:absolute;right:-5px;top:-9px;
  padding:1px 5px;border-radius:6px;background:#e6ad4f;color:#1f2632;font-size:9px;font-weight:1000}
 #lobbyScreen .moji-mobile-landscape-tip{display:none}
+#lobbyScreen{padding-bottom:max(88px,calc(78px + env(safe-area-inset-bottom)))!important}
 #lobbyScreen .moji-sortie-dock{
- position:sticky;bottom:0;z-index:110;
- width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+ position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:110;
+ width:min(1050px,100vw);box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
  flex-wrap:wrap;gap:8px;padding:9px 15px max(9px,env(safe-area-inset-bottom));
  margin:12px 0 0;border:1px solid #c19a60;border-radius:13px 13px 0 0;
  background:linear-gradient(110deg,#13263eec,#2a344aec);
