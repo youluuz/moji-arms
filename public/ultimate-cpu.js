@@ -11,6 +11,21 @@ function boot(){
  if(glyphSlots && lobby.contains(glyphSlots)){
   glyphSlots.insertAdjacentElement('afterend',pick.root);
  }
+ // The pre-existing whole-loadout randomizer belongs just ABOVE the ultimate
+ // choices. Relocate the live button, preserving its event handler.
+ const shuffle=document.getElementById('shuffleLoadout');
+ if(shuffle && pick.root.parentElement===lobby){
+  let bar=lobby.querySelector('#mojiBulkRandomBar');
+  if(!bar){
+   bar=document.createElement('div');
+   bar.id='mojiBulkRandomBar';
+   bar.className='moji-loadout-random-actions';
+   bar.setAttribute('role','group');
+   bar.setAttribute('aria-label','武装5枠をまとめてランダム設定');
+  }
+  bar.append(shuffle);
+  pick.root.insertAdjacentElement('beforebegin',bar);
+ }
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
