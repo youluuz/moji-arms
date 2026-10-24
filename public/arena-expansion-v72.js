@@ -4,7 +4,7 @@
  */
 (function () {
   'use strict';
-  const WORLD_W = 2300, WORLD_H = 1300;
+  const worldW=()=>window.MojiBattleMap?.w||2300, worldH=()=>window.MojiBattleMap?.h||1300;
   const scanned = new WeakSet();
   const installed = new WeakSet();
   function touches(x, y, radius, rect) {
@@ -26,13 +26,13 @@
   }
   function canPlace(arm, original, walls) {
     if (arm.x < 65 || arm.y < 65 ||
-        arm.x+arm.w > WORLD_W-65 || arm.y+arm.h > WORLD_H-65) return false;
-    if (touches(WORLD_W/2,WORLD_H/2,235,arm)) return false;
+        arm.x+arm.w > worldW()-65 || arm.y+arm.h > worldH()-65) return false;
+    if (touches(worldW()/2,worldH()/2,235,arm)) return false;
     for (let count=2;count<=10;count++) {
       for (let i=0;i<count;i++) {
         const a=Math.PI*2*i/count;
-        if (touches(WORLD_W/2+360*Math.cos(a),
-                    WORLD_H/2+290*Math.sin(a),40,arm)) return false;
+        if (touches(worldW()/2+360*Math.cos(a),
+                    worldH()/2+290*Math.sin(a),40,arm)) return false;
       }
     }
     for (const wall of walls) {
