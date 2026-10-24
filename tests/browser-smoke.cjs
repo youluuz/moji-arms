@@ -67,6 +67,27 @@ const { chromium } = require('playwright');
   await page.locator('#mojiNoticeClose').click();
   if(await page.locator('#mojiNoticeOverlay').isVisible())throw Error('Postbox announcements did not close');
 
+  // The user requested LESS SCROLLING, not a redesign: the same avatar
+  // controls must remain usable while the preview/setup use less vertical space.
+  const compactLobby=await page.evaluate(()=>{
+   const rect=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return {top:b.top,bottom:b.bottom,height:b.height,width:b.width,left:b.left,right:b.right}};
+   const preview=rect('#loadoutPanel .avatar-display');
+   const avatar=rect('#loadoutPanel .avatar-zone');
+   const input=rect('#avatarInput');
+   const tiles=[...document.querySelectorAll('#modeTiles [data-mode-tile]')].map(x=>x.getBoundingClientRect());
+   const button=document.querySelector('#avatarInput');
+   return {preview,avatar,input,tiles:tiles.map(x=>({width:x.width,height:x.height})),
+    stylesheet:[...document.styleSheets].some(x=>x.href?.includes('lobby-compact-v102.css')),
+    inputAccessible:button&&!button.disabled&&getComputedStyle(button).visibility==='visible',
+    inputBeside:input&&preview&&input.left>=preview.right-4,
+    controlsPresent:!!document.getElementById('modeTiles')&&!!document.getElementById('battleSettings')};
+  });
+  if(!compactLobby.stylesheet||!compactLobby.inputAccessible||!compactLobby.inputBeside||
+     !compactLobby.controlsPresent||!compactLobby.preview||
+     compactLobby.preview.height>92||compactLobby.avatar.height>116||
+     compactLobby.input.height<40||compactLobby.input.width<66||
+     compactLobby.tiles.length!==4||compactLobby.tiles.some(x=>x.height>86||x.width<65))
+   throw Error('Icon character setup still takes excessive scrolling space or is clipped '+JSON.stringify(compactLobby));
   // A touch phone may choose its play orientation next to the four mode tiles.
   const orientationUI=page.locator('#mobileOrientationSetting');
   if(!await orientationUI.isVisible())throw Error('phone-only portrait/landscape switch is missing');
