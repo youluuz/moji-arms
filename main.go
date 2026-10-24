@@ -265,7 +265,7 @@ type Player struct {
 	Aim                 float64
 	Last                [5]float64
 	GuardSlot           int
-	Casts, ActionSerial int
+	Casts, ActionSerial, Kills int
 	LastKind            string
 	LastInput           time.Time
 	Ultimate string
@@ -304,10 +304,10 @@ type Arena struct {
 var arena = &Arena{rooms: map[string]*Room{}}
 
 func (r *Room) elapsed() float64 {
-	if r.Phase == "lobby" {
+	if r.Phase == "lobby" || r.Phase == "countdown" {
 		return 0
 	}
-	return time.Since(r.Started).Seconds() * 1000
+	return math.Max(0, time.Since(r.Started).Seconds()*1000)
 }
 func (r *Room) zone() map[string]float64 {
 	rad := 1350.0
@@ -339,6 +339,8 @@ func (r *Room) broadcast() {
 }
 func (r *Room) state() map[string]any {
 	now := float64(time.Now().UnixNano()) / 1e9
+	countdownLeft:=0.0
+	if r.Phase=="countdown" {countdownLeft=math.Max(0,time.Until(r.Started).Seconds())}
 	players := make([]map[string]any, 0, len(r.Players))
 	for _, p := range r.Players {
 		cd := make([]float64, 5)
@@ -351,7 +353,7 @@ func (r *Room) state() map[string]any {
 		}
 		char:=p.Ch
         if now<p.NamepuUntil {char="😐"}
-        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"slowLeft":math.Max(0,p.SlowedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "actionSerial": p.ActionSerial, "lastKind": lastKind})
+        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"slowLeft":math.Max(0,p.SlowedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind})
 	}
 	bullets := make([]map[string]any, 0, len(r.Bullets))
 	for _, b := range r.Bullets {
@@ -361,7 +363,7 @@ func (r *Room) state() map[string]any {
 	if r.Winner != "" {
 		win = r.Winner
 	}
-	return map[string]any{"type": "state", "phase": r.Phase, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
+	return map[string]any{"type": "state", "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -520,11 +522,11 @@ func newObstacles(theme string) []Obstacle {
 }
 func ultimateCost(id string) int {
  switch id {
- case "roman": return 320
- case "slow": return 280
- case "invincible","dance": return 300
- case "invisible": return 260
- case "namepu": return 180
+ case "roman": return 300
+ case "slow": return 260
+ case "invincible","dance": return 280
+ case "invisible": return 240
+ case "namepu": return 160
  }
  return 0
 }
@@ -714,17 +716,17 @@ func (a *Arena) handle(c *Client, raw []byte) {
 				return
 			}
 		}
-		room.Phase = "playing"
-		room.Message = "戦闘開始"
-		room.Started = time.Now()
+		room.Phase = "countdown"
+		room.Message = "開始まで3秒"
+		room.Started = time.Now().Add(3*time.Second)
 		room.Bullets = nil
 		room.Winner = ""
 		room.DanceUntil=0
 		for i, pp := range room.Players {
 			angle := 2 * math.Pi * float64(i) / float64(len(room.Players))
-			rx, ry := 360.0, 290.0
+			rx, ry := 600.0, 380.0
 			if room.Shrink == "instant" {
-				rx, ry = 110, 110 // within the minimum safe radius (180)
+				rx, ry = 145, 145 // maximally spaced within initial radius 180
 			}
 			pp.X = W/2 + rx*math.Cos(angle)
 			pp.Y = H/2 + ry*math.Sin(angle)
@@ -735,6 +737,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.GuardSlot = -1
 			pp.Selected = 0
 			pp.Casts = 0
+			pp.Kills = 0
 			pp.ActionSerial = 0
 			pp.LastKind = ""
 			pp.Fire = false
@@ -873,11 +876,25 @@ func hit(p *Player, damage float64, pierce bool, now float64) {
 		p.Alive = false
 	}
 }
+// The server alone decides when a knock-out earns a player a kill.
+// Environmental deaths and already-dead targets never award credit.
+func hitFromBullet(room *Room, target *Player, bullet Bullet, now float64) {
+ wasAlive:=target.Alive
+ hit(target,bullet.Damage,bullet.Pierce,now)
+ if wasAlive && !target.Alive && bullet.Owner!=target.ID {
+  for _,p:=range room.Players {if p.ID==bullet.Owner {p.Kills++;break}}
+ }
+}
 func (a *Arena) tick(dt float64) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	now := float64(time.Now().UnixNano()) / 1e9
 	for _, room := range a.rooms {
+		if room.Phase=="countdown" {
+		 if !time.Now().Before(room.Started) {room.Phase="playing";room.Message="戦闘開始"}
+		 room.broadcast()
+		 continue
+		}
 		if room.Phase != "playing" {
 			continue
 		}
@@ -1041,7 +1058,7 @@ func (a *Arena) tick(dt float64) {
 			for _, p := range room.Players {
 				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < func() float64 { if b.Special=="roman" { return 43 }; return 30 }() {
 					protected := now<p.InvincibleUntil || (now<p.ShieldUntil && p.Shield>0) || now<room.DanceUntil
-					if now>=room.DanceUntil {hit(p, b.Damage, b.Pierce, now)}
+					if now>=room.DanceUntil {hitFromBullet(room,p,b,now)}
 					if b.Special=="slow" && !protected {p.SlowedUntil=now+3}
 					struck = true
 					break
