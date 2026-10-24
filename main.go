@@ -1368,6 +1368,8 @@ window.MojiStrokeReady=Promise.all([
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Permit solo CPU round dimensions to change with selected CPU count.
 	source = strings.Replace(source, "const WORLD_W=2300,WORLD_H=1300;", "let WORLD_W=2300,WORLD_H=1300;", 1)
+	// Match solo cover density to the variable-size world (9 walls at 2 fighters, 32 at 10).
+	source = strings.Replace(source, "while(result.length<14&&attempts++<1300)", "while(result.length<Math.max(9,Math.min(40,Math.round(14*(window.MojiBattleMap?.scale||1)**2)))&&attempts++<1900)", 1)
 	// Rendering and minimap must use the scaled world center, not the old fixed center.
 	for _,coords := range [][2]string{
 	 {"ctx.moveTo(900+zoneRadius,525)","ctx.moveTo(WORLD_W/2+zoneRadius,WORLD_H/2)"},
