@@ -1288,6 +1288,7 @@ window.MojiStrokeReady=Promise.all([
  Object.assign(dict,map,kana);
  if(window.MojiRandom){
    window.MojiRandom.strokeMap=dict;
+   window.MojiRandom.invalidateStrokePool?.();
    const oldRoll=window.MojiRandom.roll;
    window.MojiRandom.roll=function(exclude){
     for(let attempt=0;attempt<80;attempt++){
