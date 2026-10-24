@@ -165,7 +165,12 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
       const z=center(zone),v=center(pad);
       const hint=document.querySelector('#gameArea .moji-battle-howto');
-      return {slots:rects.length,sameRow:rects.every(r=>r&&Math.abs(r.top-rects[0].top)<9),
+      const field=document.querySelector('#gameArea .arena-shell');
+      const helpRect=hint?.getBoundingClientRect(),fieldRect=field?.getBoundingClientRect();
+      const outsideMap=!!helpRect&&!!fieldRect&&hint.parentElement===field.parentElement&&
+       hint.nextElementSibling===field&&helpRect.bottom<=fieldRect.top+2&&
+       getComputedStyle(hint).position!=='absolute';
+      return {outsideMap,slots:rects.length,sameRow:rects.every(r=>r&&Math.abs(r.top-rects[0].top)<9),
        noOverlap:rects.every((r,i)=>r&&rects.slice(i+1).every(s=>s&&!intersect(r,s))),
        centered:Math.hypot(z.x-v.x,z.y-v.y)<2,zoneRound:Math.abs(zone.width-zone.height)<2,
        widthSafe:rects.every(r=>r&&r.width>28&&r.left>=-2&&r.right<=innerWidth+2),
@@ -173,7 +178,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        ratio:document.querySelector('#arena').width/view.w,
        attackColor:window.MojiWeaponVisual.types.attack.color};
      });
-     if(touchUI.slots!==6||!touchUI.sameRow||!touchUI.noOverlap||
+     if(!touchUI.outsideMap||touchUI.slots!==6||!touchUI.sameRow||!touchUI.noOverlap||
         !touchUI.centered||!touchUI.zoneRound||!touchUI.widthSafe||
         !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
         touchUI.ratio>1.55||touchUI.attackColor!=='#dbff70')
@@ -278,7 +283,10 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     // separate defeat screen even when the local player loses.
     const sharedResults=await host.evaluate(()=>{
      const realTitle=document.getElementById('onlineOutcomeTitle')?.textContent||'';
-     const ownName=roomState.players.find(p=>p.id===myId)?.name||'';
+     const own=roomState.players.find(p=>p.id===myId);
+     const ownName=own?.name||'';
+     const tally=document.getElementById('onlineOutcomeKills')?.textContent;
+     const expectedTally='⚔ この試合の合計キル数：'+(own?.kills||0);
      const resultScreen=document.getElementById('onlineOutcome');
      const winnerReported=realTitle.includes('優勝：'+ownName)&&
       document.getElementById('onlineOutcomeEnglish').textContent==='MATCH RESULT';
@@ -286,10 +294,13 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       players:[...roomState.players,{id:'other-winner',name:'対戦相手',alive:true}]};
      finish(simulated);
      const loserTitle=document.getElementById('onlineOutcomeTitle').textContent;
-     return {winnerReported,loserTitle,hasDefeat:resultScreen.classList.contains('defeat'),
+     return {winnerReported,loserTitle,tally,expectedTally,
+      updatedTally:document.getElementById('onlineOutcomeKills')?.textContent,
+      hasDefeat:resultScreen.classList.contains('defeat'),
       label:document.getElementById('onlineOutcomeEnglish').textContent};
     });
     if(!sharedResults.winnerReported||sharedResults.loserTitle!=='🏆 優勝：対戦相手'||
+        sharedResults.tally!==sharedResults.expectedTally||sharedResults.updatedTally!==sharedResults.expectedTally||
         sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT')
       throw Error(mode+': champion name is not shared on winner/loser results '+JSON.stringify(sharedResults));
     await host.locator('#onlineRematch').click();
