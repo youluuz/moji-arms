@@ -83,3 +83,23 @@ body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
 .ultimate-guide-toggle[aria-expanded="true"]{margin-bottom:7px!important;border-color:#e7c583!important;background:#233751!important}
 .ultimate-guide-chevron{display:inline-flex;flex:0 0 22px;align-items:center;justify-content:center;color:#ffd98e;font-weight:900;font-size:19px}
 @media(max-width:700px){.ultimate-guide-toggle{padding:12px!important;min-height:45px;font-size:13px!important}}
+
+/* v7.9: two highly visible dismissal actions, so users don't have to find the
+   original expand toggle after reading a long skill guide (mobile included). */
+.ultimate-guide-toggle{min-height:48px!important;border-width:2px!important;box-shadow:inset 0 1px #ffffff20!important}
+.ultimate-guide-toggle[aria-expanded="true"]{color:#ffe9b1!important;background:#3b3348!important;border-color:#f4ca79!important}
+.ultimate-guide-toggle-label{flex:1;min-width:0}
+.ultimate-guide-chevron{font-size:17px!important;flex:0 0 32px!important;height:30px;min-width:32px;border-radius:8px;background:#314962;border:1px solid #6b88aa}
+.ultimate-guide-toggle[aria-expanded="true"] .ultimate-guide-chevron{background:#6a4533;border-color:#f4cc80;color:#fff0cb}
+.ultimate-guide-close{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 8px auto!important;padding:7px 15px!important;min-height:42px!important;
+ border:2px solid #ffdc9c!important;border-radius:12px!important;background:#503f35!important;color:#fff1ce!important;font-size:13px!important;font-weight:900!important;line-height:1.2!important;cursor:pointer;touch-action:manipulation}
+.ultimate-guide-close:hover,.ultimate-guide-bottom-close:hover{filter:brightness(1.13)}
+.ultimate-guide-close:focus-visible,.ultimate-guide-bottom-close:focus-visible{outline:3px solid #fff3c5!important;outline-offset:2px}
+.ultimate-guide-bottom-close{width:100%!important;display:flex!important;align-items:center;justify-content:center;min-height:46px!important;margin:14px 0 0!important;
+ border:2px solid #e9c27d!important;border-radius:12px!important;background:#38415a!important;color:#ffe9bb!important;padding:9px 12px!important;font-size:14px!important;font-weight:900!important;cursor:pointer;touch-action:manipulation}
+.ultimate-guide[hidden]{display:none!important}
+@media(max-width:700px){
+ .ultimate-guide-toggle{min-height:48px!important}
+ .ultimate-guide-close{min-width:86px;min-height:44px!important}
+ .ultimate-guide-bottom-close{min-height:48px!important}
+}
