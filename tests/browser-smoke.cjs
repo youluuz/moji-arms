@@ -74,15 +74,18 @@ const { chromium } = require('playwright');
    throw Error('CPU kana written stroke count mismatch '+JSON.stringify(cpuKana));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
-  // The ability picker must sit immediately after the five glyph inputs,
-  // not below unrelated lobby settings and action buttons.
+  // Keep the ORIGINAL five-slot shuffle handler, but place it immediately
+  // between the five glyphs and the ultimate picker.
   const soloPosition=await page.evaluate(()=>{
-   const editor=document.getElementById('setup'),picker=editor?.nextElementSibling;
+   const editor=document.getElementById('setup'),bar=editor?.nextElementSibling;
+   const picker=bar?.nextElementSibling;
    return Boolean(editor?.querySelectorAll('input.kanji').length===5 &&
+    bar?.id==='mojiBulkRandomBar'&&
+    bar.querySelector('#shuffleLoadout')?.isConnected &&
     picker?.classList.contains('ultimate-widget') &&
     picker.querySelectorAll('.ultimate-option').length===6);
   });
-  if(!soloPosition)throw Error('CPU ultimate picker must appear directly below five character slots');
+  if(!soloPosition)throw Error('CPU all-random button must be directly above six ultimate choices');
   const cpuGuide=page.locator('#loadoutPanel .ultimate-guide');
   const cpuHelp=page.locator('#loadoutPanel .ultimate-guide-toggle');
   if(!await cpuGuide.isHidden())throw Error('CPU guide should default to collapsed');
@@ -221,7 +224,20 @@ const { chromium } = require('playwright');
     })(),
     healMetric:window.MojiWeaponVisual.metric('heal',10)
    }));
-   if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
+   // The ultimate cast slot must stay inside the arena, never over a glyph
+  // slot on small mobile viewports; the help text must not swallow taps.
+  const mobileBattleUI=await page.evaluate(()=>{
+   const box=s=>document.querySelector(s)?.getBoundingClientRect();
+   const ult=box('#gameScreen .ultimate-cast'),arena=box('#gameScreen .arena-shell');
+   const weapons=box('#weapons'),tip=document.querySelector('#gameScreen .moji-battle-howto');
+   return {inside:!!ult&&!!arena&&ult.left>=arena.left-2&&ult.right<=arena.right+2&&ult.bottom<=arena.bottom+2,
+    noGlyphOverlap:!!ult&&!!weapons&&ult.bottom<=weapons.top+2,
+    guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
+  });
+  if(!mobileBattleUI.inside||!mobileBattleUI.noGlyphOverlap||
+     !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
+   throw Error('CPU mobile ultimate text/glyph overlap or gameplay guide missing '+JSON.stringify(mobileBattleUI));
+  if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
       beforeStart.killScore!=='⚔ キル 0'||!beforeStart.scoreLocation.isRight||!beforeStart.scoreLocation.besideHp||
       !beforeStart.scoreLocation.visible||beforeStart.healMetric!=='回復34'||
       Math.hypot(beforeStart.player.x-beforeStart.enemy.x,beforeStart.player.y-beforeStart.enemy.y)<250)
