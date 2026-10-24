@@ -52,6 +52,21 @@ const { chromium } = require('playwright');
   if(registeredNickname!=='蒼月の勇者')
    throw Error('Shared login did not persist the entered nickname: '+registeredNickname);
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  await page.waitForSelector('#mojiNoticeButton',{timeout:10000});
+  const lobbyExtras=await page.evaluate(()=>({
+   landscape:document.querySelector('.moji-mobile-landscape-tip')?.textContent,
+   sticky:getComputedStyle(document.getElementById('mojiSortieDock')).position,
+   startInDock:document.getElementById('start')?.closest('#mojiSortieDock')!==null
+  }));
+  if(!lobbyExtras.landscape?.includes('横画面推奨')||lobbyExtras.sticky!=='sticky'||!lobbyExtras.startInDock)
+   throw Error('Lobby postbox or fixed deployment invalid '+JSON.stringify(lobbyExtras));
+  await page.locator('#mojiNoticeButton').click();
+  if(!await page.locator('#mojiNoticeOverlay').isVisible()||
+     !(await page.locator('#mojiNoticeItems').innerText()).includes('横画面'))
+   throw Error('Lobby announcements not displayed');
+  await page.locator('#mojiNoticeClose').click();
+  if(await page.locator('#mojiNoticeOverlay').isVisible())throw Error('Postbox announcements did not close');
+
   // A touch phone may choose its play orientation next to the four mode tiles.
   const orientationUI=page.locator('#mobileOrientationSetting');
   if(!await orientationUI.isVisible())throw Error('phone-only portrait/landscape switch is missing');
@@ -288,16 +303,19 @@ const { chromium } = require('playwright');
     const tip=document.querySelector('#gameScreen .moji-battle-howto');
     const battlefield=document.querySelector('#gameScreen .arena-shell');
     const tr=tip?.getBoundingClientRect(),fieldRect=battlefield?.getBoundingClientRect();
+    const layout=battlefield.closest('.moji-map-with-stick')||battlefield;
     const guideOutside=!!tr&&!!fieldRect&&
-     tip.parentElement===battlefield.parentElement&&tip.nextElementSibling===battlefield&&
+     tip.parentElement===layout.parentElement&&tip.nextElementSibling===layout&&
      tr.bottom<=fieldRect.top+2&&getComputedStyle(tip).position!=='absolute';
-    return {guideOutside,cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
+    const outsideStick=!!zone&&document.getElementById('cpuMoveZone')?.closest('.moji-stick-dock')!==null&&
+     (zone.right<=fieldRect.left+2||zone.top>=fieldRect.bottom-2);
+    return {guideOutside,outsideStick,cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
       distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
       inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
       guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
    });
-   if(!mobileBattleUI.guideOutside||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
+   if(!mobileBattleUI.guideOutside||!mobileBattleUI.outsideStick||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
       !mobileBattleUI.inside||!mobileBattleUI.touchRing||
       !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
     throw Error('CPU six-slot layout or circular mobile movement invalid '+JSON.stringify(mobileBattleUI));
