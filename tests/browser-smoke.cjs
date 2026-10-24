@@ -100,11 +100,14 @@ const { chromium } = require('playwright');
     stylesheet:[...document.styleSheets].some(x=>x.href?.includes('lobby-compact-v102.css')),
     inputAccessible:button&&!button.disabled&&getComputedStyle(button).visibility==='visible',
     inputBeside:input&&preview&&input.left>=preview.right-4,
+    iconSize:(()=>{const canvas=document.querySelector('#loadoutPanel .avatar-display canvas');if(!canvas)return null;const box=canvas.getBoundingClientRect();return {width:box.width,height:box.height};})(),
     controlsPresent:!!document.getElementById('modeTiles')&&!!document.getElementById('battleSettings')};
   });
   if(!compactLobby.stylesheet||!compactLobby.inputAccessible||!compactLobby.inputBeside||
-     !compactLobby.controlsPresent||!compactLobby.preview||
-     compactLobby.preview.height>92||compactLobby.avatar.height>116||
+     !compactLobby.controlsPresent||!compactLobby.preview||!compactLobby.iconSize||
+     compactLobby.iconSize.width<80||compactLobby.iconSize.height<80||
+     compactLobby.preview.height<104||compactLobby.preview.height>115||
+     compactLobby.avatar.height>130||
      compactLobby.input.height<40||compactLobby.input.width<66||
      compactLobby.tiles.length!==4||compactLobby.tiles.some(x=>x.height>86||x.width<65))
    throw Error('Icon character setup still takes excessive scrolling space or is clipped '+JSON.stringify(compactLobby));
