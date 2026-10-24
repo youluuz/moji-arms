@@ -18,6 +18,7 @@ func TestDynamicMapSizeForTwoThroughTenCombatants(t *testing.T) {
   w,h:=mapDimensions(players)
   if w!=math.Round(2300*scale)||h!=math.Round(1300*scale) {t.Fatalf("%d players: bad arena size %v x %v",players,w,h)}
   room:=&Room{Shrink:"normal",Phase:"countdown",Players:make([]*Player,players)}
+  for i:=range room.Players {room.Players[i]=&Player{ID:"test",HP:600}}
   state:=room.state()
   world:=state["world"].(map[string]float64)
   if world["w"]!=w||world["h"]!=h||world["scale"]!=scale {t.Fatalf("%d players: state world disagrees with physics",players)}
