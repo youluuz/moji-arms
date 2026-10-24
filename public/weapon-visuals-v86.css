@@ -1,0 +1,53 @@
+/* v8.6 projectile distinctions, pre-game shoot previews, stats and solo HUD decluttering */
+.moji-weapon-gallery{margin:12px 0;padding:13px;border:1px solid #547ba3;border-radius:13px;background:#0d2139;color:#f0f6ff;max-width:100%}
+.moji-weapon-gallery>h3{margin:0 0 4px;font-size:15px;color:#ffe3aa;font-weight:900}
+.moji-weapon-gallery>p{margin:0 0 10px;font-size:11px;color:#b5d4f7;line-height:1.4}
+.moji-weapon-gallery-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.moji-preview{border:1px solid #466586;border-radius:10px;background:#142c46;min-width:0;padding:6px;color:#f1f7ff}
+.moji-preview[data-kind="attack"]{--shot:#9ac9ff}
+.moji-preview[data-kind="pierce"]{--shot:#ffd4a2}
+.moji-preview[data-kind="homing"]{--shot:#9cfff0}
+.moji-preview[data-kind="defense"]{--shot:#ddc3ff}
+.moji-preview[data-kind="heal"]{--shot:#b6ffb9}
+.moji-preview-track{height:34px;position:relative;background:#06192b;border-radius:6px;overflow:hidden}
+.moji-preview-track:after{content:"";position:absolute;inset:50% 0 auto;border-top:1px dotted #486683}
+.moji-preview-shot{position:absolute;z-index:1;left:10%;top:50%;transform:translate(-50%,-50%);font-size:23px;line-height:1;font-weight:900;color:var(--shot);text-shadow:0 0 8px var(--shot);animation:moji-preview-fly 1.8s ease-in-out infinite alternate}
+.moji-preview[data-kind="defense"] .moji-preview-shot,.moji-preview[data-kind="heal"] .moji-preview-shot{left:48%;animation:moji-preview-pulse 1.6s ease-in-out infinite alternate}
+.moji-preview-target{position:absolute;right:7%;top:50%;transform:translateY(-50%);color:#ff9fad;font-size:20px}
+.moji-preview[data-kind="defense"] .moji-preview-target,.moji-preview[data-kind="heal"] .moji-preview-target{display:none}
+.moji-preview-lines{display:flex;flex-direction:column;gap:3px;padding-top:5px;min-width:0}
+.moji-preview-lines strong{font-size:12px;line-height:1.3;color:var(--shot)}
+.moji-preview-lines span{font-size:10px;color:#d1e2f3;line-height:1.35}
+.moji-preview-lines small{font-size:10px;color:#ffe6a7;line-height:1.4;font-weight:800}
+@keyframes moji-preview-fly{0%{left:12%;opacity:.9}100%{left:72%;opacity:1}}
+@keyframes moji-preview-pulse{from{transform:translate(-50%,-50%) scale(.85)}to{transform:translate(-50%,-50%) scale(1.2)}}
+#onlineSlots .moji-preview{margin-top:7px;padding:4px}
+#onlineSlots .moji-preview-track{height:30px}
+#onlineSlots .moji-preview-lines strong{font-size:11px}
+#onlineSlots .moji-preview-lines small{font-size:10px}
+#gameScreen .moji-battle-metric{display:block!important;color:#ffe8ac!important;font-size:clamp(9px,1.2vw,12px)!important;white-space:nowrap;font-weight:900;line-height:1.15}
+#gameScreen .hud>.combat-hp:nth-of-type(2),#gameScreen .hud>.hp-group:nth-of-type(2),#gameScreen .hud>.hud-card:nth-of-type(2){display:none!important}
+#gameScreen .hud>.combat-hp:first-child{width:100%;max-width:600px}
+body.online-battle #gameArea .combat-hp.rival{display:none!important}
+body.online-battle #gameArea .hud{grid-template-columns:minmax(0,1fr)!important;justify-content:start!important}
+body.online-battle #gameArea .combat-hp.own{width:min(100%,540px)!important}
+body.online-battle #gameArea .weaponrow{flex-basis:102px!important}
+body.online-battle #gameArea .weapon .weapon-output{font-size:11px!important;font-weight:950!important;color:#ffe5a4!important;white-space:nowrap;line-height:1.15}
+body.online-battle #gameArea .weapon .wkind{font-weight:900!important}
+@media(max-width:780px){
+ .moji-weapon-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .moji-preview-lines small{font-size:10px}
+}
+@media(max-width:640px){
+ #onlineSlots .moji-preview{padding:3px}
+ #onlineSlots .moji-preview-lines span{font-size:9px}
+ #onlineSlots .moji-preview-lines small{font-size:9px}
+ body.online-battle #gameArea .weaponrow{flex-basis:87px!important}
+ body.online-battle #gameArea .weapon .weapon-output{font-size:10px!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+ body.online-battle #gameArea .weaponrow{flex-basis:69px!important}
+ body.online-battle #gameArea .weapon .weapon-output{font-size:9px!important}
+ body.online-battle #gameArea .weapon .card-track{margin-top:1px!important}
+}
+@media(prefers-reduced-motion:reduce){.moji-preview-shot{animation:none!important;left:50%!important}}
