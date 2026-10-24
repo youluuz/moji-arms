@@ -168,6 +168,30 @@ const { chromium } = require('playwright');
   await page.setViewportSize({width:390,height:844});
   console.log('Shared lobby iframe fullscreen bridge verified on mobile portrait and landscape.');
 
+
+  // Stress maximum CPU count and finish a free-for-all only after EVERY CPU is defeated.
+  await page.locator('#modeSelect').selectOption('normal');
+  await page.locator('#cpuBotCount').selectOption('9');
+  await page.locator('#start').click();
+  await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
+  const maxParty=await page.evaluate(()=>window.MojiCpuBots.getBots().map(b=>({id:b.id,position:[b.x,b.y],kinds:b.loadout.map(s=>s.kind)})));
+  if(maxParty.length!==9||new Set(maxParty.map(b=>b.id)).size!==9||
+     !maxParty.every(b=>b.position.every(Number.isFinite)))
+   throw Error('Maximum CPU free-for-all invalid '+JSON.stringify(maxParty));
+  const firstKill=await page.evaluate(()=>{
+   const units=window.MojiCpuBots.getBots();
+   damage(units[0],100000,performance.now(),true,{owner:'p'});
+   return {otherAlive:units.filter(x=>x.hp>0).length,running};
+  });
+  if(!firstKill.running||firstKill.otherAlive!==8)throw Error('Killing one CPU ended multiplayer solo prematurely: '+JSON.stringify(firstKill));
+  const finalKill=await page.evaluate(()=>{
+   for(const unit of window.MojiCpuBots.getBots())if(unit.hp>0)damage(unit,100000,performance.now(),true,{owner:'p'});
+   return {running,result:document.getElementById('result').classList.contains('show')};
+  });
+  if(finalKill.running||!finalKill.result)throw Error('CPU free-for-all victory did not finish after last bot: '+JSON.stringify(finalKill));
+  await page.evaluate(()=>document.getElementById('retreat').click());
+  await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
+
   console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
