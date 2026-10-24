@@ -74,8 +74,13 @@ function preMatchSolo(){
  }
  const rows=[...setup.querySelectorAll('.slot')].slice(0,5);
  const render=rows.map((row,i)=>{
-  const kind=['attack','defense','heal','pierce','homing'][i];
-  const n=row.querySelector('.strokes')?.value;
+  const equipment=typeof slots!=='undefined'&&Array.isArray(slots)?slots[i]:null;
+  const selector=row.querySelector('select.kind,select[data-kind],select[data-role],select[name*="kind"],select[name*="role"]')||
+   [...row.querySelectorAll('select')].find(e=>types[e.value]);
+  const kind=(selector&&types[selector.value]?selector.value:null)||
+   (equipment&&types[equipment.kind]?equipment.kind:null)||
+   ['attack','defense','heal','pierce','homing'][i];
+  const n=row.querySelector('.strokes')?.value||equipment?.n;
   return preview(kind,n);
  }).join('');
  const grid=pane.querySelector('.moji-weapon-gallery-grid');
@@ -102,6 +107,8 @@ function bootstrap(){
  const lobby=document.querySelector('#lobbyScreen'),online=document.querySelector('#onlineSlots');
  lobby?.addEventListener('input',preMatchSolo,true);
  lobby?.addEventListener('change',preMatchSolo,true);
+ // Randomization updates several role and stroke inputs in one click.
+ lobby?.addEventListener('click',()=>setTimeout(preMatchSolo,0),true);
  online?.addEventListener('input',preMatchOnline,true);
  online?.addEventListener('change',preMatchOnline,true);
  if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);const editor=document.querySelector('#joinArea');editor?.addEventListener('click',scheduled,true);}
