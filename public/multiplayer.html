@@ -137,7 +137,7 @@ const strokesReady=Promise.all([
  fetch('strokes.json').then(r=>r.ok?r.json():{}),
  fetch('kana-strokes.json').then(r=>r.ok?r.json():{'イ':2,'ー':1})
 ]).then(([han,kana])=>{
- strokeData={...han,...kana};if(window.MojiRandom)window.MojiRandom.strokeMap=strokeData;
+ strokeData={...han,...kana};if(window.MojiRandom){window.MojiRandom.strokeMap=strokeData;window.MojiRandom.invalidateStrokePool?.();}
  document.querySelectorAll('.online-glyph-input').forEach(syncOnlineStrokeDisplay);
 }).catch(()=>{});
 $('onlineSlots').addEventListener('input',e=>{
