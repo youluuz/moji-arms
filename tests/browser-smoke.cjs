@@ -151,6 +151,25 @@ const { chromium } = require('playwright');
   if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M23 13H45L43 53H30')||
      !hardeningArt.svg?.includes('x="62" y="59" width="28" height="25"'))
    throw Error('Hardening icon must show two feet and a visible ankle padlock: '+JSON.stringify(hardeningArt).slice(0,120));
+  // Disco ball pixels and enlarged shot silhouettes must be truly drawn.
+  const discoVisual=await page.evaluate(()=>{
+   const renderer=window.MojiWeaponVisual,canvas=document.createElement('canvas');
+   canvas.width=140;canvas.height=140;const c=canvas.getContext('2d');
+   renderer.drawMirrorBall(c,70,65,1400);
+   const discoPixels=c.getImageData(0,0,140,140).data;
+   let discoVisible=0;for(let i=3;i<discoPixels.length;i+=4)if(discoPixels[i]>60)discoVisible++;
+   c.clearRect(0,0,140,140);
+   renderer.drawProjectile(c,{x:70,y:70,ch:'火',homing:true,owner:'p'});
+   const shotPixels=c.getImageData(0,0,140,140).data;
+   let shotVisible=0;for(let i=3;i<shotPixels.length;i+=4)if(shotPixels[i]>60)shotVisible++;
+   const label=document.querySelector('#gameScreen .ultimate-aiming-banner');
+   const css=label&&getComputedStyle(label);
+   return {discoVisible,shotVisible,scaledProjectile:renderer.drawProjectile.toString().includes('cx.scale(1.14,1.14)'),
+    raisedLabel:css?.top&&parseFloat(css.top)<label.offsetParent?.clientHeight*.13};
+  });
+  if(discoVisual.discoVisible<150||discoVisual.shotVisible<250||
+     !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
+   throw Error('Visual disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
   const preview=await page.evaluate(()=>[...document.querySelectorAll('#mojiWeaponPreview .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
   if(preview.length!==5||preview[0].mark!=='●'||preview[3].mark!=='◆'||preview[4].mark!=='◎'||!preview.every(p=>p.stats.includes('CT')))
    throw Error('Solo prematch weapon trajectory and stats previews missing '+JSON.stringify(preview));
