@@ -184,7 +184,13 @@ function boot(){
  const other=document.querySelectorAll('#gameScreen .hud .hud-line>span:first-child')[1];
  if(other)other.innerHTML='<span id="cpuCountLive">◆ CPU 残り 1 / 1体</span>';
  const oldDraw=draw;
+ let lastPaint=0;
  draw=function(now){
+  // On touch phones, preserve the full-speed battle simulation but cap only
+  // expensive arena paint work at about 30 fps. This noticeably reduces
+  // canvas load without affecting player movement, collision or cooldown.
+  if(document.body.classList.contains('mobile-touch-input')&&lastPaint&&now-lastPaint<33)return;
+  lastPaint=now;
   oldDraw(now);
   if(match!==matchToken||!running&&!bots.length)return;
   const score=document.getElementById('cpuKillScore');
