@@ -25,7 +25,7 @@ function weightedHanGlyph(){
   poolsDirty=false;lastStrokeMap=map;
   hanPools={medium:[],high:[],extreme:[]};
   for(const [ch,n] of Object.entries(map)){
-   if(!Number.isInteger(n)||!safe(ch)||!/\\p{Script=Han}/u.test(ch))continue;
+   if(!Number.isInteger(n)||!safe(ch)||!/\p{Script=Han}/u.test(ch))continue;
    if(n>=45&&n<=84)hanPools.extreme.push(ch);
    else if(n>=28&&n<45)hanPools.high.push(ch);
    else if(n>=16&&n<28)hanPools.medium.push(ch);
