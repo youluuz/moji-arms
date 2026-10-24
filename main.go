@@ -1362,6 +1362,9 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?730:1250", 1)
 	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2300")
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
+	// Permit solo CPU round dimensions to change with selected CPU count.
+	source = strings.Replace(source, "const WORLD_W=2300,WORLD_H=1300;", "let WORLD_W=2300,WORLD_H=1300;", 1)
+
 	// Keep CPU spawn and collision-safe obstacle generation centered in the
 	// expanded arena. The large CPU HTML contains these legacy literals.
 	source = regexp.MustCompile(`\b1150\b`).ReplaceAllString(source, "1350")
