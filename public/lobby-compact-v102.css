@@ -1,0 +1,120 @@
+/* 文字武装 v10.2: reduce the scrolling needed to reach the glyph loadout.
+   Compact only the introductory avatar and match-setup surfaces; preserve
+   buttons, all fields, event handlers, canvas resolution and readable touch targets. */
+#lobbyScreen #loadoutPanel{padding:12px 15px!important}
+#lobbyScreen #loadoutPanel>.section-head{margin-bottom:8px!important}
+#lobbyScreen #loadoutPanel>.section-head h2{font-size:17px!important}
+
+/* The old preview was 166px tall (136px on mobile); a small avatar preview
+   is enough for identifying the character and avoids excessive scrolling. */
+#lobbyScreen #loadoutPanel .avatar-zone{
+ grid-template-columns:108px minmax(0,1fr)!important;
+ gap:11px!important;align-items:center!important;
+ padding-bottom:7px!important;
+}
+#lobbyScreen #loadoutPanel .avatar-display{
+ min-height:100px!important;height:100px!important;
+ padding:5px!important;gap:2px!important;
+ border-radius:12px!important;box-sizing:border-box!important;
+}
+#lobbyScreen #loadoutPanel .avatar-display canvas{
+ width:70px!important;height:70px!important;
+ max-width:100%!important;max-height:70px!important;
+}
+#lobbyScreen #loadoutPanel .avatar-display small{
+ font-size:9px!important;line-height:1.15!important;
+}
+#lobbyScreen #loadoutPanel .avatar-zone>.avatar-display+div{
+ min-width:0;
+}
+#lobbyScreen #loadoutPanel label[for="avatarInput"]{
+ font-size:12px!important;margin:0 0 4px!important;
+}
+#lobbyScreen #loadoutPanel .avatar-setting{
+ display:grid!important;
+ grid-template-columns:90px minmax(0,1fr)!important;
+ align-items:center!important;gap:8px!important;
+}
+#lobbyScreen #loadoutPanel .avatar-setting #avatarInput{
+ width:90px!important;max-width:100%!important;
+ height:43px!important;min-height:43px!important;
+ font-size:22px!important;padding:5px!important;
+}
+#lobbyScreen #loadoutPanel .avatar-setting .subtle{
+ min-width:0!important;max-width:100%!important;
+ font-size:11px!important;line-height:1.35!important;
+ overflow-wrap:anywhere;
+}
+#lobbyScreen #loadoutPanel #equipSummary{
+ margin-top:3px!important;font-size:11px!important;
+ line-height:1.35!important;
+}
+
+/* Keep the basic setup in the same order with less dead space. */
+#lobbyScreen #loadoutPanel #battleSettings{
+ margin-top:8px!important;padding:11px 12px!important;
+}
+#lobbyScreen #battleSettings>.section-head{margin-bottom:7px!important}
+#lobbyScreen #battleSettings>.section-head h2{font-size:15px!important}
+#lobbyScreen #modeTiles{
+ margin:7px 0 9px!important;gap:7px!important;
+}
+#lobbyScreen #modeTiles [data-mode-tile]{
+ min-height:76px!important;
+ padding:7px 5px!important;
+ gap:3px!important;font-size:19px!important;
+}
+#lobbyScreen #modeTiles [data-mode-tile] b{font-size:13px!important}
+#lobbyScreen #modeTiles [data-mode-tile] small{font-size:10px!important}
+#lobbyScreen #battleSettings .mode-quickrow{gap:9px!important}
+#lobbyScreen #battleSettings .mode-quickrow select{
+ min-height:42px!important;height:42px!important;
+}
+#lobbyScreen #battleSettings .mode-hint{
+ padding:7px 0 3px!important;
+}
+#lobbyScreen .loadout-intro{
+ margin:13px 0 10px!important;padding:12px 15px!important;
+}
+#lobbyScreen .loadout-intro h2{margin-bottom:3px!important}
+
+/* Phone: retain sufficient touch area, and use a compact side-by-side icon
+   editor instead of a tall preview block stacked above the form. */
+@media(max-width:700px){
+ #lobbyScreen #loadoutPanel{padding:9px 10px!important}
+ #lobbyScreen #loadoutPanel>.section-head{margin-bottom:6px!important}
+ #lobbyScreen #loadoutPanel .avatar-zone{
+  grid-template-columns:86px minmax(0,1fr)!important;
+  gap:8px!important;padding-bottom:6px!important;
+ }
+ #lobbyScreen #loadoutPanel .avatar-display{
+  height:88px!important;min-height:88px!important;
+  padding:4px!important;
+ }
+ #lobbyScreen #loadoutPanel .avatar-display canvas{
+  width:61px!important;height:61px!important;max-height:61px!important;
+ }
+ #lobbyScreen #loadoutPanel .avatar-display small{font-size:8px!important}
+ #lobbyScreen #loadoutPanel .avatar-setting{
+  grid-template-columns:minmax(68px,78px) minmax(0,1fr)!important;
+  gap:6px!important;
+ }
+ #lobbyScreen #loadoutPanel .avatar-setting #avatarInput{
+  width:100%!important;height:42px!important;min-height:42px!important;
+  font-size:20px!important;
+ }
+ #lobbyScreen #loadoutPanel .avatar-setting .subtle{
+  font-size:10px!important;line-height:1.3!important;
+ }
+ #lobbyScreen #loadoutPanel #equipSummary{
+  font-size:10px!important;line-height:1.35!important;
+ }
+ #lobbyScreen #loadoutPanel #battleSettings{
+  margin-top:7px!important;padding:9px!important;
+ }
+ #lobbyScreen #modeTiles [data-mode-tile]{
+  min-height:69px!important;padding:6px 4px!important;
+ }
+ #lobbyScreen #modeTiles [data-mode-tile] b{font-size:12px!important}
+ #lobbyScreen .loadout-intro{padding:10px!important;margin:10px 0 8px!important}
+}
