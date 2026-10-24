@@ -563,7 +563,8 @@ func ultimateLaunch(room *Room,p *Player,now float64) {
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
 	case "attack":
-		return (.65 + float64(n)*.125 + math.Max(0, float64(n-10))*.02)*1.3 + math.Max(0, float64(n-20))*.055 + math.Max(0, float64(n-40))*.14
+		x := math.Max(0, float64(n-1))
+		return 0.3 * (1 + 0.14*x + 0.003*x*x)
 	case "defense":
 		return (9 + float64(n)*.4) * 1.4
 	case "heal":
@@ -1365,7 +1366,8 @@ func mobilePatchedIndex(source string) string {
 		`<div class="setting"><label class="label" for="modeSelect">対戦モード</label><select id="modeSelect">`,
 		`<div class="setting" id="legacyModeSelector" hidden aria-hidden="true" style="display:none!important"><label class="label" for="modeSelect">対戦モード</label><select id="modeSelect">`, 1)
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
-	// Attack CT rises slightly for ordinary characters, with extra escalation after 20 and 40 strokes.
+	// A 1-stroke normal shot recharges in 0.3s; each additional stroke
+	// adds a progressively larger CT increment while preserving high-stroke power.
 	// Keep stroke values authoritative and avoid fake 12-stroke fallback.
 	source = strings.ReplaceAll(source, "n>40", "n>84")
 	source = strings.ReplaceAll(source, "max=\"40\"", "max=\"84\"")
@@ -1405,7 +1407,7 @@ window.MojiStrokeReady=Promise.all([
 }).catch(err=>{console.warn('画数辞書の取得に失敗',err);return false;});`
 	source = strings.Replace(source, "if(window.MojiRandom)window.MojiRandom.strokeMap=dict;", strokeLoader, 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
-	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:1.3*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)+Math.max(0,n-20)*.055+Math.max(0,n-40)*.14", 1)
+	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))", 1)
 	for _, pair := range [][2]string{
 		{"defense:9+n*.4", "defense:1.4*(9+n*.4)"},
 		{"heal:13+n*.55", "heal:1.4*(13+n*.55)"},
