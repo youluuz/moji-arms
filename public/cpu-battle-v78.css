@@ -41,3 +41,28 @@
  #cpuAliveCount{top:5px;left:5px}
  .match-alive-count{font-size:11px;padding:4px 7px}
 }
+
+/* Compact top-right live scoreboard; the arena minimap remains unobstructed. */
+#gameScreen .hud{
+ position:relative!important;box-sizing:border-box!important;
+ padding-right:clamp(138px,35%,164px)!important;
+ min-height:62px!important;
+}
+#gameScreen #cpuBattleScoreboard.moji-battle-score{
+ position:absolute!important;top:50%;right:5px;transform:translateY(-50%);
+ z-index:28;display:flex!important;flex-direction:column;align-items:stretch;
+ justify-content:center;gap:3px;width:clamp(129px,34%,154px);
+ pointer-events:none;
+}
+#gameScreen #cpuBattleScoreboard #cpuAliveCount,
+#gameScreen #cpuBattleScoreboard #cpuKillScore{
+ position:static!important;display:block!important;box-sizing:border-box;
+ width:100%;text-align:center;margin:0;
+ padding:3px 5px;font-size:clamp(10px,1.2vw,12px);line-height:1.2;
+}
+@media(max-width:500px){
+ #gameScreen .hud{min-height:54px!important;padding-right:137px!important}
+ #gameScreen #cpuBattleScoreboard.moji-battle-score{width:131px;right:3px;gap:2px}
+ #gameScreen #cpuBattleScoreboard #cpuAliveCount,
+ #gameScreen #cpuBattleScoreboard #cpuKillScore{padding:2px 3px;font-size:10px}
+}
