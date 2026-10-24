@@ -169,6 +169,9 @@ function boot(){
    // collision inside cpu-battle-v78.js awards the hardening effect.
    for(const b of [...specialBullets])if(!bullets.includes(b))specialBullets.delete(b);
   }
+  // Match start and slot reconfiguration rebuild the legacy #weapons DOM.
+  // Keep the SAME ultimate button (and its listener) attached as slot six.
+  if(weaponRow && battle.root.parentElement!==weaponRow)weaponRow.append(battle.root);
   battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-now)/1000));
   banner.hidden=!active||!aiming;if(!banner.hidden)banner.textContent=curr().name+' 照準中・残り'+Math.ceil(Math.max(0,aimUntil-now)/1000)+'秒';
   const result=document.getElementById('result');
