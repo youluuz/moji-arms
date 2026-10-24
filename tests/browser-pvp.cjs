@@ -97,6 +97,28 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         buttons.labels.length!==5||buttons.labels.some(label=>label!=='🎲 文字ランダム'))
       throw Error(mode+': waiting-room ready placement or random label wrong '+JSON.stringify(buttons));
     }
+    // A slot's "文字ランダム" only changes that glyph. It must not touch
+    // other slots, chosen abilities, or a custom-mode manual stroke count.
+    const beforeSlotRandom=await host.evaluate(()=>[...document.querySelectorAll('#onlineSlots .online-slot')].map(row=>({
+     ch:row.querySelector('.online-glyph-input').value,
+     kind:row.querySelector('.online-kind').value,
+     n:row.querySelector('.slot-strokes').value
+    })));
+    await host.locator('#roomLoadoutMount .slot-random').first().click();
+    const afterSlotRandom=await host.evaluate(()=>[...document.querySelectorAll('#onlineSlots .online-slot')].map(row=>({
+     ch:row.querySelector('.online-glyph-input').value,
+     kind:row.querySelector('.online-kind').value,
+     n:row.querySelector('.slot-strokes').value
+    })));
+    if(afterSlotRandom[0].kind!==beforeSlotRandom[0].kind||
+       (mode==='custom'&&afterSlotRandom[0].n!==beforeSlotRandom[0].n)||
+       JSON.stringify(afterSlotRandom.slice(1))!==JSON.stringify(beforeSlotRandom.slice(1)))
+      throw Error(mode+': slot glyph random changed power, role or other slots');
+    await host.locator('#roomLoadoutMount #onlineGlyph0').fill(beforeSlotRandom[0].ch);
+    if(mode==='custom')await host.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').fill(beforeSlotRandom[0].n);
+    await host.locator('#saveRoomLoadout').click();
+    await host.waitForFunction(()=>roomState.players.find(p=>p.id===myId)?.ready&&
+     document.getElementById('roomEditStatus')?.textContent.includes('保存しました'),{timeout:12000});
     // The two original randomizers sit immediately ABOVE the ultimate choices,
     // including when the editable loadout moves into the waiting room.
     for(const p of pages){
