@@ -8,6 +8,52 @@ import (
 	"time"
 )
 
+
+func TestBattleCountdownSpawnsAndKillCredit(t *testing.T) {
+ a:=&Arena{rooms:map[string]*Room{}}
+ mk:=func(id string)*Client{return &Client{send:make(chan []byte,128),pid:id}}
+ c1,c2:=mk("p1"),mk("p2")
+ slots:=[]Slot{
+  {Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},
+  {Ch:"木",Kind:"heal",N:4},{Ch:"金",Kind:"pierce",N:8},
+  {Ch:"土",Kind:"homing",N:3},
+ }
+ setup,_:=json.Marshal(map[string]any{"type":"create","name":"A","ch":"火","slots":slots,"theme":"sakura","shrink":"normal"})
+ a.handle(c1,setup)
+ if c1.room==nil {t.Fatal("room creation failed")}
+ join,_:=json.Marshal(map[string]any{"type":"join","code":c1.room.Code,"name":"B","ch":"水","slots":slots})
+ a.handle(c2,join)
+ room:=c1.room
+ a.handle(c1,[]byte(`{"type":"start"}`))
+ if room.Phase!="countdown" {t.Fatal("online round must open with countdown")}
+ if room.zone()["r"]<1300 {t.Fatal("countdown unexpectedly shrank safe zone")}
+ if room.state()["countdownLeft"].(float64)<2.0 {t.Fatal("expected visible 3-second server countdown")}
+ if math.Hypot(room.Players[0].X-room.Players[1].X,room.Players[0].Y-room.Players[1].Y)<900 {t.Fatal("initial spawns still too close")}
+ a.tick(.033)
+ if room.Phase!="countdown" {t.Fatal("match began before 3s elapsed")}
+ room.Started=time.Now().Add(-time.Millisecond)
+ a.tick(.033)
+ if room.Phase!="playing" {t.Fatal("server failed to begin battle at countdown end")}
+ p1,p2:=room.Players[0],room.Players[1]
+ if p1.Kills!=0||p2.Kills!=0 {t.Fatal("kills not reset")}
+ hitFromBullet(room,p2,Bullet{Owner:p1.ID,Damage:750},float64(time.Now().UnixNano())/1e9)
+ if p1.Kills!=1||p2.Alive {t.Fatal("finishing player's kill was not counted")}
+ hitFromBullet(room,p2,Bullet{Owner:p1.ID,Damage:100},float64(time.Now().UnixNano())/1e9)
+ if p1.Kills!=1 {t.Fatal("duplicate kill credited")}
+ if room.state()["players"].([]map[string]any)[0]["kills"]!=1 {t.Fatal("kill tally missing in server state")}
+ p2.Alive=true;p2.HP=100
+ hit(p2,100,true,float64(time.Now().UnixNano())/1e9)
+ if p1.Kills!=1 {t.Fatal("zone/environment death incorrectly counted as a kill")}
+ p2.Alive=true;p2.HP=100
+ hitFromBullet(room,p2,Bullet{Owner:"unknown",Damage:200},float64(time.Now().UnixNano())/1e9)
+ if p1.Kills!=1 {t.Fatal("unknown owner earned a player's kill")}
+ // A subsequent rematch resets per-round kills and opens another countdown.
+ room.Phase="ended"
+ a.handle(c1,[]byte(`{"type":"return-lobby"}`))
+ a.handle(c1,[]byte(`{"type":"start"}`))
+ if room.Phase!="countdown"||p1.Kills!=0 {t.Fatal("rematch did not reset kills/countdown")}
+}
+
 func TestGraphemes(t *testing.T) {
 	for _, c := range []string{"一", "薔", "超", "A", "7", "♨", "♨️", "👩‍🚀", "🇯🇵", "★", "!"} {
 		if !validCharacter(c) {
@@ -136,7 +182,7 @@ func TestRoomEquipmentEditsAndSameRoomRematch(t *testing.T) {
   t.Fatal("joined player failed to apply changed kana loadout and ultimate")
  }
  a.handle(first,[]byte(`{"type":"start"}`))
- if room.Phase!="playing"{t.Fatal("host failed to launch after updated setup")}
+ if room.Phase!="countdown"{t.Fatal("host failed to launch countdown after updated setup")}
  a.handle(second,[]byte(`{"type":"setup","ch":"火","slots":[],"ultimate":"roman"}`))
  if room.Players[1].Ultimate!="slow"{t.Fatal("equipment changed mid-match")}
  room.Phase="ended";room.Winner=first.pid
@@ -147,7 +193,7 @@ func TestRoomEquipmentEditsAndSameRoomRematch(t *testing.T) {
  }
  if !room.Players[0].Ready||!room.Players[1].Ready {t.Fatal("rematch lobby not ready")}
  a.handle(first,[]byte(`{"type":"start"}`))
- if room.Phase!="playing"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600{
+ if room.Phase!="countdown"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600{
   t.Fatal("second round did not start with updated equipment")
  }
  if strokes("イ")!=2 || strokes("ー")!=1 || strokes("フ")!=1 || strokes("ネ")!=4 {t.Fatal("kana stroke regression")}
@@ -200,9 +246,13 @@ func TestPublicMatchWaitsForHostStart(t *testing.T) {
 		t.Fatal("non-host was allowed to start a public match")
 	}
 	a.handle(first, []byte(`{"type":"start"}`))
-	if room.Phase != "playing" {
-		t.Fatal("host could not manually start the public match")
+	if room.Phase != "countdown" {
+		t.Fatal("host could not manually start the public match countdown")
 	}
+	if room.Started.Sub(time.Now()).Seconds()<2.5 {t.Fatal("the server countdown was not 3 seconds")}
+	room.Started=time.Now().Add(-time.Millisecond)
+	a.tick(1.0/30)
+	if room.Phase!="playing" {t.Fatal("countdown did not transition to playing")}
 	// Mobile taps must survive 50ms keyboard-state updates and use the targeted slot.
 	a.handle(first, []byte(`{"type":"cast","selected":4,"aim":1.25}`))
 	a.handle(first, []byte(`{"type":"input","selected":0,"aim":0,"fire":false,"keys":[]}`))
@@ -388,13 +438,13 @@ func TestExpandedArenaCPUAndOnlineAssets(t *testing.T) {
 }
 
 func TestSixUltimatesChargeAndServerRules(t *testing.T) {
- specs:=map[string]int{"roman":320,"slow":280,"invincible":300,"dance":300,"invisible":260,"namepu":180}
+ specs:=map[string]int{"roman":300,"slow":260,"invincible":280,"dance":280,"invisible":240,"namepu":160}
  for id,want:=range specs {if got:=ultimateCost(id);got!=want {t.Fatalf("ultimate %s: got %d want %d",id,got,want)}}
  if ultimateCost("unknown")!=0 || chooseUltimate("unknown")!="roman" {t.Fatal("invalid ultimate must default safely")}
  c1:=&Client{send:make(chan []byte,64),pid:"a"}
  c2:=&Client{send:make(chan []byte,64),pid:"b"}
- p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:320,Keys:map[string]bool{}}
- q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:300,Keys:map[string]bool{}}
+ p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:300,Keys:map[string]bool{}}
+ q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:280,Keys:map[string]bool{}}
  room:=&Room{Code:"ULT",Phase:"playing",Mode:"normal",Theme:"shrine",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,q}}
  c1.room=room;c2.room=room
  a:=&Arena{rooms:map[string]*Room{"ULT":room}}
@@ -417,12 +467,12 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  a.tick(.01)
  if q.Casts!=1 || q.LastKind!="attack" {t.Fatal("invincibility blocked an ordinary weapon cast")}
  // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
- p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=180
+ p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=160
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  if p.NamepuUntil<=float64(time.Now().UnixNano())/1e9 || !p.NamepuUsed {t.Fatal("namepu 5-second self-dance was not enabled")}
  hp=p.HP;hit(p,10,true,float64(time.Now().UnixNano())/1e9)
  if p.HP!=hp-10 {t.Fatal("namepu must not grant damage resistance")}
- p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=280;p.NamepuUntil=0
+ p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=260;p.NamepuUntil=0
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
  if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" {t.Fatal("slow ultimate should fire targeted projectile")}
