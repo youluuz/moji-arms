@@ -80,6 +80,27 @@ function drawMirrorBall(cx,x,y,t){
  cx.beginPath();cx.arc(0,0,18,0,Math.PI*2);cx.stroke();
  cx.restore();
 }
+// An avatar-attached effect stays visible even when the high overhead disco
+// ball is clipped by the top of the camera. Cosmetic only: no hitbox changes.
+function drawDanceAura(cx,x,y,t){
+ if(!cx)return;
+ cx.save();cx.translate(x,y);cx.textAlign='center';cx.textBaseline='middle';
+ const beat=1+Math.sin(t/145)*.12;
+ cx.strokeStyle='#ffe8a8';cx.lineWidth=3;cx.shadowColor='#ffd687';cx.shadowBlur=18;
+ cx.beginPath();cx.arc(0,0,31*beat,0,Math.PI*2);cx.stroke();
+ cx.strokeStyle='#8ef4ff';cx.lineWidth=2;
+ cx.setLineDash([6,5]);cx.lineDashOffset=-(t/50)%22;
+ cx.beginPath();cx.arc(0,0,39*beat,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+ for(let i=0;i<3;i++){
+  const a=t/360+i*Math.PI*2/3;
+  cx.fillStyle=i%2?'#ffb0e3':'#fff3ac';
+  cx.beginPath();cx.arc(Math.cos(a)*42,Math.sin(a)*35,3.5,0,Math.PI*2);cx.fill();
+ }
+ cx.shadowBlur=7;cx.font='bold 19px sans-serif';cx.fillStyle='#fff1ae';
+ cx.fillText('♪',-39,-39+Math.sin(t/180)*4);
+ cx.fillText('♫',36,-37+Math.cos(t/180)*4);
+ cx.restore();
+}
 // Put projectile examples INSIDE the existing how-to/effects explanations,
 // rather than showing a second set of large panels under the equipment editor.
 const weaponOrder=['attack','defense','heal','pierce','homing'];
@@ -181,5 +202,5 @@ function bootstrap(){
  if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);document.querySelector('#joinArea')?.addEventListener('click',scheduled,true);document.querySelector('#waitArea')?.addEventListener('click',scheduled,true);online.addEventListener('click',()=>setTimeout(preMatchOnline,0),true);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap,{once:true});else bootstrap();
-window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,preMatchSolo,preMatchOnline,syncSoloBattle};
+window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,drawDanceAura,preMatchSolo,preMatchOnline,syncSoloBattle};
 })();
