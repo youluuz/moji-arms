@@ -92,6 +92,23 @@ const { chromium } = require('playwright');
   await page.locator('#shuffleLoadout').click();
   await page.locator('#createRoomNow').click();
   await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
+  await page.waitForTimeout(1600);
+  console.log('ONLINE_ROOM_CREATE_DIAG',JSON.stringify({
+   errors,
+   child:await page.evaluate(()=>{
+    const frame=document.getElementById('onlineFrame'),w=frame?.contentWindow,d=frame?.contentDocument;
+    if(!w||!d)return {frameExists:!!frame,src:frame?.src};
+    return {src:frame.src,readyState:d.readyState,
+     joinedCode:d.getElementById('code')?.textContent,
+     error:d.getElementById('error')?.textContent,
+     waitError:d.getElementById('waitError')?.textContent,
+     onlineSlots:[...d.querySelectorAll('.online-glyph-input')].map(el=>el.value),
+     joinTitle:d.querySelector('#joinArea h2')?.textContent,
+     waitShown:d.getElementById('waitArea')?.style.display,
+     wsOpen:w.sock?.readyState,phase:w.roomState?.phase,code:w.roomState?.code,
+     onlineLoading:d.getElementById('joinArea')?.style.display};
+   })
+  }));
   await page.waitForFunction(()=>{
    const iframe=document.getElementById('onlineFrame');
    try{return iframe.contentWindow?.roomState?.phase==='lobby'&&/^[A-Z0-9]{6}$/.test(iframe.contentWindow.roomState.code)}catch(_){return false}
