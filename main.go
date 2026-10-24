@@ -1304,7 +1304,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=81"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=81"></script><script defer src="/ultimate-cpu.js?v=82"></script><script defer src="/arena-expansion-v72.js?v=78"></script><script defer src="/cpu-battle-v78.js?v=82"></script><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=81">`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=81"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=81"></script><script defer src="/ultimate-cpu.js?v=82"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=80"></script><script defer src="/mobile-orientation-v80.js?v=80"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=81">`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1364,6 +1364,18 @@ window.MojiStrokeReady=Promise.all([
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Permit solo CPU round dimensions to change with selected CPU count.
 	source = strings.Replace(source, "const WORLD_W=2300,WORLD_H=1300;", "let WORLD_W=2300,WORLD_H=1300;", 1)
+	// Rendering and minimap must use the scaled world center, not the old fixed center.
+	for _,coords := range [][2]string{
+	 {"ctx.moveTo(900+zoneRadius,525)","ctx.moveTo(WORLD_W/2+zoneRadius,WORLD_H/2)"},
+	 {"ctx.arc(900,525,zoneRadius","ctx.arc(WORLD_W/2,WORLD_H/2,zoneRadius"},
+	 {"(900+zoneRadius)/WORLD_W","(WORLD_W/2+zoneRadius)/WORLD_W"},
+	 {"900/WORLD_W","(WORLD_W/2)/WORLD_W"},
+	 {"525/WORLD_H","(WORLD_H/2)/WORLD_H"},
+	 {"crest(900,525,170","crest(WORLD_W/2,WORLD_H/2,170"},
+	 {"crest(240,190,82","crest(WORLD_W*.14,WORLD_H*.18,82"},
+	 {"crest(1560,845,92","crest(WORLD_W*.87,WORLD_H*.82,92"},
+	} {source = strings.ReplaceAll(source,coords[0],coords[1])}
+
 
 	// Keep CPU spawn and collision-safe obstacle generation centered in the
 	// expanded arena. The large CPU HTML contains these legacy literals.
