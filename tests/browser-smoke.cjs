@@ -174,8 +174,9 @@ const { chromium } = require('playwright');
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
    await page.waitForFunction(()=>document.querySelectorAll('#gameScreen .moji-battle-metric').length===5,{timeout:9500});
    const soloMetrics=await page.locator('#gameScreen .moji-battle-metric').allInnerTexts();
-   if(!soloMetrics.some(x=>x.includes('威力'))||!soloMetrics.some(x=>x.includes('防御'))||!soloMetrics.some(x=>x.includes('回復')))
-    throw Error(mode+' solo battle missing damage/guard/heal on each card: '+JSON.stringify(soloMetrics));
+   const expectedMetrics=await page.evaluate(()=>slots.map(s=>(window.MojiWeaponVisual.types[s.kind]?.marker||'')+' '+window.MojiWeaponVisual.metric(s.kind,s.n)));
+   if(JSON.stringify(soloMetrics)!==JSON.stringify(expectedMetrics))
+    throw Error(mode+' solo battle slot stats disagree with randomized actual equipment: '+JSON.stringify({soloMetrics,expectedMetrics}));
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
    if(!await page.locator('#cpuBattleCountdown').isVisible())throw Error(mode+' CPU start countdown not visible on map');
    const beforeStart=await page.evaluate(()=>({
