@@ -1,0 +1,33 @@
+name: Verify public game launch
+on:
+  # Explicit opt-in: never wakes the free host or spends CI minutes on each push.
+  workflow_dispatch:
+    inputs:
+      public_url:
+        description: '公開Render URL（必ず管理画面で確認した正しいURLを入力）'
+        required: true
+        type: string
+        default: 'https://moji-arms-online.onrender.com/'
+      pages_url:
+        description: 'GitHub Pages URL（まだPages未公開なら空欄でOK）'
+        required: false
+        type: string
+        default: ''
+jobs:
+  public-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - name: Get release checker
+        uses: actions/checkout@v4
+      - name: Set up Node.js without third-party packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify health, introduction, release assets and WebSocket
+        env:
+          PUBLIC_BASE_URL: ${{ inputs.public_url }}
+          PAGES_URL: ${{ inputs.pages_url }}
+        run: node scripts/public-release-check.mjs "$PUBLIC_BASE_URL"
