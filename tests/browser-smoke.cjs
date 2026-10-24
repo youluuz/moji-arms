@@ -200,6 +200,30 @@ const { chromium } = require('playwright');
   if(discoVisual.discoVisible<150||discoVisual.auraVisible<200||discoVisual.shotVisible<250||
      !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
    throw Error('Avatar dance aura, disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
+  // Roman ultimate VFX must paint real pixels in all 3 phases, while never
+  // flashing a text-based KO/"撃破" label.
+  const romanVisual=await page.evaluate(()=>{
+   const fx=window.MojiRomanFX,canvas=document.createElement('canvas');
+   canvas.width=360;canvas.height=310;
+   const ctx=canvas.getContext('2d'),counts=[],labels=[];
+   const original=ctx.fillText.bind(ctx);
+   ctx.fillText=function(s,...args){labels.push(String(s));return original(s,...args)};
+   for(const paint of [
+    ()=>fx.drawCharge(ctx,180,150,500,.7),
+    ()=>fx.drawShot(ctx,180,150,-.3,520),
+    ()=>fx.drawImpact(ctx,180,150,160)
+   ]){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    paint();
+    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let visible=0;for(let i=3;i<pixels.length;i+=4)if(pixels[i]>55)visible++;
+    counts.push(visible);
+   }
+   return {exists:!!fx,counts,labels};
+  });
+  if(romanVisual.counts.some(n=>n<300)||
+    romanVisual.labels.some(x=>x.includes('撃破')||x==='K.O.'||x==='KO'))
+   throw Error('Cannon charge/fire/impact must be visible without KO text '+JSON.stringify(romanVisual));
   if(await page.evaluate(()=>window.MojiWeaponVisual.types.attack.color)!=='#dbff70')
    throw Error('Normal shot should be lime-gold, not avatar blue');
   const preview=await page.evaluate(()=>[...document.querySelectorAll('#abilityGuide .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
