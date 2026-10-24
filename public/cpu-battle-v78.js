@@ -142,6 +142,15 @@ function boot(){
  if(initialized||typeof loop!=='function'||typeof draw!=='function'||typeof damage!=='function')return;
  initialized=true;
  setupPicker();
+ // Lock real attacks during the map countdown; the display and aim still work.
+ if(typeof act==='function'){
+  const cast=act;
+  act=function(...args){if(performance.now()<roundStartAt)return;return cast.apply(this,args);};
+ }
+ if(typeof requestCast==='function'){
+  const request=requestCast;
+  requestCast=function(...args){if(performance.now()<roundStartAt)return;return request.apply(this,args);};
+ }
  const hud=document.querySelector('#gameScreen .hud .hud-line span');
  const arena=document.querySelector('#gameScreen .arena-shell');
  if(arena&&!document.getElementById('cpuKillScore')){
