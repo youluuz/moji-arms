@@ -10,6 +10,20 @@ const { chromium } = require('playwright');
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
   await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
+  // Check actual post-dictionary sampling, not just the randomizer source.
+  const glyphDistribution=await page.evaluate(()=>{
+   let han=0,heavy=0,extreme=0,other=0;
+   for(let i=0;i<850;i++){
+    const ch=window.MojiRandom.roll();
+    const n=getStrokeCount(ch);
+    if(/\\p{Script=Han}/u.test(ch)){han++;if(n>=16)heavy++;if(n>=45)extreme++;}
+    else other++;
+   }
+   return {han,heavy,extreme,other};
+  });
+  if(glyphDistribution.han<280||glyphDistribution.heavy<170||glyphDistribution.extreme<20||glyphDistribution.other<250)
+   throw Error('High-stroke glyph randomization or broad Unicode balance regression: '+JSON.stringify(glyphDistribution));
+
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
