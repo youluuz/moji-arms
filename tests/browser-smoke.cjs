@@ -85,9 +85,14 @@ const { chromium } = require('playwright');
   await page.locator('#shuffleLoadout').click();
   await page.locator('#createRoomNow').click();
   await page.waitForTimeout(1600);
+  console.log('ROOM_CREATE_ERRORS',JSON.stringify(errors));
   console.log('ROOM_CREATE_DIAG',JSON.stringify(await page.evaluate(()=>{
    const frame=document.getElementById('onlineFrame'),d=frame?.contentDocument,w=frame?.contentWindow;
    return {src:frame?.getAttribute('src'),onlineActive:document.getElementById('onlineScreen')?.classList.contains('active'),
+    onlineClass:document.getElementById('onlineScreen')?.className,
+    onlineTag:document.getElementById('onlineScreen')?.outerHTML?.slice(0,360),
+    handlerAvailable:typeof openEmbeddedMultiplayer,
+    appTab:document.querySelector('.app-tab.active')?.textContent?.trim(),
     validation:document.getElementById('validation')?.textContent,
     inputValues:[...document.querySelectorAll('#setup .slot .kanji')].map(x=>x.value),
     stored:(()=>{try{return sessionStorage.getItem('kanji_v5_multi_setup')?.slice(0,280)}catch{return null}})(),
