@@ -58,3 +58,24 @@ body.online-battle #gameArea .weapon .wkind{font-weight:900!important}
 #gameScreen .hud > :first-child{max-width:580px!important;width:100%!important}
 
 .moji-weapon-gallery .moji-equipped-summary{margin:8px 0 0;font-size:11px;color:#d4ebff;line-height:1.6;overflow-wrap:anywhere}
+
+/* v8.8 — integrate projectile explanations into ordinary ability use/effect guides. */
+#abilityGuide .moji-preview{margin:9px 0 0;padding:5px;border-radius:8px}
+#abilityGuide .moji-preview-track{height:31px}
+#abilityGuide .moji-preview-lines strong{font-size:11px}
+#abilityGuide .moji-preview-lines span{font-size:10px}
+#abilityGuide .moji-preview-lines small{font-size:10px;white-space:normal}
+#mojiOnlineAbilityGuide{margin:12px 0 14px}
+.moji-weapon-help{padding:10px 13px 14px}
+.moji-weapon-help h3{margin:2px 0 5px;font-size:14px;font-weight:900;color:#ffdfa2}
+.moji-weapon-help>p{margin:0 0 11px;font-size:11px;color:#bcdcff;line-height:1.5}
+.moji-weapon-help .moji-weapon-gallery-grid{gap:8px}
+.moji-weapon-help .moji-preview{margin:0}
+.moji-weapon-help .moji-preview-lines span{min-height:28px}
+#onlineSlots>.online-slot>.moji-preview{display:none!important}
+@media(max-width:780px){
+ #abilityGuide .ability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #abilityGuide .ability-grid article{padding:10px 8px}
+ .moji-weapon-help{padding:10px 8px}
+ .moji-weapon-help .moji-preview-lines span{min-height:0}
+}
