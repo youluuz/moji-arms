@@ -116,8 +116,8 @@ const { chromium } = require('playwright');
   await cpuHelp.click();
 
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow]').click();
-  if(!((await cpuGuide.innerText()).includes('鈍化弾')&&(await cpuGuide.innerText()).includes('2段階操作')&&(await cpuGuide.innerText()).includes('4.5秒間')))
-   throw Error('CPU slow shot guide must reflect the 4.5-second slowdown');
+  if(!((await cpuGuide.innerText()).includes('硬化弾')&&(await cpuGuide.innerText()).includes('2段階操作')&&(await cpuGuide.innerText()).includes('3秒間')))
+   throw Error('CPU hardening-shot guide must explain the 3-second immobilization');
   for(const [id,phrase] of [['roman','即死'],['invincible','2.8秒'],['dance','マップ全域'],['invisible','4秒']]){
    await page.locator('#loadoutPanel .ultimate-option[data-ultimate="'+id+'"]').click();
    if(!(await cpuGuide.innerText()).includes(phrase))throw Error('CPU '+id+' guide lacks '+phrase);
@@ -141,7 +141,13 @@ const { chromium } = require('playwright');
   });
   if(!sharedBazooka.choice?.includes('rotate(-24 48 49)')||sharedBazooka.choice!==sharedBazooka.guide||sharedBazooka.choice!==sharedBazooka.battle)
    throw Error('Roman bazooka icon differs between selection, guide and CPU battle');
-  if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow] svg').count())throw Error('new slow-shot icon missing');
+  if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow] svg').count())throw Error('new hardening-shot icon missing');
+  const hardeningArt=await page.evaluate(()=>({
+   text:document.querySelector('#loadoutPanel [data-ultimate="slow"] .ultimate-option-title')?.textContent,
+   svg:document.querySelector('#loadoutPanel [data-ultimate="slow"] svg')?.outerHTML
+  }));
+  if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M43 16 72 19 87 40'))
+   throw Error('Hardening icon must show the crystal-lock silhouette: '+JSON.stringify(hardeningArt).slice(0,120));
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
   if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',275],['invincible',280],['dance',280],['invisible',240],['namepu',160]]))throw Error('shared specs mismatch');
@@ -188,14 +194,15 @@ const { chromium } = require('playwright');
     return {target:b.id,before:b.hp};
    });
    await page.waitForFunction(()=>window.MojiCpuBots.getBots()[1]?.hp<500,{timeout:12000});
-   const slowDebuff=await page.evaluate(()=>{
+   const hardenEffect=await page.evaluate(()=>{
     const b=window.MojiCpuBots.getBots()[1],now=performance.now();
     if(b.hp<=0)return {remaining:-1};
-    damage(b,1,now,false,{owner:'p',ultimate:'slow'});
-    return {remaining:b.slowUntil-now,damage:b.hp};
+    b.hp=500;b.shield=900;b.shieldEnd=now+5000;
+    damage(b,60,now,false,{owner:'p',ultimate:'slow'});
+    return {remaining:b.hardenUntil-now,hp:b.hp,shield:b.shield};
    });
-   if(slowDebuff.remaining<4400||slowDebuff.remaining>4600)
-    throw Error(mode+' CPU slow shot did not apply 4.5 seconds: '+JSON.stringify(slowDebuff));
+   if(hardenEffect.remaining<2950||hardenEffect.remaining>3050||hardenEffect.hp!==440||hardenEffect.shield!==900)
+    throw Error(mode+' CPU hardening bullet should freeze 3s through a shield: '+JSON.stringify(hardenEffect));
    const playerKill=await page.evaluate(()=>{
     const b=window.MojiCpuBots.getBots()[2],now=performance.now();
     b.hp=600;b.shield=900;b.shieldEnd=now+5000;
@@ -331,6 +338,11 @@ const { chromium } = require('playwright');
   const onlineGuide=page.locator('#joinArea .ultimate-guide');
   const onlineHelp=page.locator('#joinArea .ultimate-guide-toggle');
   if(!await onlineGuide.isHidden())throw Error('online guide must default to collapsed');
+  await page.locator('#joinArea .ultimate-option[data-ultimate=slow]').click();
+  await onlineHelp.click();
+  if(!((await onlineGuide.innerText()).includes('硬化弾')&&(await onlineGuide.innerText()).includes('3秒間')&&(await onlineGuide.innerText()).includes('無敵')))
+   throw Error('online hardening guide did not reflect stun and invincibility rules');
+  await onlineHelp.click();
   const onlineArrow=onlineHelp.locator('.ultimate-guide-chevron');
   const onlineArrowBox=await onlineArrow.boundingBox();
   if(!(await onlineArrow.innerText()).includes('▼')||!(await onlineArrow.innerText()).includes('開く')||
