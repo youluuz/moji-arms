@@ -82,31 +82,20 @@ const { chromium } = require('playwright');
     throw Error('Room creation is not left of CPU start or obsolete online panel remains '+JSON.stringify(lobbyActions));
   // Real lobby button regression, not only CSS placement. The original
   // 5-slot setup should open a live socket room when its dock CTA is clicked.
+  // Blank equipment must show an actionable error rather than silently
+  // failing or crashing; users must equip five glyphs before creating.
+  await page.locator('#createRoomNow').click();
+  const blankResult=await page.locator('#validation').innerText();
+  if(!blankResult.includes('枠1')||!blankResult.includes('5枠'))
+   throw Error('Blank create-room click should identify required equipment '+blankResult);
+  if(errors.length)throw Error('Blank create-room click threw a JS error: '+errors.join('; '));
   await page.locator('#shuffleLoadout').click();
   await page.locator('#createRoomNow').click();
-  await page.waitForTimeout(1600);
-  console.log('ROOM_CREATE_ERRORS',JSON.stringify(errors));
-  console.log('ROOM_CREATE_DIAG',JSON.stringify(await page.evaluate(()=>{
-   const frame=document.getElementById('onlineFrame'),d=frame?.contentDocument,w=frame?.contentWindow;
-   return {src:frame?.getAttribute('src'),onlineActive:document.getElementById('onlineScreen')?.classList.contains('active'),
-    onlineClass:document.getElementById('onlineScreen')?.className,
-    onlineTag:document.getElementById('onlineScreen')?.outerHTML?.slice(0,360),
-    handlerAvailable:typeof openEmbeddedMultiplayer,
-    appTab:document.querySelector('.app-tab.active')?.textContent?.trim(),
-    validation:document.getElementById('validation')?.textContent,
-    inputValues:[...document.querySelectorAll('#setup .slot .kanji')].map(x=>x.value),
-    stored:(()=>{try{return sessionStorage.getItem('kanji_v5_multi_setup')?.slice(0,280)}catch{return null}})(),
-    state:w?.roomState?{code:w.roomState.code,phase:w.roomState.phase,players:w.roomState.players?.length}:null,
-    joinError:d?.getElementById('error')?.textContent,waitError:d?.getElementById('waitError')?.textContent,
-    waiting:d?.getElementById('waitArea')?.style.display,
-    onlineInput:[...d?.querySelectorAll('.online-glyph-input')||[]].map(x=>x.value),
-    socketState:w?.sock?.readyState,htmlTitle:d?.title};
-  })));
   await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
   await page.waitForFunction(()=>{
    const iframe=document.getElementById('onlineFrame');
    try{return iframe.contentWindow?.roomState?.phase==='lobby'&&/^[A-Z0-9]{6}$/.test(iframe.contentWindow.roomState.code)}catch(_){return false}
-  },{timeout:16000});
+  },null,{timeout:16000});
   const roomCreated=await page.evaluate(()=>({
    roomCode:document.getElementById('onlineFrame')?.contentWindow?.roomState?.code,
    playerCount:document.getElementById('onlineFrame')?.contentWindow?.roomState?.players?.length,
