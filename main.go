@@ -1261,15 +1261,33 @@ func (c *Client) reader() error {
 		}
 	}
 }
+// Restrict browser WebSockets to the actual requested public Host. Proxy
+// forwarding headers supplied by a client must NEVER authorize a foreign
+// Origin: otherwise an attacker could set X-Forwarded-Host themselves.
+func websocketOriginAllowed(r *http.Request) bool {
+ origin := r.Header.Get("Origin")
+ if origin == "" { return true } // Native WS clients used for release checks.
+ parsed, err := url.Parse(origin)
+ if err != nil || parsed.Host == "" || parsed.User != nil ||
+  parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+  return false
+ }
+ if parsed.Scheme != "http" && parsed.Scheme != "https" { return false }
+ return strings.EqualFold(parsed.Host, r.Host)
+}
+func publicResponseHeaders(next http.Handler) http.Handler {
+ return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  w.Header().Set("X-Content-Type-Options", "nosniff")
+  w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+  w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+  next.ServeHTTP(w,r)
+ })
+}
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
-	// Browsers on an unrelated website should not be able to create rooms here.
-	if origin := r.Header.Get("Origin"); origin != "" {
-		parsed, err := url.Parse(origin)
-		if err != nil || (!strings.EqualFold(parsed.Host, r.Host) && !strings.EqualFold(parsed.Host, r.Header.Get("X-Forwarded-Host"))) || (parsed.Scheme != "https" && parsed.Scheme != "http") {
-			http.Error(w, "WebSocket origin not allowed", http.StatusForbidden)
-			return
-		}
-	}
+ if !websocketOriginAllowed(r) {
+  http.Error(w, "WebSocket origin not allowed", http.StatusForbidden)
+  return
+ }
 	if !strings.EqualFold(r.Header.Get("Upgrade"), "websocket") || !strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") || r.Header.Get("Sec-WebSocket-Key") == "" {
 		http.Error(w, "WebSocket upgrade required", 400)
 		return
@@ -1528,7 +1546,7 @@ func main() {
 		}
 		http.FileServer(http.FS(files)).ServeHTTP(w, r)
 	}))
-	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 8 * time.Second}
+	srv := &http.Server{Handler: publicResponseHeaders(mux), ReadHeaderTimeout: 8 * time.Second}
 	go func() {
 		if e := srv.Serve(listener); e != nil && e != http.ErrServerClosed {
 			log.Print("サーバー停止:", e)
