@@ -211,10 +211,20 @@ const { chromium } = require('playwright');
     enemy:{x:enemy.x,y:enemy.y}, enemyHp:document.getElementById('ehp')?.textContent,
     rivalHPVisible:!!document.getElementById('ehp')?.getBoundingClientRect().width,
     ownHPVisible:!!document.querySelector('#gameScreen .hud > :first-child')?.getBoundingClientRect().width,
-    killScore:document.getElementById('cpuKillScore')?.textContent
+    killScore:document.getElementById('cpuKillScore')?.textContent,
+    scoreLocation:(()=>{
+     const hud=document.querySelector('#gameScreen .hud').getBoundingClientRect();
+     const score=document.getElementById('cpuBattleScoreboard').getBoundingClientRect();
+     const hp=document.querySelector('#gameScreen .hud > :first-child').getBoundingClientRect();
+     return {isRight:score.right<=hud.right+2&&score.left>hud.left+hud.width*.5,
+       besideHp:score.left>=hp.right-5,visible:score.width>90&&score.height>20};
+    })(),
+    healMetric:window.MojiWeaponVisual.metric('heal',10)
    }));
    if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
-      beforeStart.killScore!=='⚔ キル 0'||Math.hypot(beforeStart.player.x-beforeStart.enemy.x,beforeStart.player.y-beforeStart.enemy.y)<250)
+      beforeStart.killScore!=='⚔ キル 0'||!beforeStart.scoreLocation.isRight||!beforeStart.scoreLocation.besideHp||
+      !beforeStart.scoreLocation.visible||beforeStart.healMetric!=='回復34'||
+      Math.hypot(beforeStart.player.x-beforeStart.enemy.x,beforeStart.player.y-beforeStart.enemy.y)<250)
     throw Error(mode+' self-only HP/spawn/countdown/kill UI failed '+JSON.stringify(beforeStart));
    await page.waitForFunction(()=>window.MojiCpuBots.countdownLeft()<=0 && document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
 
