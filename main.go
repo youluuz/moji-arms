@@ -1501,7 +1501,7 @@ func main() {
 		count := len(arena.rooms)
 		arena.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "7.8", "rooms": count})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": "文字武装", "version": "9.4-beta", "commit": os.Getenv("RENDER_GIT_COMMIT"), "rooms": count})
 	})
 	mux.HandleFunc("/lan", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1536,7 +1536,7 @@ func main() {
 	}()
 	localURL := fmt.Sprintf("http://127.0.0.1:%d/", actual)
 	fmt.Println("\n===============================================")
-	fmt.Println("  文字武装 v7.4 / Python不要")
+	fmt.Println("  文字武装 v9.4 公開ベータ / Python不要")
 	fmt.Println("  ローカル: " + localURL)
 	fmt.Println("  ルーム作成後に招待リンクをコピーしてください。")
 	fmt.Print("===============================================\n\n")
