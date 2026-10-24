@@ -6,6 +6,7 @@ const samples=['炎','氷','雷','風','光','影','剣','盾','星','龍','月'
 const bots=[]; // Keep the same array for cover-generation collision checks.
 window.enemies=bots;
 let match=-1, chosenCount=1, initialized=false, roundStartAt=0, playerKills=0, mapFactor=1;
+let cpuSpectating=false,cpuWatchIndex=0,cpuSpectateTarget=null;
 // Use the NAME entered on the common login screen in every solo result,
 // including the special Namepu ending. Never interpret saved career stats as
 // a player's identity, and never inject this user text as HTML.
@@ -71,6 +72,9 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  return {x:cx+Math.cos(angle)*(instant?115:630)*mapFactor,y:cy+Math.sin(angle)*(instant?115:345)*mapFactor};
 }
 function startRound(token,now){
+ cpuSpectating=false;cpuWatchIndex=0;cpuSpectateTarget=null;
+ document.getElementById('cpuDeathChoice')?.remove();
+ document.getElementById('cpuWatchControls')?.remove();
  bots.length=0;
  chosenCount=countSetting();
  // Two total fighters use 80% of the legacy map; ten use 150%.
@@ -161,6 +165,8 @@ function updateHpDisplay(){
   const count=living.length+(player.hp>0?1:0);
   counter.textContent='👥 生存 '+count+' / '+total+'人';
   counter.setAttribute('aria-label','生存プレイヤー '+count+'人、参加 '+total+'人');
+  const viewers=document.getElementById('cpuSpectatorCount');
+  if(viewers)viewers.textContent='👁 観戦 '+(cpuSpectating?1:0);
  }
  if(near){
   document.getElementById('ehp').textContent=Math.ceil(near.hp);
@@ -186,7 +192,7 @@ function boot(){
  // corner, outside the arena canvas so its minimap is never obstructed.
  const hud=document.querySelector('#gameScreen .hud');
  if(hud&&!document.getElementById('cpuBattleScoreboard')){
-  hud.insertAdjacentHTML('beforeend','<div id="cpuBattleScoreboard" class="moji-battle-score" role="group" aria-label="生存人数と自分のキル数"><span id="cpuAliveCount" class="match-alive-count" role="status" aria-live="off">👥 生存 2 / 2人</span><span id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</span></div>');
+  hud.insertAdjacentHTML('beforeend','<div id="cpuBattleScoreboard" class="moji-battle-score" role="group" aria-label="生存人数と自分のキル数"><span id="cpuSpectatorCount" class="match-spectator-count" aria-label="観戦人数">👁 観戦 0</span><span id="cpuAliveCount" class="match-alive-count" role="status" aria-live="off">👥 生存 2 / 2人</span><span id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</span></div>');
  }
  const arena=document.querySelector('#gameScreen .arena-shell');
  if(arena&&!document.getElementById('cpuBattleCountdown')){
@@ -202,7 +208,15 @@ function boot(){
   // canvas load without affecting player movement, collision or cooldown.
   if(document.body.classList.contains('mobile-touch-input')&&lastPaint&&now-lastPaint<33)return;
   lastPaint=now;
-  oldDraw(now);
+  // The legacy camera follows player coordinates. Temporarily aim it at
+  // the observed CPU for painting only; never alter the combat simulation.
+  const oldPosition={x:player.x,y:player.y};
+  if(cpuSpectating){
+   const fighters=alive();
+   if(!fighters.includes(cpuSpectateTarget))cpuSpectateTarget=fighters[0]||null;
+   if(cpuSpectateTarget){player.x=cpuSpectateTarget.x;player.y=cpuSpectateTarget.y;}
+  }
+  try{oldDraw(now)}finally{player.x=oldPosition.x;player.y=oldPosition.y}
   if(match!==matchToken||!running&&!bots.length)return;
   const score=document.getElementById('cpuKillScore');
   if(score)score.textContent='⚔ キル '+playerKills;
@@ -276,6 +290,36 @@ function boot(){
   showResult=function(won,...args){
    const value=oldResult.call(this,won,...args);
    const others=alive();
+   if(!won&&player.hp<=0&&others.length>1&&!cpuSpectating){
+    const arena=document.querySelector('#gameScreen .arena-shell')||document.getElementById('gameScreen');
+    if(arena&&!document.getElementById('cpuDeathChoice')){
+     const chooser=document.createElement('div');
+     chooser.id='cpuDeathChoice';
+     chooser.innerHTML='<div><strong>戦闘不能！</strong><p>ロビーに戻るか、CPU同士の残りの試合を観戦できます。</p><button type="button" id="cpuChooseWatch">👁 観戦する</button><button type="button" id="cpuChooseLobby">↩ ロビーに戻る</button></div>';
+     document.body.append(chooser);
+     document.getElementById('cpuChooseWatch').onclick=()=>{
+      chooser.remove();cpuSpectating=true;cpuWatchIndex=0;cpuSpectateTarget=alive()[0]||null;
+      const game=document.getElementById('gameScreen');
+      game?.classList.remove('hidden');game?.classList.add('active');
+      document.getElementById('resultScreen')?.classList.add('hidden');
+      document.body.classList.add('in-match','cpu-spectating');
+      const controls=document.createElement('div');controls.id='cpuWatchControls';
+      controls.innerHTML='<button type="button" id="cpuWatchPrev">◀ 前</button><span id="cpuWatchTarget">👁 観戦中</span><button type="button" id="cpuWatchNext">次 ▶</button><button type="button" id="cpuWatchExit">ロビーへ戻る</button>';
+      arena.append(controls);
+      const shift=direction=>{
+       const living=alive();if(!living.length)return;
+       cpuWatchIndex=(cpuWatchIndex+direction+living.length)%living.length;
+       cpuSpectateTarget=living[cpuWatchIndex];
+      };
+      document.getElementById('cpuWatchPrev').onclick=()=>shift(-1);
+      document.getElementById('cpuWatchNext').onclick=()=>shift(1);
+      document.getElementById('cpuWatchExit').onclick=()=>document.getElementById('retreat')?.click();
+      down=false;keys={};queuedCast=null;running=true;
+      requestAnimationFrame(t=>loop(t,matchToken));
+     };
+     document.getElementById('cpuChooseLobby').onclick=()=>{chooser.remove();document.getElementById('retreat')?.click();};
+    }
+   }
    const winner=won?loginWinnerName():
     others.length===1?'CPU '+(Number(others[0].id?.split('-')[1]||0)+1):
     others.length>1?'未確定（CPU残り'+others.length+'体）':'引き分け';
@@ -329,6 +373,7 @@ function boot(){
   let dt=Math.min(Math.max(0,(now-last)/1000),.05);last=now;
   if(running){
    if(match!==token){match=token;startRound(token,now);}
+   if(cpuSpectating){down=false;keys={};queuedCast=null;}
    const countdown=document.getElementById('cpuBattleCountdown');
    if(now<roundStartAt){
     if(countdown){countdown.hidden=false;countdown.textContent=String(Math.max(1,Math.ceil((roundStartAt-now)/1000)));}
@@ -344,7 +389,7 @@ function boot(){
    let vy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);
    if(touch){vx=touch.x;vy=touch.y}
    const mag=Math.hypot(vx,vy)||1;
-   moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
+   if(!cpuSpectating)moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
    for(const bot of alive()){
     const hardened=now<bot.hardenUntil;
     const target=hardened?null:chooseTarget(bot,now);
@@ -362,7 +407,7 @@ function boot(){
    const center={x:WORLD_W/2,y:WORLD_H/2};
    const outside=Math.hypot(player.x-center.x,player.y-center.y)>zoneRadius;
    zoneWarningUpdate(outside,now);
-   for(const actor of [player,...alive()]){
+   for(const actor of [...(cpuSpectating?[]:[player]),...alive()]){
     if(Math.hypot(actor.x-center.x,actor.y-center.y)>zoneRadius)damage(actor,32*dt,now,true);
     if(!running)break;
    }
@@ -373,7 +418,7 @@ function boot(){
      queuedCast=null;selected=pending.selected;mouse=pending.aim;act(now);selected=saved;mouse=aim;
     }
    }
-   if(running&&down)act(now);
+   if(running&&down&&!cpuSpectating)act(now);
    for(let i=bullets.length-1;i>=0&&running;i--){
     const b=bullets[i],t=projectileTarget(b);
     if(b.homing&&t)guide(b,t,dt);
@@ -387,6 +432,19 @@ function boot(){
     const hit=targets.find(a=>a.hp>0&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+9);
     if(hit){damage(hit,b.n*DAMAGE_PER_STROKE,now,b.pierce,b);bullets.splice(i,1);}
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
+   }
+   if(cpuSpectating){
+    const living=alive();
+    if(!living.includes(cpuSpectateTarget))cpuSpectateTarget=living[0]||null;
+    const label=document.getElementById('cpuWatchTarget');
+    if(label)label.textContent='👁 観戦中：'+(cpuSpectateTarget?'CPU '+(Number(cpuSpectateTarget.id?.split('-')[1]||0)+1):'生存者なし');
+    if(living.length<=1){
+     cpuSpectating=false;running=false;
+     document.body.classList.remove('cpu-spectating');
+     const title=document.getElementById('cpuWatchTarget');
+     if(title)title.textContent='🏆 優勝：'+(living.length?'CPU '+(Number(living[0].id?.split('-')[1]||0)+1):'引き分け');
+     document.getElementById('status').textContent='観戦終了';
+    }
    }
   }
   document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':'安全エリア半径：'+Math.round(zoneRadius)+' / '+Math.round(1350*mapFactor);
