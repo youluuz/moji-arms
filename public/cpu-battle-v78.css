@@ -27,3 +27,17 @@
 .match-countdown{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;pointer-events:none;width:clamp(84px,15vw,132px);height:clamp(84px,15vw,132px);border:3px solid #ffdb92;border-radius:26px;background:#0b1a30dc;box-shadow:0 0 35px #071222cf,0 0 34px #ffd17488;color:#ffe5ac;font-size:clamp(48px,9vw,82px);font-weight:1000;text-align:center;line-height:clamp(84px,15vw,132px);text-shadow:0 2px 12px #ffac5b88}
 .match-countdown[hidden]{display:none!important}
 @media(max-width:650px){#cpuKillScore{top:32px;left:5px;font-size:11px;padding:3px 6px}}
+
+/* Persistent, visible survivor tally separate from the hidden enemy HP area. */
+#cpuAliveCount{position:absolute;top:8px;left:10px;z-index:26;pointer-events:none}
+.match-alive-count{
+ display:inline-flex;align-items:center;padding:5px 11px;
+ border:1px solid #98e8df;border-radius:10px;
+ background:#0a2942ed;color:#d5fff1;font-size:13px;font-weight:950;
+ white-space:nowrap;font-variant-numeric:tabular-nums;
+ box-shadow:0 0 14px #53e6da38
+}
+@media(max-width:650px){
+ #cpuAliveCount{top:5px;left:5px}
+ .match-alive-count{font-size:11px;padding:4px 7px}
+}
