@@ -14,7 +14,7 @@ function boot(){
  // The pre-existing whole-loadout randomizer belongs just ABOVE the ultimate
  // choices. Relocate the live button, preserving its event handler.
  const shuffle=document.getElementById('shuffleLoadout');
- if(shuffle && pick.root.parentElement===lobby){
+ if(shuffle && pick.root.isConnected){
   let bar=lobby.querySelector('#mojiBulkRandomBar');
   if(!bar){
    bar=document.createElement('div');
