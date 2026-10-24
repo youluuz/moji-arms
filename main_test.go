@@ -625,6 +625,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
    if shielded.HP!=556 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
    shielded.InvincibleUntil=0
    shielded.Keys["d"]=true
+   shielded.LastInput=time.Now() // Emulate the fresh key packet sent after hardening ends.
    oldX:=shielded.X
    a.tick(.1)
    if shielded.X<=oldX {t.Fatal("movement did not recover after hardening")}
