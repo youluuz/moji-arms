@@ -6,7 +6,28 @@ const { chromium } = require('playwright');
  page.on('pageerror',e=>errors.push(String(e)));
  const base=process.env.BASE_URL||'http://127.0.0.1:8083';
  try {
+  // Public discovery pages must work without a logged-in game session.
+  const landing=await page.goto(base+'/about.html',{waitUntil:'domcontentloaded',timeout:45000});
+  if(!landing.ok())throw Error('Public landing HTML '+landing.status());
+  const landingState=await page.evaluate(()=>({
+   title:document.title,
+   button:document.querySelector('a.cta.primary')?.getAttribute('href'),
+   share:!!document.querySelector('#share'),
+   mobileWidth:document.documentElement.scrollWidth<=innerWidth+2
+  }));
+  if(!landingState.title.includes('文字武装')||landingState.button!=='/'||
+     !landingState.share||!landingState.mobileWidth)
+   throw Error('Public launch landing metadata, CTA or phone layout invalid '+JSON.stringify(landingState));
+  const privacy=await page.goto(base+'/privacy.html',{waitUntil:'domcontentloaded',timeout:45000});
+  if(!privacy.ok())throw Error('Public beta privacy notice '+privacy.status());
   const res=await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
+  const marketing=await page.evaluate(()=>({
+   description:document.querySelector('meta[name="description"]')?.content||'',
+   og:document.querySelector('meta[property="og:title"]')?.content||'',
+   info:document.querySelector('#mojiLaunchInfo')?.getAttribute('href')
+  }));
+  if(!marketing.description.includes('無料')||!marketing.og.includes('文字武装')||
+     marketing.info!=='/about.html')throw Error('Game root is not linked to its public launch page '+JSON.stringify(marketing));
   if(!res.ok())throw Error('login HTTP '+res.status());
   await page.waitForFunction(()=>!!window.MojiUlt,{timeout:15000});
   await page.waitForFunction(async()=>await window.MojiStrokeReady,{timeout:20000});
