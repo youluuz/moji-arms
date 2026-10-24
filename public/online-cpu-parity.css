@@ -198,3 +198,35 @@ body.online-battle #gameArea #movePad{
 @media(orientation:landscape) and (max-height:480px){
  body.online-battle #gameArea #touchControls{--moji-pad-size:86px}
 }
+
+/* v9.6 — modern live equipment stats in the ONLINE room before the match.
+   These are real computed damage/heal/shield/cooldown values, not attack-only
+   labels or a second set of animated projectile previews. */
+#waitArea .moji-room-summary{margin:12px 0 13px;padding:12px 10px;background:linear-gradient(155deg,#142941,#102034);border:1px solid #6e8eaa;border-radius:12px}
+#waitArea .moji-room-summary-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+#waitArea .moji-room-summary-head strong{font-size:15px;color:#ffe3ad}
+#waitArea .moji-room-summary-head small{font-size:11px;color:#add1ed}
+#waitArea .moji-room-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#waitArea .moji-room-weapon{--weapon-accent:#dbff70;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:center;background:linear-gradient(180deg,#1b3552,#14243c);border:1px solid #547798;border-top:3px solid var(--weapon-accent);border-radius:9px;padding:6px 3px 8px;min-height:116px;text-align:center}
+#waitArea .moji-room-weapon-id{color:#b8d4ed;font-size:9px;font-weight:800;letter-spacing:.07em}
+#waitArea .moji-room-weapon-char{font-size:clamp(21px,3vw,32px);font-weight:900;line-height:1.12;color:#fff;overflow-wrap:anywhere;max-width:100%;min-height:28px}
+#waitArea .moji-room-weapon-type{color:var(--weapon-accent);font-size:11px;font-weight:800}
+#waitArea .moji-room-weapon-metric{color:#f9f6e6;font-size:clamp(12px,1.4vw,15px)}
+#waitArea .moji-room-weapon-ct{color:#b8ddff;font-size:11px;font-variant-numeric:tabular-nums}
+#onlineSlots .moji-setup-stat{--weapon-accent:#dbff70;display:flex;flex-wrap:wrap;gap:3px 7px;align-items:center;justify-content:center;margin:7px 0 0;padding:7px 4px;border:1px solid #526b88;border-left:3px solid var(--weapon-accent);border-radius:7px;background:#101f33;min-width:0}
+#onlineSlots .moji-setup-stat strong{color:var(--weapon-accent);font-size:12px;white-space:nowrap;font-weight:900}
+#onlineSlots .moji-setup-stat span{color:#d2e9ff;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+#onlineSlots .moji-setup-stat small{display:block;flex-basis:100%;font-size:10px;color:#b4d0e4;line-height:1.4;text-align:center}
+@media(max-width:700px){
+ #waitArea .moji-room-summary{padding:8px 6px;margin:7px 0 9px}
+ #waitArea .moji-room-summary-head strong{font-size:12px}
+ #waitArea .moji-room-summary-head small{font-size:9px}
+ #waitArea .moji-room-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #waitArea .moji-room-weapon{min-height:89px;gap:2px;padding:5px 2px}
+ #waitArea .moji-room-weapon:last-child:nth-child(odd){grid-column:span 2}
+ #waitArea .moji-room-weapon-char{font-size:23px;min-height:22px}
+ #onlineSlots .moji-setup-stat{padding:5px 2px;gap:2px 5px}
+ #onlineSlots .moji-setup-stat strong{font-size:11px}
+ #onlineSlots .moji-setup-stat span{font-size:10px}
+ #onlineSlots .moji-setup-stat small{font-size:9px}
+}
