@@ -63,15 +63,41 @@
    announcements=data.notices.filter(x=>typeof x.title==='string'&&typeof x.body==='string').slice(0,15);
    if(announcements.length){badge();if(!overlay.hidden)render()}
   }).catch(()=>{});
-  // Relocate only the existing Start button, preserving old listeners and ID.
-  // It remains sticky when scrolling through equipment or the ability guide.
+  // Keep the original buttons (including their listeners and IDs) while
+  // removing the redundant online matchmaking panel from the lower lobby.
+  // A room can still be created from immediately left of the CPU start CTA.
   const start=$('start');
   if(start&&!$('mojiSortieDock')){
    const bar=document.createElement('div');bar.id='mojiSortieDock';bar.className='moji-sortie-dock';
    const label=document.createElement('span');label.className='moji-sortie-text';
    label.textContent='⚔ 装備が決まったら出撃';
+   const actions=document.createElement('div');actions.className='moji-sortie-actions';
    start.parentNode.insertBefore(document.createComment('Start button moved to sticky bar'),start);
-   bar.append(label,start);lobby.append(bar);
+   actions.append(start);bar.append(label,actions);lobby.append(bar);
+  }
+  function moveRoomButtonAndRemovePanel(){
+   const bar=$('mojiSortieDock'),actions=bar?.querySelector('.moji-sortie-actions');
+   if(!actions)return false;
+   const heading=[...lobby.querySelectorAll('h1,h2,h3,h4,legend,.section-head,header,strong')]
+    .find(node=>node!==bar&&/ロビーからオンライン対戦/.test(node.textContent||'')&&
+      (node.textContent||'').length<180);
+   const panel=heading?.closest('.panel')||heading?.closest('section');
+   if(!panel||panel===lobby||panel.contains(bar))return false;
+   const create=[...panel.querySelectorAll('button')]
+    .find(button=>/ルームを作成|新しいルームを作る/.test(button.textContent||''));
+   if(!create)return false; // Never remove the existing control without relocating it.
+   create.classList.add('moji-dock-room-create');
+   create.setAttribute('aria-label','オンライン対戦のルームを作成');
+   actions.insertBefore(create,start); // Preserve its original click handler.
+   panel.remove(); // Includes now-unneeded matchmaking, code entry, and join buttons.
+   return true;
+  }
+  if(!moveRoomButtonAndRemovePanel()){
+   // Some lobby sections are rendered only after the player signs in.
+   const observer=new MutationObserver(()=>{
+    if(moveRoomButtonAndRemovePanel())observer.disconnect();
+   });
+   observer.observe(lobby,{subtree:true,childList:true});
   }
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
