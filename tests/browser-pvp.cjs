@@ -82,11 +82,23 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      throw Error(mode+': consolidated weapon previews are hidden even when usage/effects help is open');
     await weaponHelp.locator('summary').click();
     if(await weaponHelp.evaluate(el=>el.open))throw Error(mode+': ordinary weapon guide did not close');
-    // Both phones must be able to edit weapons and ultimate after joining the room.
+    // The two original randomizers sit immediately ABOVE the ultimate choices,
+    // including when the editable loadout moves into the waiting room.
     for(const p of pages){
+     const order=await p.evaluate(()=>{
+      const root=document.getElementById('roomLoadoutMount');
+      const editor=root?.querySelector('.online-loadout');
+      const bar=editor?.lastElementChild;
+      const ult=editor?.nextElementSibling;
+      return {editor:!!editor,random:bar?.id==='onlineBulkRandomBar',
+       all:bar?.querySelector('#randomAll')?.isConnected,
+       emoji:bar?.querySelector('#randomEmoji')?.isConnected,
+       next:ult?.classList.contains('ultimate-widget')};
+     });
      if(!await p.locator('#waitArea #roomLoadoutMount #onlineGlyph0').isVisible()||
-        !await p.locator('#waitArea #roomLoadoutMount .ultimate-option').count())
-      throw Error(mode+': equipment or ultimate picker is hidden after room join');
+        !await p.locator('#waitArea #roomLoadoutMount .ultimate-option').count()||
+        !order.editor||!order.random||!order.all||!order.emoji||!order.next)
+      throw Error(mode+': mobile random button placement or editable ultimate missing '+JSON.stringify(order));
     }
     if(mode==='normal'){
      await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
@@ -141,6 +153,20 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
      if(!await page.locator('#gameArea .battle-head').isVisible()||!await page.locator('#cards .card.weapon').count())throw Error(mode+': CPU-style battle HUD not rendered');
+     const touchUI=await page.evaluate(()=>{
+      const box=q=>document.querySelector(q)?.getBoundingClientRect();
+      const ult=box('#gameArea .ultimate-cast'),arena=box('#gameArea .game-wrap');
+      const cards=box('#cards'),hint=document.querySelector('#gameArea .moji-battle-howto');
+      const ratio=document.querySelector('#arena').width/view.w;
+      return {inside:!!ult&&!!arena&&ult.left>=arena.left-2&&ult.right<=arena.right+2&&ult.bottom<=arena.bottom+2,
+       separate:!!ult&&!!cards&&ult.bottom<=cards.top+2,
+       hint:hint?.textContent||'',pointerSafe:hint&&getComputedStyle(hint).pointerEvents==='none',
+       ratio};
+     });
+     if(!touchUI.inside||!touchUI.separate||
+        !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
+        touchUI.ratio>1.55)
+      throw Error(mode+': mobile ultimate overlaps glyph slots, help missing or canvas too heavy '+JSON.stringify(touchUI));
      // Check the screenshot-defining structure, not just a decorative header.
      const parity=await page.evaluate(()=>{
       const box=q=>document.querySelector(q).getBoundingClientRect();
