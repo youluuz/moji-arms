@@ -114,3 +114,97 @@ body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
 .ultimate-guide-toggle[aria-expanded="true"]{background:linear-gradient(115deg,#42394f,#253750)!important;border-color:#f4cc80!important}
 .ultimate-guide-toggle[aria-expanded="true"] .ultimate-guide-chevron{background:#f4cc80!important;color:#342336!important;border-color:#fff1bb!important}
 @media(max-width:700px){.ultimate-guide-toggle{min-height:67px!important;padding:8px 10px!important;gap:9px!important}.ultimate-guide-toggle-label{font-size:13px}.ultimate-guide-toggle-hint{font-size:11px}.ultimate-guide-chevron{flex-basis:65px!important;min-width:65px!important;height:48px!important;font-size:24px!important}}
+
+/* v9.1: The original loadout random buttons live just above the ultimate
+   selector instead of being scattered above/below the five equipment slots. */
+.moji-loadout-random-actions{
+ display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-start;
+ gap:9px;margin:12px 0 4px;padding:10px 11px;
+ border-radius:11px;border:1px solid #5f83a5;background:#14283d;
+}
+.moji-loadout-random-actions button{
+ min-height:40px!important;padding:8px 13px!important;flex:0 1 auto;
+ border:1px solid #c9aa69!important;border-radius:9px!important;
+ background:#463d56!important;color:#fff2c7!important;
+ font-weight:900!important;cursor:pointer;touch-action:manipulation;
+}
+@media(max-width:540px){
+ .moji-loadout-random-actions{gap:6px;padding:8px}
+ .moji-loadout-random-actions button{flex:1 1 100%;max-width:100%;font-size:12px!important}
+}
+/* v9.2 mobile: keep the active ultimate entirely INSIDE the battlefield.
+   Previously CPU position:fixed tied it to the viewport and overlapped the
+   five glyph slots. Online also placed status labels outside its button. */
+@media (hover:none) and (pointer:coarse), (max-width:680px){
+ body.in-match #gameScreen .arena-shell .ultimate-battle,
+ body.mobile-touch-input.in-match #gameScreen .arena-shell .ultimate-battle,
+ body.online-battle #gameArea .game-wrap .ultimate-battle{
+  position:absolute!important;top:auto!important;left:auto!important;
+  right:max(6px,env(safe-area-inset-right))!important;
+  bottom:8px!important;width:70px!important;max-width:70px!important;
+  margin:0!important;padding:0!important;z-index:46!important;
+  gap:2px!important;pointer-events:none;
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-cast,
+ body.online-battle #gameArea .game-wrap .ultimate-cast{
+  display:flex!important;width:66px!important;height:70px!important;
+  min-width:0!important;min-height:0!important;box-sizing:border-box!important;
+  padding:3px 2px!important;gap:0!important;overflow:hidden!important;
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-icon,
+ body.online-battle #gameArea .game-wrap .ultimate-icon{
+  width:41px!important;height:41px!important;min-height:0!important;flex:0 0 41px!important;
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-icon svg,
+ body.online-battle #gameArea .game-wrap .ultimate-icon svg{
+  width:39px!important;height:39px!important;max-width:100%;max-height:100%;
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-left,
+ body.online-battle #gameArea .game-wrap .ultimate-left{
+  width:100%;max-width:100%;min-width:0;
+  display:block;font-size:9px!important;line-height:1.15!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;
+  text-align:center;
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-state,
+ body.online-battle #gameArea .game-wrap .ultimate-state{
+  display:none!important;
+ }
+}
+@media (hover:none) and (pointer:coarse) and (max-height:520px){
+ body.in-match #gameScreen .arena-shell .ultimate-battle,
+ body.online-battle #gameArea .game-wrap .ultimate-battle{
+  bottom:5px!important;right:5px!important;max-width:57px!important;width:57px!important
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-cast,
+ body.online-battle #gameArea .game-wrap .ultimate-cast{
+  width:55px!important;height:56px!important;padding:2px!important
+ }
+ body.in-match #gameScreen .arena-shell .ultimate-icon,
+ body.online-battle #gameArea .game-wrap .ultimate-icon{width:32px!important;height:32px!important;flex-basis:32px!important}
+ body.in-match #gameScreen .arena-shell .ultimate-icon svg,
+ body.online-battle #gameArea .game-wrap .ultimate-icon svg{width:31px!important;height:31px!important}
+ body.in-match #gameScreen .arena-shell .ultimate-left,
+ body.online-battle #gameArea .game-wrap .ultimate-left{font-size:7.5px!important}
+}
+/* A tiny battle tutorial occupies top-center spare HUD space but never catches
+   the attack pointer, and remains legible on portrait/landscape mobile. */
+.moji-battle-howto{
+ position:absolute;top:8px;left:50%;transform:translateX(-50%);
+ z-index:12;pointer-events:none;user-select:none;
+ display:flex;flex-direction:column;gap:2px;align-items:center;
+ width:max-content;max-width:calc(100% - 180px);
+ padding:5px 11px;border-radius:10px;
+ border:1px solid #81acc780;background:#092038c9;
+ color:#f3f4de;text-align:center;font-size:11px;font-weight:800;
+ line-height:1.4;text-shadow:0 1px 3px #00182e;
+}
+.moji-battle-howto small{font-size:10px;color:#adddfb;line-height:1.4}
+@media(max-width:640px){
+ .moji-battle-howto{top:7px;left:47%;max-width:calc(100% - 138px);padding:5px 6px;font-size:9px}
+ .moji-battle-howto small{font-size:8px}
+}
+@media(max-height:520px) and (orientation:landscape){
+ .moji-battle-howto{top:5px;left:45%;padding:3px 6px;font-size:8.5px}
+ .moji-battle-howto small{font-size:7.5px}
+}
