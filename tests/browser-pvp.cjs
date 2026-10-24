@@ -100,12 +100,35 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         !order.editor||!order.random||!order.all||!order.emoji||!order.next)
       throw Error(mode+': mobile random button placement or editable ultimate missing '+JSON.stringify(order));
     }
+    // The waiting room displays the same power, shield, healing and cooldown
+    // formulas as the in-battle equipment HUD; refresh on custom/normal edits.
+    for(const p of pages){
+     await p.waitForFunction(()=>document.querySelectorAll('#roomWeaponSummary .moji-room-weapon').length===5,{timeout:9500});
+     const stats=await p.evaluate(()=>{
+      const cards=[...document.querySelectorAll('#roomWeaponSummary .moji-room-weapon')];
+      const editor=[...document.querySelectorAll('#roomLoadoutMount #onlineSlots .online-slot')];
+      return {count:cards.length, visible:cards.every(x=>x.getBoundingClientRect().height>50),
+       valid:cards.every((card,i)=>{
+        const n=Number(editor[i].querySelector('.slot-strokes').value),kind=editor[i].querySelector('.online-kind').value;
+        return card.querySelector('.moji-room-weapon-metric').textContent===window.MojiWeaponVisual.metric(kind,n) &&
+         card.querySelector('.moji-room-weapon-ct').textContent==='CT '+window.MojiWeaponVisual.cooldown(kind,n) &&
+         editor[i].querySelector('.moji-setup-stat strong')?.textContent.includes(window.MojiWeaponVisual.metric(kind,n));
+       }),
+       notes:editor.map(x=>x.querySelector('.moji-setup-stat small')?.textContent)};
+     });
+     if(stats.count!==5||!stats.visible||!stats.valid||stats.notes.some(x=>!x))
+      throw Error(mode+': live weapon power/cooldown details missing from room '+JSON.stringify(stats));
+    }
     if(mode==='normal'){
      await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
+     await guest.waitForFunction(()=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力12',{timeout:8000});
      await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ready===false,{timeout:10000});
      await host.waitForFunction(()=>document.getElementById('begin')?.disabled,{timeout:6000});
      if(await host.locator('#begin').isEnabled())throw Error('host could start while player edits');
      const ii=await guest.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').inputValue();
+     const refreshed=await guest.locator('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-ct').innerText();
+     if(refreshed!=='CT '+(await guest.evaluate(()=>window.MojiWeaponVisual.cooldown('attack',2))))
+      throw Error('Room preview attack CT did not react to glyph change: '+refreshed);
      if(ii!=='2')throw Error('イ must be two strokes; got '+ii);
      await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('ー');
      const dash=await guest.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').inputValue();
