@@ -84,6 +84,19 @@ const { chromium } = require('playwright');
   // 5-slot setup should open a live socket room when its dock CTA is clicked.
   await page.locator('#shuffleLoadout').click();
   await page.locator('#createRoomNow').click();
+  await page.waitForTimeout(1600);
+  console.log('ROOM_CREATE_DIAG',JSON.stringify(await page.evaluate(()=>{
+   const frame=document.getElementById('onlineFrame'),d=frame?.contentDocument,w=frame?.contentWindow;
+   return {src:frame?.getAttribute('src'),onlineActive:document.getElementById('onlineScreen')?.classList.contains('active'),
+    validation:document.getElementById('validation')?.textContent,
+    inputValues:[...document.querySelectorAll('#setup .slot .kanji')].map(x=>x.value),
+    stored:(()=>{try{return sessionStorage.getItem('kanji_v5_multi_setup')?.slice(0,280)}catch{return null}})(),
+    state:w?.roomState?{code:w.roomState.code,phase:w.roomState.phase,players:w.roomState.players?.length}:null,
+    joinError:d?.getElementById('error')?.textContent,waitError:d?.getElementById('waitError')?.textContent,
+    waiting:d?.getElementById('waitArea')?.style.display,
+    onlineInput:[...d?.querySelectorAll('.online-glyph-input')||[]].map(x=>x.value),
+    socketState:w?.sock?.readyState,htmlTitle:d?.title};
+  })));
   await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
   await page.waitForFunction(()=>{
    const iframe=document.getElementById('onlineFrame');
