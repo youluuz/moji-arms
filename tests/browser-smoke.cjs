@@ -51,6 +51,13 @@ const { chromium } = require('playwright');
   const registeredNickname=await page.evaluate(()=>sessionStorage.getItem('moji_player_name'));
   if(registeredNickname!=='蒼月の勇者')
    throw Error('Shared login did not persist the entered nickname: '+registeredNickname);
+  console.log('ROOM_LOBBY_DEBUG',JSON.stringify(await page.evaluate(()=>({
+   hasLoadout:!!document.querySelector('#loadoutPanel'),
+   lobbyHTML:(document.getElementById('lobbyScreen')?.outerHTML||'').slice(0,950),
+   panels:[...document.querySelectorAll('#lobbyScreen .panel')].map(p=>({id:p.id,cls:p.className,length:p.textContent.length,heading:(p.querySelector('h2,h3')?.textContent||'').slice(0,95)})).slice(0,20),
+   onlineHits:[...document.querySelectorAll('#lobbyScreen *')].filter(x=>x.children.length===0&&/ロビーからオンライン対戦/.test(x.textContent||'')).slice(0,3).map(x=>({name:x.tagName,html:x.outerHTML.slice(0,400),ancestors:[...function*(n){for(let i=0;i<6&&n;i++,n=n.parentElement)yield {tag:n.tagName,id:n.id,cls:n.className,childCount:n.children.length};}(x)]})),
+   roomButtons:[...document.querySelectorAll('#lobbyScreen button')].filter(x=>/ルームを作成|新しいルームを作る/.test(x.textContent||'')).map(x=>({outer:x.outerHTML.slice(0,300),parent:x.parentElement?.outerHTML.slice(0,700)}))
+  }))));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   await page.waitForSelector('#mojiNoticeButton',{timeout:10000});
   const lobbyExtras=await page.evaluate(()=>({
