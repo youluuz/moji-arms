@@ -78,19 +78,31 @@
   function moveRoomButtonAndRemovePanel(){
    const bar=$('mojiSortieDock'),actions=bar?.querySelector('.moji-sortie-actions');
    if(!actions)return false;
-   const heading=[...lobby.querySelectorAll('h1,h2,h3,h4,legend,.section-head,header,strong')]
-    .find(node=>node!==bar&&/ロビーからオンライン対戦/.test(node.textContent||'')&&
+   const create=$('createRoomNow')||
+    [...lobby.querySelectorAll('button')].find(button=>/ルームを作成|新しいルームを作る/.test(button.textContent||''));
+   if(!create)return false;
+   // The old online controls are INSIDE the large equipment panel. Never
+   // remove that ancestor: it also contains all five weapon slots and ultimates.
+   const heading=[...lobby.querySelectorAll('h1,h2,h3,h4,strong,.section-head')]
+    .find(node=>/ロビーからオンライン対戦/.test(node.textContent||'')&&
       (node.textContent||'').length<180);
-   const panel=heading?.closest('.panel')||heading?.closest('section');
-   if(!panel||panel===lobby||panel.contains(bar))return false;
-   const create=[...panel.querySelectorAll('button')]
-    .find(button=>/ルームを作成|新しいルームを作る/.test(button.textContent||''));
-   if(!create)return false; // Never remove the existing control without relocating it.
+   const protectedNodes=[$('loadoutPanel'),$('setup'),$('battleSettings'),start].filter(Boolean);
+   let container=null;
+   if(heading){
+    let parent=heading;
+    while(parent&&parent!==lobby){
+     if(parent.contains(create)&&!protectedNodes.some(n=>parent===n||
+         (n!==start&&parent.contains(n))||parent.contains(start)))container=parent;
+     parent=parent.parentElement;
+    }
+   }
+   // Move the EXISTING button with its click handler, never a dead duplicate.
    create.classList.add('moji-dock-room-create');
    create.setAttribute('aria-label','オンライン対戦のルームを作成');
-   actions.insertBefore(create,start); // Preserve its original click handler.
-   panel.remove(); // Includes now-unneeded matchmaking, code entry, and join buttons.
-   return true;
+   actions.insertBefore(create,start);
+   if(container)container.remove();
+   // When its heading remains, do not delete a shared equipment ancestor.
+   return !heading||!!container;
   }
   if(!moveRoomButtonAndRemovePanel()){
    // Some lobby sections are rendered only after the player signs in.
