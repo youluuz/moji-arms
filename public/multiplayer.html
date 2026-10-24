@@ -354,11 +354,44 @@ async function connect(action){
   });
  }else{$('copyInvite').disabled=false;}
  return}if(m.type==='state'){roomState=m;if(m.phase==='lobby')showWait(m);else showGame(m)}};}
+function applyServerEquipment(player){
+ if(!Array.isArray(player?.slots)||player.slots.length!==5)return;
+ const fresh=player.slots.map(s=>({ch:s.ch,kind:s.kind,n:s.n}));
+ activeSetup={...(activeSetup||setup),ch:fresh[0].ch,slots:fresh};
+ try{sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(activeSetup))}catch(_){}
+ for(let i=0;i<5;i++){
+  const input=$('onlineGlyph'+i),row=input?.closest('.online-slot');
+  if(!row)continue;
+  input.value=fresh[i].ch;
+  row.querySelector('.online-kind').value=fresh[i].kind;
+  row.querySelector('.slot-strokes').value=fresh[i].n;
+ }
+ window.MojiWeaponVisual?.preMatchOnline?.();
+}
 function showWait(m){
  const wasBattle=document.body.classList.contains('online-battle');
- if(wasBattle){stopInput();if(drawHandle!==null){cancelAnimationFrame(drawHandle);drawHandle=null;}informParentBattle(false);finished=false;wonPaid=false;down=false;keys={};$('onlineOutcome').classList.remove('show','defeat');$('battleResult').textContent='';$('onlineVictory').pause();onlineMusicStarted=false;}
+ if(wasBattle){stopInput();if(drawHandle!==null){cancelAnimationFrame(drawHandle);drawHandle=null;}informParentBattle(false);finished=false;wonPaid=false;down=false;keys={};$('onlineOutcome').classList.remove('show','defeat');$('battleResult').textContent='';$('onlineVictory').pause();onlineMusicStarted=false;pendingSetup=null;roomEditing=true;}
  mountRoomEditor();
- $('joinArea').style.display='none';document.body.classList.add('online-waiting');$('waitArea').querySelector('h2').firstChild.textContent=m.public?'ランダムマッチ待機中 ':'ルーム完成！ ';$('begin').textContent=m.public?'ランダム対戦を開始（ホスト）':'試合開始（ホスト）';document.body.classList.remove('online-battle');$('waitArea').style.display='block';$('gameArea').style.display='none';$('roster').textContent=m.players.map(p=>(p.ready?'✅ ':'✏️編集中 ')+p.name+(p.id===m.host?'（ホスト）':'')).join('　　');$('begin').disabled=m.host!==myId||m.players.length<2||!m.players.every(p=>p.ready);}
+ const self=m.players.find(p=>p.id===myId);
+ if(wasBattle){
+  // Only rehydrate at the replay boundary, never overwrite unsaved edits on
+  // ordinary lobby broadcasts from other participants.
+  applyServerEquipment(self);
+  $('roomEditStatus').textContent='再戦の武装を確認・変更したら準備完了を押してください';
+  $('saveRoomLoadout').disabled=false;
+  $('saveRoomLoadout').textContent='✓ 準備完了（装備を保存）';
+ }else if(pendingSetup&&self?.ready&&Array.isArray(self.slots)){
+  const received=self.slots;
+  const expected=pendingSetup.slots;
+  if(JSON.stringify(received)===JSON.stringify(expected)){
+   activeSetup=pendingSetup;pendingSetup=null;roomEditing=false;
+   try{sessionStorage.setItem('kanji_v5_multi_setup',JSON.stringify(activeSetup))}catch(_){}
+   $('saveRoomLoadout').disabled=false;
+   $('saveRoomLoadout').textContent='✓ 準備完了（装備を保存）';
+   $('roomEditStatus').textContent='✅ 装備を保存しました。再戦でもこの5枠を使用します。';
+  }
+ }
+ $('joinArea').style.display='none';document.body.classList.add('online-waiting');$('waitArea').querySelector('h2').firstChild.textContent=m.public?'ランダムマッチ待機中 ':'ルーム完成！ ';$('begin').textContent=m.public?'ランダム対戦を開始（ホスト）':'試合開始（ホスト）';document.body.classList.remove('online-battle');$('waitArea').style.display='block';$('gameArea').style.display='none';$('roster').textContent=m.players.map(p=>(p.ready?'✅ ':'✏️編集中 ')+p.name+(p.id===m.host?'（ホスト）':'')).join('　　');$('begin').disabled=m.host!==myId||m.players.length<2||!m.players.every(p=>p.ready)||roomEditing||!!pendingSetup;}
 function showGame(m){
  const enteringBattle=!document.body.classList.contains('online-battle');
  if(enteringBattle){informParentBattle(true);roomEditing=false;}
