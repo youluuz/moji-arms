@@ -28,6 +28,7 @@ jobs:
           node --check public/roman-effects-v97.js
           node --check public/mobile-stick-dock-v100.js
           node --check public/launch-nav.js
+          node --check public/room-entry-v106.js
           node -e "const a=require('./public/notices.json');if(!Array.isArray(a.notices)||!a.notices.length)process.exit(1)"
           node --check scripts/public-release-check.mjs
           node --check public/mobile-input-v70.js
@@ -69,6 +70,8 @@ jobs:
         run: node tests/browser-smoke.cjs
       - name: Test real two-player online normal and custom matches
         run: node tests/browser-pvp.cjs
+      - name: Verify room creation and invite from empty login equipment
+        run: node tests/browser-room-invite.cjs
       - name: Test embedded online match in mobile portrait and landscape
         run: node tests/browser-embedded-pvp.cjs
       - name: Check public-beta deployment paths and WebSocket on test server

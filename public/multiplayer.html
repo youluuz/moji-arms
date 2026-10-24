@@ -378,6 +378,7 @@ function applyServerEquipment(player){
  }
  window.MojiWeaponVisual?.preMatchOnline?.();
 }
+let draftNoticeShown=false;
 function showWait(m){
  const wasBattle=document.body.classList.contains('online-battle');
  if(wasBattle){stopInput();if(drawHandle!==null){cancelAnimationFrame(drawHandle);drawHandle=null;}informParentBattle(false);finished=false;wonPaid=false;down=false;keys={};watchMode=joinedAsSpectator;watchTargetId='';$('onlineDeathChoice').hidden=true;$('onlineWatchControls').hidden=true;$('onlineOutcome').classList.remove('show','defeat');$('battleResult').textContent='';$('onlineVictory').pause();onlineMusicStarted=false;pendingSetup=null;roomEditing=true;}
@@ -400,6 +401,15 @@ function showWait(m){
    $('saveRoomLoadout').textContent='✓ 準備完了（装備を保存）';
    $('roomEditStatus').textContent='✅ 装備を保存しました。再戦でもこの5枠を使用します。';
   }
+ }
+ if(!wasBattle&&!draftNoticeShown&&self?.id){
+  try{
+   if(sessionStorage.getItem('moji_room_autoequip')==='1'){
+    $('roomEditStatus').textContent='🔗 空欄には仮装備を設定しました。ここで5枠を変更し、「準備完了」で保存できます。';
+    sessionStorage.removeItem('moji_room_autoequip');
+   }
+  }catch(_){}
+  draftNoticeShown=true;
  }
  $('joinArea').style.display='none';document.body.classList.add('online-waiting');$('waitArea').querySelector('h2').firstChild.textContent=m.public?'ランダムマッチ待機中 ':'ルーム完成！ ';$('begin').textContent=m.public?'ランダム対戦を開始（ホスト）':'試合開始（ホスト）';document.body.classList.remove('online-battle');$('waitArea').style.display='block';$('gameArea').style.display='none';$('roster').textContent=m.players.map(p=>(p.ready?'✅ ':'✏️編集中 ')+p.name+(p.id===m.host?'（ホスト）':'')).join('　　')+(joinedAsSpectator?'　👁 観戦者として参加中':'');$('begin').disabled=m.host!==myId||m.players.length<2||!m.players.every(p=>p.ready)||roomEditing||!!pendingSetup;}
 function showGame(m){
@@ -545,7 +555,7 @@ cx.fillStyle='#ecf3ff';cx.font='bold 13px sans-serif';
 cx.fillText((({sakura:'桜舞う庭園',shrine:'黄金の神殿',night:'蒼月の城塞'})[m.theme]||'文字闘技場')+' | 座標 '+Math.round(me.x)+','+Math.round(me.y),17,29);
 drawHandle=requestAnimationFrame(draw)}
 $('onlineBattleBack').onclick=()=>{onlineReturnToLobby()};
-function onlineReturnToLobby(){sock?.close();$('onlineMusic').pause();if(embeddedMode&&window.parent!==window)window.parent.postMessage({type:'moji:returnLobby'},location.origin);else location.href='index.html'}
+function onlineReturnToLobby(){sock?.close();$('onlineMusic').pause();informParentBattle(false);if(embeddedMode&&window.parent!==window)window.parent.postMessage({type:'moji:returnLobby'},location.origin);else location.href='index.html'}
 $('onlineRematch').onclick=()=>{if(roomState?.phase==='ended')send({type:'return-lobby'});};
 $('onlineBack').onclick=onlineReturnToLobby;
 document.querySelector('header a[href="index.html"]').addEventListener('click',e=>{e.preventDefault();onlineReturnToLobby()});
@@ -557,7 +567,19 @@ $('onlineWatchExit').onclick=onlineReturnToLobby;
 const stepWatch=dir=>{const roster=roomState?.players.filter(p=>p.alive)||[];if(!roster.length)return;const ix=roster.findIndex(p=>p.id===watchTargetId);watchTargetId=roster[(ix+dir+roster.length)%roster.length].id;if(roomState)showGame(roomState)};
 $('onlineWatchPrev').onclick=()=>stepWatch(-1);$('onlineWatchNext').onclick=()=>stepWatch(1);
 // Direct route from the main lobby creates a room; invite links join in one click.
-if(incomingRoom){$('joinArea').querySelector('h2').textContent='招待ルームへ参加';$('join').textContent='装備を確認して参加';if(savedLoadout)setTimeout(()=>connect('join'),80);else setTimeout(()=>connect('watch'),80);}
+if(incomingRoom){$('joinArea').querySelector('h2').textContent='招待ルームへ参加';$('join').textContent='装備を確認して参加';if(savedLoadout)setTimeout(()=>connect('join'),80);else setTimeout(()=>{
+  // Invitees may arrive with no saved equipment, even from another Wi-Fi.
+  // A lobby needs a valid five-slot loadout; the server will automatically
+  // treat a late join as a spectator if the match has already started.
+  const draft=[['火',4],['水',4],['木',4],['金',8],['土',3]];
+  for(let i=0;i<draft.length;i++){
+   const input=$('onlineGlyph'+i),row=input.closest('.online-slot');
+   input.value=draft[i][0];
+   row.querySelector('.slot-strokes').value=String(draft[i][1]);
+  }
+  try{sessionStorage.setItem('moji_room_autoequip','1')}catch(_){}
+  connect('join');
+ },80);}
 else {const auto=new URLSearchParams(location.search).get('auto');if(auto==='create'||auto==='match'){
  $('joinArea').querySelector('h2').textContent=auto==='match'?'ランダムマッチへ接続中':'ルームを作成中';
  if(savedLoadout)setTimeout(()=>connect(auto),80);
