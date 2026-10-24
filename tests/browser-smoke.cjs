@@ -60,6 +60,26 @@ const { chromium } = require('playwright');
   }));
   if(!lobbyExtras.landscape?.includes('横画面推奨')||lobbyExtras.sticky!=='fixed'||!lobbyExtras.startInDock)
    throw Error('Lobby postbox or fixed deployment invalid '+JSON.stringify(lobbyExtras));
+  // The online panel is gone; its original room-creation button survives
+  // immediately to the left of the CPU start button in the persistent dock.
+  const lobbyActions=await page.evaluate(()=>{
+    const lobby=document.getElementById('lobbyScreen'),bar=document.getElementById('mojiSortieDock');
+    const actions=bar?.querySelector('.moji-sortie-actions');
+    const buttons=[...actions?.querySelectorAll('button')||[]];
+    const create=buttons.find(b=>b.textContent.includes('ルームを作成'));
+    const start=document.getElementById('start');
+    const roomRect=create?.getBoundingClientRect(),startRect=start?.getBoundingClientRect();
+    return {hasOldPanel:lobby?.textContent.includes('ロビーからオンライン対戦'),
+      buttonCount:buttons.length,roomExists:!!create,
+      order:!!(create&&start&&buttons.indexOf(create)<buttons.indexOf(start)),
+      roomWidth:roomRect?.width,roomHeight:roomRect?.height,startWidth:startRect?.width,
+      beside:!!(roomRect&&startRect&&roomRect.right<=startRect.left+2),
+      fits:!!(roomRect&&startRect&&roomRect.left>=-1&&startRect.right<=innerWidth+2)};
+  });
+  if(lobbyActions.hasOldPanel||!lobbyActions.roomExists||!lobbyActions.order||
+     !lobbyActions.beside||!lobbyActions.fits||lobbyActions.roomWidth<110||
+     lobbyActions.roomHeight<40||lobbyActions.startWidth<110)
+    throw Error('Room creation is not left of CPU start or obsolete online panel remains '+JSON.stringify(lobbyActions));
   await page.locator('#mojiNoticeButton').click();
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
      !(await page.locator('#mojiNoticeItems').innerText()).includes('横画面'))
