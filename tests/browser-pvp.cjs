@@ -135,9 +135,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       const counts=[...groups.values()].reduce((a,v)=>(a[v.length]=(a[v.length]||0)+1,a),{});
       return {parts:roomState.obstacles.length,groups:groups.size,counts,center:roomState.zone};
     });
-    if(terrain.parts!==26||terrain.groups!==16||
-       terrain.counts[1]!==8||terrain.counts[2]!==6||terrain.counts[3]!==2||
-       terrain.center.x!==1150||terrain.center.y!==650||terrain.center.r<1330)
+    if(terrain.parts!==16||terrain.groups!==10||
+       terrain.counts[1]!==5||terrain.counts[2]!==4||terrain.counts[3]!==1||
+       terrain.center.x!==920||terrain.center.y!==520||terrain.center.r<1050)
       throw Error(mode+': arena/L-T-U-cover mismatch '+JSON.stringify(terrain));
     // A real tap-cast must accrue automatic stroke units on the server.
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
