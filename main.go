@@ -1266,7 +1266,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=77"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=77"></script><script defer src="/ultimate-cpu.js?v=77"></script><script defer src="/arena-expansion-v72.js?v=77"></script><link rel="stylesheet" href="/ui-polish-v74.css?v=77">`
+	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=77"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=77"></script><script defer src="/ultimate-cpu.js?v=77"></script><script defer src="/arena-expansion-v72.js?v=78"></script><script defer src="/cpu-battle-v78.js?v=78"></script><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=78">`
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// Attack CT rises slightly for ordinary characters, with extra escalation after 20 and 40 strokes.
 	// Keep stroke values authoritative and avoid fake 12-stroke fallback.
@@ -1351,6 +1351,9 @@ window.MojiStrokeReady=Promise.all([
  });
 })();
 </script>`
+	// Omit dead first CPU from the original one-opponent renderer.
+	source = strings.Replace(source, "drawMarker(player,avatarChar,false);drawMarker(enemy,'敵',true);", "drawMarker(player,avatarChar,false);if(enemy.hp>0)drawMarker(enemy,'敵',true);", 1)
+	source = strings.Replace(source, "miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');", "miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');if(enemy.hp>0)miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');", 1)
 	return strings.Replace(source, "</head>", additions+fullscreenBridge+"</head>", 1)
 }
 func main() {
