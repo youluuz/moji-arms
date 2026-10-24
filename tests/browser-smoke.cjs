@@ -80,6 +80,24 @@ const { chromium } = require('playwright');
      !lobbyActions.beside||!lobbyActions.fits||lobbyActions.roomWidth<110||
      lobbyActions.roomHeight<40||lobbyActions.startWidth<110)
     throw Error('Room creation is not left of CPU start or obsolete online panel remains '+JSON.stringify(lobbyActions));
+  // Real lobby button regression, not only CSS placement. The original
+  // 5-slot setup should open a live socket room when its dock CTA is clicked.
+  await page.locator('#shuffleLoadout').click();
+  await page.locator('#createRoomNow').click();
+  await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
+  await page.waitForFunction(()=>{
+   const iframe=document.getElementById('onlineFrame');
+   try{return iframe.contentWindow?.roomState?.phase==='lobby'&&/^[A-Z0-9]{6}$/.test(iframe.contentWindow.roomState.code)}catch(_){return false}
+  },{timeout:16000});
+  const roomCreated=await page.evaluate(()=>({
+   roomCode:document.getElementById('onlineFrame')?.contentWindow?.roomState?.code,
+   playerCount:document.getElementById('onlineFrame')?.contentWindow?.roomState?.players?.length,
+   roomTitle:document.getElementById('onlineFrame')?.contentWindow?.document?.getElementById('waitArea')?.querySelector('h2')?.textContent
+  }));
+  if(roomCreated.playerCount!==1||!roomCreated.roomTitle?.includes('ルーム'))
+   throw Error('Dock create-room click failed to actually create a room '+JSON.stringify(roomCreated));
+  await page.locator('#closeOnline').click();
+  await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:9000});
   await page.locator('#mojiNoticeButton').click();
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
      !(await page.locator('#mojiNoticeItems').innerText()).includes('横画面'))
