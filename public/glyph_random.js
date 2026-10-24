@@ -14,16 +14,26 @@ const byCategory={
  emoji:[[0x1f300,0x1faff],[0x2600,0x27bf]]
 };
 const categories=Object.keys(byCategory);
-// Gentle 6% mid-stroke bonus; the rest still draws from every supported Unicode category.
-let lastStrokeMap=null,midStrokePool=[];
-function middleStrokeGlyph(){
+// Prefer battle-worthy, higher-stroke Han while keeping all Unicode categories.
+// Rebuild after the asynchronously-loaded 100k Unihan dictionary becomes available.
+let poolsDirty=true, lastStrokeMap=null, hanPools={medium:[],high:[],extreme:[]};
+function invalidateStrokePool(){poolsDirty=true;}
+function weightedHanGlyph(){
  const map=window.MojiRandom?.strokeMap;
  if(!map)return null;
- if(map!==lastStrokeMap){
-  lastStrokeMap=map;
-  midStrokePool=Object.keys(map).filter(ch=>Number.isInteger(map[ch])&&map[ch]>=5&&map[ch]<=18&&safe(ch));
+ if(poolsDirty||map!==lastStrokeMap){
+  poolsDirty=false;lastStrokeMap=map;
+  hanPools={medium:[],high:[],extreme:[]};
+  for(const [ch,n] of Object.entries(map)){
+   if(!Number.isInteger(n)||!safe(ch)||!/\\p{Script=Han}/u.test(ch))continue;
+   if(n>=45&&n<=84)hanPools.extreme.push(ch);
+   else if(n>=28&&n<45)hanPools.high.push(ch);
+   else if(n>=16&&n<28)hanPools.medium.push(ch);
+  }
  }
- return midStrokePool.length?midStrokePool[integer(midStrokePool.length)]:null;
+ const n=Math.random(),key=n<.24?'extreme':n<.65?'high':'medium';
+ const pool=hanPools[key].length?hanPools[key]:hanPools.high.length?hanPools.high:hanPools.medium;
+ return pool.length?pool[integer(pool.length)]:null;
 }
 const safe=(s)=>{
  if(typeof s!=='string'||!s||/[\u0000-\u001f\u007f-\u009f\s]/u.test(s))return false;
@@ -51,8 +61,10 @@ function categoryRoll(category){
 }
 function roll(exclude=new Set()){
  for(let attempt=0;attempt<240;attempt++){
-  const category=categories[integer(categories.length)];
-  const ch=Math.random()<.06?(middleStrokeGlyph()||categoryRoll(category)):categoryRoll(category);
+  // 45% Han overall. 75% of Han results favor 16+ strokes, including rare 45+.
+  const category=Math.random()<.45?'han':categories[1+integer(categories.length-1)];
+  const ch=category==='han'&&Math.random()<.75
+    ?(weightedHanGlyph()||categoryRoll(category)):categoryRoll(category);
   if(ch&&!exclude.has(ch))return ch;
  }
  for(const ch of examples)if(safe(ch)&&!exclude.has(ch))return ch;
@@ -73,7 +85,7 @@ function all(){
  for(const ch of examples)if(!cachedPool.includes(ch))cachedPool.push(ch);
  return cachedPool;
 }
-window.MojiRandom={all,roll,sample,examples,categories};
+window.MojiRandom={all,roll,sample,examples,categories,invalidateStrokePool};
 // Shared-login invite flow: invitees start at the guest entrance, equip five glyphs
 // in the common lobby, then choose "コードで参加". No standalone PvP splash.
 const inviteCode=new URLSearchParams(location.search).get('room');
