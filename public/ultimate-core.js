@@ -85,18 +85,24 @@ function play(id){
 function victoryPhrase(){const a=['ナメプ完遂！','踊って勝利！','真顔で制圧','余裕の勝利','舞踏の覇者','ナメて勝った！','その余裕、本物。'];return a[Math.floor(Math.random()*a.length)]}
 function attachUI(container,opts={}){
  const root=document.createElement('div');root.className='ultimate-widget';
- root.innerHTML='<div class="ultimate-picker-heading"><strong class="ultimate-picker-label">必殺技を選択</strong><span class="ultimate-picker-note">1試合に1回だけ使える</span></div><div class="ultimate-picker" role="group" aria-label="必殺技6種類"></div><button type="button" class="ultimate-guide-toggle" aria-expanded="false">？ 選択中の技の説明を見る <span class="ultimate-guide-chevron" aria-hidden="true">⌄</span></button><section class="ultimate-guide" hidden aria-live="polite"><div class="ultimate-guide-header"><span class="ultimate-guide-icon" aria-hidden="true"></span><div class="ultimate-guide-heading"><strong class="ultimate-guide-name"></strong><span class="ultimate-guide-role"></span></div><span class="ultimate-guide-cost"></span></div><p class="ultimate-guide-summary"></p><div class="ultimate-guide-grid"><div class="ultimate-guide-section"><span class="ultimate-guide-label">使い方</span><p class="ultimate-guide-usage"></p></div><div class="ultimate-guide-section"><span class="ultimate-guide-label">注意点・弱点</span><p class="ultimate-guide-caution"></p></div></div><div class="ultimate-guide-footer">※ 画数・効果時間などのバランスは今後調整する場合があります。</div></section><div class="ultimate-battle" hidden><button class="ultimate-cast" type="button" aria-label="必殺技"><span class="ultimate-icon"></span><span class="ultimate-left">残り --画</span></button><span class="ultimate-state"></span></div>';
+ root.innerHTML='<div class="ultimate-picker-heading"><strong class="ultimate-picker-label">必殺技を選択</strong><span class="ultimate-picker-note">1試合に1回だけ使える</span></div><div class="ultimate-picker" role="group" aria-label="必殺技6種類"></div><button type="button" class="ultimate-guide-toggle" aria-expanded="false"><span class="ultimate-guide-toggle-label">？ 選択中の技の説明を見る</span><span class="ultimate-guide-chevron" aria-hidden="true">▼</span></button><section class="ultimate-guide" hidden aria-live="polite"><button class="ultimate-guide-close" type="button" aria-label="必殺技の説明を閉じる">✕ <span>閉じる</span></button><div class="ultimate-guide-header"><span class="ultimate-guide-icon" aria-hidden="true"></span><div class="ultimate-guide-heading"><strong class="ultimate-guide-name"></strong><span class="ultimate-guide-role"></span></div><span class="ultimate-guide-cost"></span></div><p class="ultimate-guide-summary"></p><div class="ultimate-guide-grid"><div class="ultimate-guide-section"><span class="ultimate-guide-label">使い方</span><p class="ultimate-guide-usage"></p></div><div class="ultimate-guide-section"><span class="ultimate-guide-label">注意点・弱点</span><p class="ultimate-guide-caution"></p></div></div><div class="ultimate-guide-footer">※ 画数・効果時間などのバランスは今後調整する場合があります。</div><button class="ultimate-guide-bottom-close" type="button">▲ 説明を閉じる</button></section><div class="ultimate-battle" hidden><button class="ultimate-cast" type="button" aria-label="必殺技"><span class="ultimate-icon"></span><span class="ultimate-left">残り --画</span></button><span class="ultimate-state"></span></div>';
  const picker=root.querySelector('.ultimate-picker');
  const guide=root.querySelector('.ultimate-guide'),guideId='ultimate-guide-'+(++widgetSerial);
  const guideToggle=root.querySelector('.ultimate-guide-toggle');
  guide.id=guideId;
  guideToggle.setAttribute('aria-controls',guideId);
+ function setGuideOpen(expanded,restoreFocus=false){
+  guide.hidden=!expanded;
+  guideToggle.setAttribute('aria-expanded',String(expanded));
+  guideToggle.innerHTML='<span class="ultimate-guide-toggle-label">'+(expanded?'✕ 説明を閉じる':'？ 選択中の技の説明を見る')+'</span><span class="ultimate-guide-chevron" aria-hidden="true">'+(expanded?'▲':'▼')+'</span>';
+  if(restoreFocus)guideToggle.focus({preventScroll:false});
+ }
  guideToggle.addEventListener('click',()=>{
   const expanded=guideToggle.getAttribute('aria-expanded')==='true';
-  guideToggle.setAttribute('aria-expanded',String(!expanded));
-  guide.hidden=expanded;
-  guideToggle.innerHTML=(!expanded?'説明を閉じる':'？ 選択中の技の説明を見る')+' <span class="ultimate-guide-chevron" aria-hidden="true">'+(!expanded?'⌃':'⌄')+'</span>';
+  setGuideOpen(!expanded);
  });
+ guide.querySelector('.ultimate-guide-close').addEventListener('click',()=>setGuideOpen(false,true));
+ guide.querySelector('.ultimate-guide-bottom-close').addEventListener('click',()=>setGuideOpen(false,true));
  for(const d of defs){
   const b=document.createElement('button');b.type='button';b.className='ultimate-option';b.dataset.ultimate=d.id;
   b.title=d.name+'：'+guides[d.id].role;
@@ -129,7 +135,7 @@ function attachUI(container,opts={}){
   button.disabled=spent||charge<d.cost||aiming;
   root.querySelector('.ultimate-state').textContent=aiming?'戦場をタップして発射／5秒後自動発射':spent?'必殺技を使用しました':'';
  }
- return {root,picker,guide,guideToggle,cast:root.querySelector('.ultimate-cast'),show,showBattle(flag){root.querySelector('.ultimate-battle').hidden=!flag;root.querySelector('.ultimate-picker-heading').hidden=flag;picker.hidden=flag;guideToggle.hidden=flag;if(flag)guide.hidden=true;else guide.hidden=guideToggle.getAttribute('aria-expanded')!=='true'}};
+ return {root,picker,guide,guideToggle,cast:root.querySelector('.ultimate-cast'),show,showBattle(flag){root.querySelector('.ultimate-battle').hidden=!flag;root.querySelector('.ultimate-picker-heading').hidden=flag;picker.hidden=flag;guideToggle.hidden=flag;if(flag)setGuideOpen(false);else guide.hidden=guideToggle.getAttribute('aria-expanded')!=='true'}};
 }
 window.MojiUlt={defs,byId,icon,play,victoryPhrase,attachUI};
 })();
