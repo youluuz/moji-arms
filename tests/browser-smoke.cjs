@@ -45,7 +45,12 @@ const { chromium } = require('playwright');
   if(glyphDistribution.han<280||glyphDistribution.heavy<170||glyphDistribution.extreme<20||glyphDistribution.other<250)
    throw Error('High-stroke glyph randomization or broad Unicode balance regression: '+JSON.stringify(glyphDistribution));
 
+  // End-to-end: a person TYPES this into the actual shared login screen.
+  await page.locator('#playerName').fill('蒼月の勇者');
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
+  const registeredNickname=await page.evaluate(()=>sessionStorage.getItem('moji_player_name'));
+  if(registeredNickname!=='蒼月の勇者')
+   throw Error('Shared login did not persist the entered nickname: '+registeredNickname);
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   // A touch phone may choose its play orientation next to the four mode tiles.
   const orientationUI=page.locator('#mobileOrientationSetting');
@@ -443,8 +448,6 @@ const { chromium } = require('playwright');
   // Stress maximum CPU count and finish a free-for-all only after EVERY CPU is defeated.
   await page.locator('[data-mode-tile="normal"]').click();
   await page.locator('#cpuBotCount').selectOption('9');
-  // The common login page persists its nickname in this session key.
-  await page.evaluate(()=>sessionStorage.setItem('moji_player_name','蒼月の勇者'));
   await page.locator('#start').click();
   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
   if(await page.evaluate(()=>window.MojiCpuBots.kills())!==0)throw Error('CPU kill count failed to reset on new round');
@@ -476,7 +479,6 @@ const { chromium } = require('playwright');
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
 
-  console.log('LOGIN_INPUTS',JSON.stringify(await page.locator('#loginScreen input').evaluateAll(es=>es.map(el=>({id:el.id,name:el.name,type:el.type,placeholder:el.placeholder})))));
   console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
