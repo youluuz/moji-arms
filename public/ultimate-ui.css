@@ -20,7 +20,7 @@
 #gameScreen .arena-shell,#gameArea .game-wrap{position:relative}
 #gameScreen .ultimate-widget>.ultimate-battle{position:fixed;right:max(9px,env(safe-area-inset-right));bottom:84px}
 body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
-.ultimate-aiming-banner{position:absolute;top:13%;left:50%;transform:translateX(-50%);z-index:47;background:#351e25e8;color:#ffe4ae;border:2px solid #ffc383;border-radius:30px;padding:8px 12px;pointer-events:none;font-size:12px;font-weight:900;white-space:nowrap}
+.ultimate-aiming-banner{position:absolute;top:9%;left:50%;transform:translateX(-50%);z-index:47;background:#351e25e8;color:#ffe4ae;border:2px solid #ffc383;border-radius:30px;padding:8px 12px;pointer-events:none;font-size:12px;font-weight:900;white-space:nowrap}
 .ultimate-aiming-banner[hidden]{display:none}
 .ultimate-gold-win{background:radial-gradient(circle,#88531f88,transparent 60%),#111522f5!important;border-color:#ffdf87!important;box-shadow:0 0 75px #ffe2a1aa!important}
 .ultimate-gold-win h2{text-shadow:0 0 22px #f9ca64;font-size:clamp(30px,5vw,48px)!important;color:#ffe5a2!important}
