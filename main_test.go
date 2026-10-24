@@ -543,6 +543,24 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
       shielded.CastPending||shielded.UltimateSpent {
     t.Fatal("hardened player moved, attacked, or fired an ultimate")
    }
+   // Healing and guarding must remain usable while feet are locked.
+   a.handle(c,[]byte(`{"type":"cast","selected":1,"aim":0}`))
+   a.tick(.01)
+   if shielded.Casts!=1||shielded.LastKind!="defense"||shielded.Shield!=24||
+      shielded.X!=beforeX||shielded.Y!=beforeY {
+    t.Fatalf("defense must work while hardened and player must stay put: casts=%d, kind=%s, shield=%v",shielded.Casts,shielded.LastKind,shielded.Shield)
+   }
+   a.handle(c,[]byte(`{"type":"cast","selected":2,"aim":0}`))
+   a.tick(.01)
+   if shielded.Casts!=2||shielded.LastKind!="heal"||shielded.HP!=556 {
+    t.Fatalf("healing must work while hardened: casts=%d, kind=%s, HP=%v",shielded.Casts,shielded.LastKind,shielded.HP)
+   }
+   // Hardened attackers must not queue a delayed offensive cast.
+   a.handle(c,[]byte(`{"type":"cast","selected":3,"aim":0}`))
+   a.tick(.01)
+   if shielded.Casts!=2||shielded.CastPending||shielded.X!=beforeX {
+    t.Fatal("piercing attacks or movement occurred during hardening")
+   }
    state:=room.state()["players"].([]map[string]any)
    var hardenedLeft float64
    for _,p:=range state {if p["id"]=="b"{hardenedLeft=p["hardenedLeft"].(float64)}}
@@ -551,7 +569,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
    shielded.HardenedUntil=0;shielded.InvincibleUntil=float64(time.Now().UnixNano())/1e9+8
    room.Bullets=[]Bullet{{X:shielded.X,Y:shielded.Y,VX:0,VY:0,TTL:3,Damage:60,Owner:"a",Ch:"硬化弾",Special:"slow"}}
    a.tick(.01)
-   if shielded.HP!=540 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
+   if shielded.HP!=556 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
    shielded.InvincibleUntil=0
    shielded.Keys["d"]=true
    oldX:=shielded.X
@@ -559,7 +577,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
    if shielded.X<=oldX {t.Fatal("movement did not recover after hardening")}
    a.handle(c,[]byte(`{"type":"cast","selected":0,"aim":0}`))
    a.tick(.01)
-   if shielded.Casts!=1 {t.Fatal("ordinary attacks did not recover after hardening")}
+   if shielded.Casts!=3 {t.Fatal("ordinary attacks did not recover after hardening")}
   })
  }
 }
@@ -688,7 +706,7 @@ func TestOnlineCombatScreenMatchesCPUScreenshotLayout(t *testing.T) {
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
  js,e:=gameFiles.ReadFile("public/ultimate-core.js");if e!=nil{t.Fatal(e)}
  content:=string(js)
- for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","setGuideOpen(false,true)","ultimate-guide-close","ultimate-guide-bottom-close","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'硬化弾'","rotate(-24 48 49)","M65 32H83L89 37V63L83 68H65","M43 16 72 19 87 40","M49 54Q59 47 69 54"} {
+ for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","setGuideOpen(false,true)","ultimate-guide-close","ultimate-guide-bottom-close","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'硬化弾'","rotate(-24 48 49)","M65 32H83L89 37V63L83 68H65","M23 13H45L43 53H30","x=\"62\" y=\"59\" width=\"28\" height=\"25\""} {
   if !strings.Contains(content,part){t.Errorf("missing ultimate help control or new icon artwork: %s",part)}
  }
  css,e:=gameFiles.ReadFile("public/ultimate-ui.css");if e!=nil{t.Fatal(e)}
