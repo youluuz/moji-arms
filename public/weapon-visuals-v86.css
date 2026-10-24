@@ -56,3 +56,5 @@ body.online-battle #gameArea .weapon .wkind{font-weight:900!important}
 #gameScreen .hud > :nth-child(2){display:none!important}
 #gameScreen .hud{grid-template-columns:minmax(0,1fr)!important}
 #gameScreen .hud > :first-child{max-width:580px!important;width:100%!important}
+
+.moji-weapon-gallery .moji-equipped-summary{margin:8px 0 0;font-size:11px;color:#d4ebff;line-height:1.6;overflow-wrap:anywhere}
