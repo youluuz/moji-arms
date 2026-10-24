@@ -116,9 +116,9 @@ function boot(){
  function graphics(now){
   const size=field.getBoundingClientRect(),area=shell.getBoundingClientRect();
   fx.style.left=(size.left-area.left)+'px';fx.style.top=(size.top-area.top)+'px';fx.style.width=size.width+'px';fx.style.height=size.height+'px';
-  const dpr=Math.min(2,devicePixelRatio||1),w=Math.round(size.width*dpr),h=Math.round(size.height*dpr);
+  const dpr=Math.min(document.body.classList.contains('mobile-touch-input')?1.5:2,Math.max(1,devicePixelRatio||1)),w=Math.round(size.width*dpr),h=Math.round(size.height*dpr);
   if(fx.width!==w||fx.height!==h){fx.width=w;fx.height=h}
-  const c=fx.getContext('2d');c.clearRect(0,0,w,h);c.setTransform(dpr*size.width/cpuView.w,0,0,dpr*size.height/cpuView.h,0,0);
+  const c=fx.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);c.setTransform(dpr*size.width/cpuView.w,0,0,dpr*size.height/cpuView.h,0,0);
   if(!isReady())return;
   const x=player.x-cam.x,y=player.y-cam.y;
   c.save();c.textAlign='center';
@@ -147,6 +147,7 @@ function boot(){
   }
   c.restore();
  }
+ let lastFxPaint=0;
  function tick(){
   const now=performance.now(),active=isReady();
   if(active&&!lastActive)reset();
@@ -168,7 +169,10 @@ function boot(){
    const title=document.getElementById('resultTitle');
    if(!result.dataset.ultimateNamepu){result.dataset.ultimateNamepu='1';title.textContent='🏆 優勝：あなた｜'+U.victoryPhrase()}
   }else if(!result.classList.contains('show')){result.classList.remove('ultimate-namepu-victory');delete result.dataset.ultimateNamepu}
-  graphics(now);requestAnimationFrame(tick);
+  // Keep ultimate timers and the simulation live at full refresh rate, but
+  // paint its separate transparent canvas at 30fps on touch phones.
+  if(!document.body.classList.contains('mobile-touch-input')||!lastFxPaint||now-lastFxPaint>=33){lastFxPaint=now;graphics(now)}
+  requestAnimationFrame(tick);
  }
  requestAnimationFrame(tick);
 }
