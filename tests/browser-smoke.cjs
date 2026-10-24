@@ -80,17 +80,16 @@ const { chromium } = require('playwright');
      !lobbyActions.beside||!lobbyActions.fits||lobbyActions.roomWidth<110||
      lobbyActions.roomHeight<40||lobbyActions.startWidth<110)
     throw Error('Room creation is not left of CPU start or obsolete online panel remains '+JSON.stringify(lobbyActions));
-  // Real lobby button regression, not only CSS placement. The original
-  // 5-slot setup should open a live socket room when its dock CTA is clicked.
-  // Blank equipment must show an actionable error rather than silently
-  // failing or crashing; users must equip five glyphs before creating.
+  // Real lobby regression: freshly blank weapon slots must NOT block
+  // creating a room. Draft equipment is visibly editable in the room.
+  const initialGlyphs=await page.locator('#setup .slot .kanji').evaluateAll(items=>items.map(x=>x.value));
+  if(initialGlyphs.length!==5||initialGlyphs.some(Boolean))
+   throw Error('Login equipment must begin blank '+JSON.stringify(initialGlyphs));
   await page.locator('#createRoomNow').click();
-  const blankResult=await page.locator('#validation').innerText();
-  if(!blankResult.includes('枠1')||!blankResult.includes('5枠'))
-   throw Error('Blank create-room click should identify required equipment '+blankResult);
-  if(errors.length)throw Error('Blank create-room click threw a JS error: '+errors.join('; '));
-  await page.locator('#shuffleLoadout').click();
-  await page.locator('#createRoomNow').click();
+  const draftedGlyphs=await page.locator('#setup .slot .kanji').evaluateAll(items=>items.map(x=>x.value));
+  if(draftedGlyphs.join('')!=='火水木金土')
+   throw Error('One-click room draft did not fill five valid slots '+JSON.stringify(draftedGlyphs));
+  if(errors.length)throw Error('One-click room triggered a JS error: '+errors.join('; '));
   await page.waitForFunction(()=>document.querySelector('#onlineScreen.active #onlineFrame')?.getAttribute('src')?.includes('auto=create'),{timeout:8000});
   await page.waitForFunction(()=>{
    const frame=document.getElementById('onlineFrame'),doc=frame?.contentDocument;
@@ -104,10 +103,12 @@ const { chromium } = require('playwright');
    return {roomCode:d.getElementById('code')?.textContent?.trim(),
     roster:d.getElementById('roster')?.textContent,
     invite:d.getElementById('inviteUrl')?.value,
+    draftNotice:d.getElementById('roomEditStatus')?.textContent,
     roomTitle:d.getElementById('waitArea')?.querySelector('h2')?.textContent};
   });
   if(!/^[A-Z0-9]{6}$/.test(roomCreated.roomCode)||!roomCreated.roster?.length||
-     !roomCreated.invite?.includes(roomCreated.roomCode)||!roomCreated.roomTitle?.includes('ルーム'))
+     !roomCreated.invite?.includes(roomCreated.roomCode)||!roomCreated.roomTitle?.includes('ルーム')||
+     !roomCreated.draftNotice?.includes('仮装備'))
    throw Error('Dock create-room click failed to actually create a room '+JSON.stringify(roomCreated));
   await page.locator('#closeOnline').click();
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:9000});
