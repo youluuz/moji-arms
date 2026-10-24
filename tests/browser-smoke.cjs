@@ -607,6 +607,37 @@ const { chromium } = require('playwright');
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
 
+  // Force a genuine post-KO decision in a CPU free-for-all and verify the
+  // simulation can continue through the spectate path instead of freezing.
+  await page.locator('[data-mode-tile="normal"]').click();
+  await page.locator('#cpuBotCount').selectOption('3');
+  await page.locator('#shuffleLoadout').click();
+  await page.locator('#start').click();
+  await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
+  await page.waitForFunction(()=>document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
+  await page.evaluate(()=>{
+   player.hp=1;player.shield=0;player.shieldEnd=0;
+   damage(player,120,performance.now(),true);
+  });
+  await page.waitForSelector('#cpuDeathChoice',{timeout:10000});
+  if(!await page.locator('#cpuChooseWatch').isVisible()||
+     !await page.locator('#cpuChooseLobby').isVisible())
+   throw Error('CPU elimination choice must offer spectate and lobby');
+  await page.locator('#cpuChooseWatch').click();
+  await page.waitForSelector('#cpuWatchControls',{timeout:10000});
+  const cpuViewing=await page.evaluate(()=>({
+   active:document.getElementById('gameScreen')?.classList.contains('active'),
+   watching:document.body.classList.contains('cpu-spectating'),
+   target:document.getElementById('cpuWatchTarget')?.textContent,
+   spectators:document.getElementById('cpuSpectatorCount')?.textContent
+  }));
+  if(!cpuViewing.active||!cpuViewing.watching||
+     !cpuViewing.target?.includes('観戦')||!cpuViewing.spectators?.includes('1'))
+   throw Error('CPU match did not switch to live spectator view '+JSON.stringify(cpuViewing));
+  await page.locator('#cpuWatchNext').click();
+  await page.locator('#cpuWatchExit').click();
+  await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
+
   console.log('CPU actual battle smoke passed for normal and custom modes.');
   if(errors.length)throw Error('CPU page JS error: '+errors.join('; '));
   errors.length=0;
