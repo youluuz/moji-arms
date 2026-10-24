@@ -2,7 +2,7 @@
 
 **漢字も、絵文字も、記号も武器になる。** 好きな5つの文字を装備して、CPUや友達と戦う無料のブラウザ対戦ゲーム。スマホ・PC対応、ダウンロード不要。
 
-[🎮 プレイ用URL候補](https://moji-arms-online.onrender.com/)　｜　[📣 紹介サイトのソース](docs/index.html)　｜　[🐛 不具合報告](https://github.com/youluuz/moji-arms/issues/new/choose)
+[🎮 プレイ用URL候補](https://moji-arms-online.onrender.com/)　｜　[📣 無料紹介サイト（GitHub Pages）](https://youluuz.github.io/moji-arms/)　｜　[🐛 不具合報告](https://github.com/youluuz/moji-arms/issues/new/choose)
 
 > **公開ベータ準備中です。** プレイ用URLはRenderサービス名から推定した候補で、現時点では実際の公開稼働を確認できていません。告知する際はRender Dashboardの正確な公開URLを確認してください。無料プランは無通信15分で休止します。
 
@@ -14,7 +14,7 @@
 | 無料Render Web Service / Docker / CI通過後デプロイ設定 | ✅ ソース準備済み |
 | ロマン砲の発動・弾道・衝撃波（撃破テキストなし） | ✅ ソース準備済み |
 | 公開URL、HTTPS、WebSocket、実デプロイの稼働確認 | ⚠️ Renderの実URL確認が必要 |
-| 無料GitHub Pages紹介ページ | ⚠️ リポジトリSettingsで有効化が必要 |
+| 無料GitHub Pages紹介ページ | ✅ Pages有効・GitHubの公開ビルド成功（実サイトへの外部接続は別途確認） |
 | 別Wi-Fiの2台によるスマホ実戦・再戦確認 | ⚠️ 実機確認が必要 |
 
 **公開までの手順と配信資料：**
