@@ -59,7 +59,7 @@ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #tapHint{displa
 @media(orientation:portrait) and (max-width:800px){
  body.mobile-touch-input.in-match #gameScreen .moji-map-with-stick,
  body.mobile-touch-input.online-battle #gameArea .moji-map-with-stick{
-  flex-direction:column!important;gap:3px!important;
+  flex-direction:column-reverse!important;gap:3px!important;
  }
  body.mobile-touch-input.in-match #gameScreen .moji-stick-dock,
  body.mobile-touch-input.online-battle #gameArea .moji-stick-dock{
