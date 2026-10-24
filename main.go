@@ -935,8 +935,8 @@ func (a *Arena) tick(dt float64) {
 		}
 		for _, p := range room.Players {
 			if !p.Alive {continue}
-			if p.UltimateAiming && now>=p.UltimateAimUntil {p.UltimateAiming=false;ultimateLaunch(room,p,now)}
-			if p.UltimateWindupUntil>0 && now>=p.UltimateWindupUntil {
+			if p.UltimateAiming && now>=p.UltimateAimUntil && now>=p.HardenedUntil {p.UltimateAiming=false;ultimateLaunch(room,p,now)}
+			if p.UltimateWindupUntil>0 && now>=p.UltimateWindupUntil && now>=p.HardenedUntil {
 				angle:=p.UltimateAim
 				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*590,VY:math.Sin(angle)*590,Damage:600,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
 				p.UltimateWindupUntil=0
