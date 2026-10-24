@@ -1267,6 +1267,12 @@ func getPort(listener net.Listener) int {
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
 	const additions = `<link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=77"><script defer src="/mobile-input-v70.js?v=77"></script><script defer src="/ultimate-core.js?v=77"></script><script defer src="/ultimate-cpu.js?v=77"></script><script defer src="/arena-expansion-v72.js?v=78"></script><script defer src="/cpu-battle-v78.js?v=78"></script><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=78">`
+	// Four large mode tiles are the ONLY visible mode selector.
+	// Retain the original <select> for legacy event handlers and logic; hide its
+	// containing field so the mode isn't offered twice. The map dropdown stays visible.
+	source = strings.Replace(source,
+		`<div class="setting"><label class="label" for="modeSelect">対戦モード</label><select id="modeSelect">`,
+		`<div class="setting" id="legacyModeSelector" hidden aria-hidden="true" style="display:none!important"><label class="label" for="modeSelect">対戦モード</label><select id="modeSelect">`, 1)
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// Attack CT rises slightly for ordinary characters, with extra escalation after 20 and 40 strokes.
 	// Keep stroke values authoritative and avoid fake 12-stroke fallback.
