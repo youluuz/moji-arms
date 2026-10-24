@@ -38,7 +38,7 @@ function equip(bot,i){
  // Guarantee all five action kinds each round, shuffle slots and vary each glyph.
  bot.id='cpu-'+i;bot.ch='敵';bot.loadout=shuffle(kinds.map(kind=>({...randomGlyph(),kind,ready:0})));
  bot.nextDecision=0;bot.intent=roll(5);bot.speed=125+roll(31);
- bot.ready=0;bot.guardReady=0;bot.targetId=null;
+ bot.ready=0;bot.guardReady=0;bot.targetId=null;bot.hardenUntil=0;
 }
 function spawnPosition(index,total,now,ignorePlayer=false){
  // Wider, collision-checked initial positions across the playable map.
@@ -78,7 +78,7 @@ function startRound(token,now){
  equip(enemy,0);bots.push(enemy);
  for(let i=1;i<chosenCount;i++){
   const pos=spawnPosition(i+1,chosenCount+1,now);
-  const bot={x:pos.x,y:pos.y,hp:MAX_HP,speed:140,shield:0,shieldEnd:0,r:19};
+  const bot={x:pos.x,y:pos.y,hp:MAX_HP,speed:140,shield:0,shieldEnd:0,hardenUntil:0,r:19};
   equip(bot,i);bots.push(bot);
  }
  window.MojiCpuBots.rounds++;
@@ -100,6 +100,7 @@ function chooseTarget(bot,now){
  return bot.target;
 }
 function botAction(bot,target,now){
+ if(now<bot.hardenUntil)return; // A hardened enemy cannot cast, attack, heal, or guard.
  const available=bot.loadout.filter(s=>now>=s.ready);
  if(!available.length)return;
  const urgent=bot.hp<MAX_HP*.55&&available.find(s=>s.kind==='heal');
@@ -197,6 +198,17 @@ function boot(){
    cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*bot.hp/MAX_HP,5);
    cx.restore();
   }
+  // Stun visuals over EVERY CPU, including the first enemy drawn by the legacy renderer.
+  for(const bot of bots){
+   if(bot.hp<=0||!(bot.hardenUntil>now))continue;
+   const x=bot.x-cam.x,y=bot.y-cam.y;
+   if(x<-70||y<-70||x>cpuView.w+70||y>cpuView.h+70)continue;
+   cx.save();cx.strokeStyle='#a9f3ff';cx.fillStyle='#98e9ff33';cx.lineWidth=3;cx.shadowColor='#8ddfff';cx.shadowBlur=12;
+   cx.beginPath();cx.moveTo(x-25,y-24);cx.lineTo(x+17,y-29);cx.lineTo(x+29,y-4);
+   cx.lineTo(x+22,y+28);cx.lineTo(x-22,y+24);cx.lineTo(x-30,y-3);cx.closePath();cx.fill();cx.stroke();
+   cx.shadowBlur=0;cx.fillStyle='#ecffff';cx.font='bold 13px sans-serif';
+   cx.fillText('🔒 硬直 '+((bot.hardenUntil-now)/1000).toFixed(1)+'秒',x,y-61);cx.restore();
+  }
   // Overlay additional enemies on the existing CPU battle minimap.
   const mw=cpuView.w<700?110:145,mh=cpuView.w<700?66:82,mx=cpuView.w-mw-12,my=10;
   for(const bot of bots.slice(1)){
@@ -212,6 +224,7 @@ function boot(){
   if(window.MojiCpuUltimateState?.danceActive?.())return;
   if(actor.hp<=0)return;
   if(rest[0]?.ultimate==='roman'){amount=Math.max(amount,actor.hp);pierce=true} // Guaranteed KO without piercing obstacles.
+  if(rest[0]?.ultimate==='slow'){pierce=true} // Hardening bullet bypasses shields, but not terrain.
   if(!pierce&&actor.shieldEnd>now&&actor.shield>0){
    const absorbed=Math.min(actor.shield,amount);actor.shield-=absorbed;amount-=absorbed;
   }
@@ -220,7 +233,7 @@ function boot(){
    battleDamage+=Math.max(0,old-actor.hp);
    if(old>0&&actor.hp<=0)playerKills++;
   }
-  if(rest[0]?.ultimate==='slow'&&actor.hp>0)actor.slowUntil=now+4500;
+  if(rest[0]?.ultimate==='slow'&&actor.hp>0){actor.hardenUntil=now+3000;actor.nextDecision=Math.max(actor.nextDecision,actor.hardenUntil)}
   if(actor.hp<=0 && !alive().length && running){
    running=false;
    document.getElementById('status').textContent='🏆 勝利！ すべてのCPUを撃破！';
@@ -249,10 +262,11 @@ function boot(){
    const mag=Math.hypot(vx,vy)||1;
    moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
    for(const bot of alive()){
+    if(now<bot.hardenUntil)continue; // No movement or AI actions during the full three seconds.
     const target=chooseTarget(bot,now);if(!target)continue;
     const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
     const approach=d<170?-1:d>310?1:0;
-    const speed=bot.speed*(bot.slowUntil>now?.65:1);
+    const speed=bot.speed;
     moveActor(bot,dx/d*approach*speed*dt,dy/d*approach*speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
     if(now>=bot.nextDecision){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
    }
