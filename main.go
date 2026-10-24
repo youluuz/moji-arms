@@ -765,7 +765,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.ActionSerial = 0
 			pp.LastKind = ""
 			pp.Fire = false
-			pp.Keys = nil
+			pp.Keys = map[string]bool{}
 			pp.LastInput = time.Time{}
 			pp.CastPending = false
 			pp.PendingUntil = 0
@@ -923,7 +923,7 @@ func hitFromBullet(room *Room, target *Player, bullet Bullet, now float64) {
 // last movement packet after it stops arriving (for example on tab switch).
 func expireStaleInput(p *Player, now time.Time) {
  if p.LastInput.IsZero() || now.Sub(p.LastInput) > 500*time.Millisecond {
-  p.Keys = nil
+  p.Keys = map[string]bool{}
   p.Fire = false
  }
 }
