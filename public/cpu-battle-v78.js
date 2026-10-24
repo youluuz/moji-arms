@@ -75,13 +75,13 @@ function startRound(token,now){
  if(label)label.textContent='CPU 残り '+chosenCount+' / '+chosenCount+'体';
 }
 function rivals(bot){
- return [player,...alive()].filter(x=>x!==bot&&x.hp>0);
+ return [player,...alive()].filter(x=>x!==bot&&x.hp>0&&(x!==player||!window.MojiCpuUltimateState?.invisibleActive?.()));
 }
 function chooseTarget(bot,now){
  const options=rivals(bot);
  if(!options.length)return null;
  // Hold a target briefly to avoid frame-by-frame direction jitter.
- if(bot.target && bot.target.hp>0 && now<(bot.retargetAt||0))return bot.target;
+ if(bot.target && options.includes(bot.target) && now<(bot.retargetAt||0))return bot.target;
  bot.target=Math.random()<.46?options[roll(options.length)]:
   options.reduce((a,b)=>Math.hypot(bot.x-a.x,bot.y-a.y)<Math.hypot(bot.x-b.x,bot.y-b.y)?a:b);
  bot.retargetAt=now+900+roll(1250);
@@ -172,12 +172,14 @@ function boot(){
  const originalDamage=damage;
  damage=function(actor,amount,now,pierce,...rest){
   if(match!==matchToken||!bots.includes(actor))return originalDamage.call(this,actor,amount,now,pierce,...rest);
+  if(window.MojiCpuUltimateState?.danceActive?.())return;
   if(actor.hp<=0)return;
   if(!pierce&&actor.shieldEnd>now&&actor.shield>0){
    const absorbed=Math.min(actor.shield,amount);actor.shield-=absorbed;amount-=absorbed;
   }
   const old=actor.hp;actor.hp=Math.max(0,actor.hp-amount);
   if(rest[0]?.owner==='p')battleDamage+=Math.max(0,old-actor.hp);
+  if(rest[0]?.ultimate==='slow'&&actor.hp>0)actor.slowUntil=now+3000;
   if(actor.hp<=0 && !alive().length && running){
    running=false;
    document.getElementById('status').textContent='🏆 勝利！ すべてのCPUを撃破！';
@@ -189,6 +191,10 @@ function boot(){
   let dt=Math.min(Math.max(0,(now-last)/1000),.05);last=now;
   if(running){
    if(match!==token){match=token;startRound(token,now);}
+   // Global dance stops ALL CPU attacks, bullets and damage, not only the human.
+   if(window.MojiCpuUltimateState?.danceActive?.()){
+    draw(now);requestAnimationFrame(t=>loop(t,token));return;
+   }
    let vx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0);
    let vy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);
    if(touch){vx=touch.x;vy=touch.y}
@@ -198,7 +204,8 @@ function boot(){
     const target=chooseTarget(bot,now);if(!target)continue;
     const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
     const approach=d<170?-1:d>310?1:0;
-    moveActor(bot,dx/d*approach*bot.speed*dt,dy/d*approach*bot.speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
+    const speed=bot.speed*(bot.slowUntil>now?.65:1);
+    moveActor(bot,dx/d*approach*speed*dt,dy/d*approach*speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
     if(now>=bot.nextDecision){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
    }
    const elapsed=(now-startTime)/1000;
