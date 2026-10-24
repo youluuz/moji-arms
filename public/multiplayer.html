@@ -555,7 +555,7 @@ cx.fillStyle='#ecf3ff';cx.font='bold 13px sans-serif';
 cx.fillText((({sakura:'桜舞う庭園',shrine:'黄金の神殿',night:'蒼月の城塞'})[m.theme]||'文字闘技場')+' | 座標 '+Math.round(me.x)+','+Math.round(me.y),17,29);
 drawHandle=requestAnimationFrame(draw)}
 $('onlineBattleBack').onclick=()=>{onlineReturnToLobby()};
-function onlineReturnToLobby(){sock?.close();$('onlineMusic').pause();if(embeddedMode&&window.parent!==window)window.parent.postMessage({type:'moji:returnLobby'},location.origin);else location.href='index.html'}
+function onlineReturnToLobby(){sock?.close();$('onlineMusic').pause();informParentBattle(false);if(embeddedMode&&window.parent!==window)window.parent.postMessage({type:'moji:returnLobby'},location.origin);else location.href='index.html'}
 $('onlineRematch').onclick=()=>{if(roomState?.phase==='ended')send({type:'return-lobby'});};
 $('onlineBack').onclick=onlineReturnToLobby;
 document.querySelector('header a[href="index.html"]').addEventListener('click',e=>{e.preventDefault();onlineReturnToLobby()});
