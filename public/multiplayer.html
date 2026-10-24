@@ -371,9 +371,10 @@ function showGame(m){
  $('onlineStatus').textContent=(pregame?'試合開始前｜':'👥 生存 ')+m.players.filter(p=>p.alive).length+' / '+m.players.length+'人';
  $('zoneSize').textContent=Math.round(m.zone.r);
  // Render slot buttons once: replacing them 30 times/sec eats mobile taps.
- if($('cards').children.length!==5){
+ if($('cards').querySelectorAll(':scope > .card[data-slot]').length!==5){
   $('cards').innerHTML=activeSetup.slots.map((slot,i)=>`<button type="button" data-slot="${i}" class="card weapon"><span class="wchar">${escapeHtml(slot.ch)}</span><small class="wkind">${i+1}｜${onlineNames[slot.kind]}</small><small class="weapon-output">${window.MojiWeaponVisual.metric(slot.kind,slot.n)}</small><div class="card-cooldown"></div><div class="card-track"><div class="progress"></div></div>${slot.kind==='defense'?'<div class="card-track guard-track"><div class="guard-progress"></div></div>':''}</button>`).join('');
  }
+ window.MojiOnlineUltimateDock?.();
  activeSetup.slots.forEach((slot,i)=>{
   const card=$('cards').children[i],remaining=self?.cooldowns?.[i]||0;
   card.title=onlineNames[slot.kind]+'｜'+window.MojiWeaponVisual.metric(slot.kind,slot.n)+'｜CT '+window.MojiWeaponVisual.cooldown(slot.kind,slot.n)+'｜'+window.MojiWeaponVisual.types[slot.kind].note;
@@ -550,18 +551,17 @@ function moveStick(e){
 function releaseStick(e){
  if(padPointer!==null&&(!e||e.pointerId===padPointer)){
   padPointer=null;moveThumb.style.transform='';
-  movePad.style.top='auto';movePad.style.left='12px';movePad.style.bottom='13px';
+  movePad.style.removeProperty('top');movePad.style.removeProperty('left');movePad.style.removeProperty('bottom');
   for(const k of ['w','a','s','d'])keys[k]=false;
  }
 }
 moveZone.addEventListener('pointerdown',e=>{
  if(e.pointerType==='mouse'||padPointer!==null)return;
  e.preventDefault();padPointer=e.pointerId;moveZone.setPointerCapture(e.pointerId);
- const shell=moveZone.parentElement.getBoundingClientRect(),size=movePad.getBoundingClientRect().width;
- const x=Math.max(0,Math.min(moveZone.clientWidth-size,e.clientX-shell.left-size/2));
- const y=Math.max(0,Math.min(shell.height-size,e.clientY-shell.top-size/2));
- movePad.style.bottom='auto';movePad.style.left=x+'px';movePad.style.top=y+'px';
- padOriginX=shell.left+x+size/2;padOriginY=shell.top+y+size/2;
+ const zone=moveZone.getBoundingClientRect();
+ // Keep the stick visually concentric with the hit circle; only the inner
+ // thumb moves. Previous clamping used the wrong coordinate system.
+ padOriginX=zone.left+zone.width/2;padOriginY=zone.top+zone.height/2;
  moveStick(e);
 });
 moveZone.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();moveStick(e)}});
