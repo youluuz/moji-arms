@@ -53,6 +53,14 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const state=await page.evaluate(()=>({waiting:document.body.classList.contains('online-waiting'),entryHidden:getComputedStyle(document.getElementById('joinArea')).display==='none',code:roomState?.code}));
      if(!state.waiting||!state.entryHidden||state.code!==code)throw Error(mode+': did not auto-switch to joined room: '+JSON.stringify(state));
     }
+    // See each pre-match weapon's actual projectile silhouette and current power.
+    const previews=await host.evaluate(()=>[...document.querySelectorAll('#onlineSlots .moji-preview')].map(e=>({
+     kind:e.dataset.kind,stats:e.textContent,shot:e.querySelector('.moji-preview-shot')?.textContent
+    })));
+    if(previews.length!==5||previews[0].kind!=='attack'||previews[3].kind!=='pierce'||
+       previews[4].kind!=='homing'||previews[0].shot!=='●'||previews[3].shot!=='◆'||previews[4].shot!=='◎'||
+       !previews.every(p=>p.stats.includes('CT')))
+     throw Error(mode+': missing real preview of normal, piercing and homing shots '+JSON.stringify(previews));
     // The ordinary-ability guide has an explicit down arrow when closed and up arrow when open.
     const weaponHelp=host.locator('#waitArea details.online-guide');
     if(!(await weaponHelp.locator('summary').innerText()).includes('▼')||!(await weaponHelp.locator('summary').innerText()).includes('開く'))
@@ -115,21 +123,25 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      // Check the screenshot-defining structure, not just a decorative header.
      const parity=await page.evaluate(()=>{
       const box=q=>document.querySelector(q).getBoundingClientRect();
-      const self=box('#selfBar'),enemy=box('#enemyBar'),hud=box('#gameArea .hud');
+      const self=box('#selfBar'),hud=box('#gameArea .hud');
       const arena=box('#gameArea .arena-shell'),cards=box('#cards');
-      return {twinHP:Math.abs(self.top-enemy.top)<5,stacked:hud.bottom<=arena.top+1&&arena.bottom<=cards.top+3,
+      return {singleHP:document.querySelectorAll('#gameArea .combat-hp').length===1&&
+        document.querySelector('#gameArea .combat-hp.own')!==null&&!document.querySelector('#enemyBar'),
+        ownHPVisible:self.width>50&&self.height>=5,
+        stacked:hud.bottom<=arena.top+1&&arena.bottom<=cards.top+3,
         ownName:document.querySelector('#selfName').textContent,
-        enemyName:document.querySelector('#enemyName').textContent,
-        bg:getComputedStyle(document.querySelector('#gameArea .combat-hp.rival .hp-fill')).backgroundImage,
-        cssLoaded:[...document.styleSheets].some(x=>x.href?.includes('online-cpu-parity.css')),
+        metrics:[...document.querySelectorAll('#cards .weapon-output')].map(e=>e.textContent),
+        cssLoaded:[...document.styleSheets].some(x=>x.href?.includes('weapon-visuals-v86.css')),
+        projectilePreview:typeof window.MojiWeaponVisual?.drawProjectile==='function',
         announcement:document.getElementById('battleAnnounce')?.textContent};
      });
      const liveWorld=await page.evaluate(()=>({server:roomState.world,source:draw.toString()}));
      if(!liveWorld.source.includes('worldW')||!liveWorld.source.includes('worldH')||liveWorld.source.includes('/2300*mmw')||liveWorld.source.includes('/1300*mmh'))
       throw Error(mode+': online map/minimap still assumes fixed dimensions');
-     if(!parity.twinHP||!parity.stacked||!parity.ownName||!parity.enemyName||
-        !parity.cssLoaded||!parity.bg.includes('gradient')||parity.announcement!=='戦闘開始！')
-      throw Error(mode+': match UI does not follow reference CPU screenshot '+JSON.stringify(parity));
+     if(!parity.singleHP||!parity.ownHPVisible||!parity.stacked||!parity.ownName||
+        parity.metrics.length!==5||!parity.metrics[0].includes('威力')||
+        !parity.cssLoaded||!parity.projectilePreview||parity.announcement!=='戦闘開始！')
+      throw Error(mode+': self-only HP, active weapon stats or bullet renderer missing '+JSON.stringify(parity));
      const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
      if(volume!==.10)throw Error(mode+': BGM startup volume '+volume);
      if(!await page.locator('#gameArea .ultimate-cast').isVisible())throw Error(mode+': missing ultimate cast button');
