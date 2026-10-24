@@ -26,6 +26,20 @@ const { chromium } = require('playwright');
 
   if(await page.locator('#enterLobby').count())await page.locator('#enterLobby').click({timeout:9000});
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
+  // Four clickable tiles are the only visible mode controls.
+  const modes=page.locator('#modeTiles [data-mode-tile]');
+  if(await modes.count()!==4)throw Error('Expected four mode icons only');
+  if(!await page.locator('#legacyModeSelector').isHidden())throw Error('Duplicate mode dropdown is still visible');
+  if(!await page.locator('#mapTheme').isVisible())throw Error('Map selector was hidden by mistake');
+  for(const mode of ['normal','custom','multi','multiCustom']){
+   await page.locator('[data-mode-tile="'+mode+'"]').click();
+   const chosen=await page.locator('#modeSelect').inputValue();
+   if(chosen!==mode)throw Error('Mode icon did not update legacy state: '+mode+' => '+chosen);
+   if(await page.locator('[data-mode-tile][aria-pressed=true]').count()!==1)
+    throw Error('Mode buttons have inconsistent pressed state: '+mode);
+  }
+  await page.locator('[data-mode-tile="normal"]').click();
+
   await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
   const cpuGlyph=await page.evaluate(()=>{
     const field=document.querySelector('#lobbyScreen .kanji');
@@ -90,7 +104,7 @@ const { chromium } = require('playwright');
   const chosen=await page.evaluate(()=>localStorage.getItem('moji_ultimate_choice'));
   if(chosen!=='namepu')throw Error('CPU skill picker not persisted');
   for(const mode of ['normal','custom']){
-   await page.locator('#modeSelect').selectOption(mode);
+   await page.locator('[data-mode-tile="'+mode+'"]').click();
    await page.locator('#cpuBotCount').selectOption('3');
    await page.locator('#shuffleLoadout').click();
    await page.locator('#start').click();
@@ -170,7 +184,7 @@ const { chromium } = require('playwright');
 
 
   // Stress maximum CPU count and finish a free-for-all only after EVERY CPU is defeated.
-  await page.locator('#modeSelect').selectOption('normal');
+  await page.locator('[data-mode-tile="normal"]').click();
   await page.locator('#cpuBotCount').selectOption('9');
   await page.locator('#start').click();
   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
