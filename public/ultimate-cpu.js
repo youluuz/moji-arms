@@ -36,6 +36,10 @@ function boot(){
  let specialBullets=new Set();
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;shell.append(banner);
  const fx=document.createElement('canvas');fx.className='ultimate-solo-overlay';Object.assign(fx.style,{position:'absolute',pointerEvents:'none',zIndex:11});shell.append(fx);
+ const howto=document.createElement('div');
+ howto.className='moji-battle-howto';howto.setAttribute('role','note');
+ howto.innerHTML='<span>🎯 戦場をタップ／クリックした方向に攻撃！</span><small>左スティック／WASDで移動　・　下の武装で切替</small>';
+ shell.append(howto);
  function curr(){return U.byId[chosen]}
  function choose(id){if(!U.byId[id])return;chosen=id;localStorage.setItem('moji_ultimate_choice',id);pick.show(chosen);battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-performance.now())/1000))}
  pick.picker.addEventListener('click',e=>{const b=e.target.closest('[data-ultimate]');if(b)choose(b.dataset.ultimate)});
