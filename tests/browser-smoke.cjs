@@ -51,13 +51,6 @@ const { chromium } = require('playwright');
   const registeredNickname=await page.evaluate(()=>sessionStorage.getItem('moji_player_name'));
   if(registeredNickname!=='蒼月の勇者')
    throw Error('Shared login did not persist the entered nickname: '+registeredNickname);
-  console.log('ROOM_LOBBY_DEBUG',JSON.stringify(await page.evaluate(()=>({
-   hasLoadout:!!document.querySelector('#loadoutPanel'),
-   lobbyHTML:(document.getElementById('lobbyScreen')?.outerHTML||'').slice(0,950),
-   panels:[...document.querySelectorAll('#lobbyScreen .panel')].map(p=>({id:p.id,cls:p.className,length:p.textContent.length,heading:(p.querySelector('h2,h3')?.textContent||'').slice(0,95)})).slice(0,20),
-   onlineHits:[...document.querySelectorAll('#lobbyScreen *')].filter(x=>x.children.length===0&&/ロビーからオンライン対戦/.test(x.textContent||'')).slice(0,3).map(x=>({name:x.tagName,html:x.outerHTML.slice(0,400),ancestors:[...function*(n){for(let i=0;i<6&&n;i++,n=n.parentElement)yield {tag:n.tagName,id:n.id,cls:n.className,childCount:n.children.length};}(x)]})),
-   roomButtons:[...document.querySelectorAll('#lobbyScreen button')].filter(x=>/ルームを作成|新しいルームを作る/.test(x.textContent||'')).map(x=>({outer:x.outerHTML.slice(0,300),parent:x.parentElement?.outerHTML.slice(0,700)}))
-  }))));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   await page.waitForSelector('#mojiNoticeButton',{timeout:10000});
   const lobbyExtras=await page.evaluate(()=>({
@@ -534,6 +527,32 @@ const { chromium } = require('playwright');
   await page.waitForFunction(()=>document.getElementById('fullscreenParityCheck')?.contentDocument?.readyState==='complete',{timeout:15000});
   const embedded=page.frames().find(f=>f.url().includes('/multiplayer.html?embedded=1'));
   if(!embedded)throw Error('embedded multiplayer test frame did not load');
+
+  // The room/waiting UI uses the same navy-and-gold hierarchy as the lobby,
+  // including a visible room code, prominent ready controls and invitation.
+  const roomUI=await embedded.evaluate(()=>{
+   const join=document.getElementById('joinArea'),wait=document.getElementById('waitArea');
+   const stylesheet=[...document.styleSheets].some(x=>x.href?.includes('room-lobby-v104.css'));
+   const joinColor=getComputedStyle(join).backgroundImage;
+   const oldDisplay=wait.style.display;
+   wait.style.display='block';
+   const actions=wait.querySelector('.room-ready-actions');
+   const roomCode=document.getElementById('code');
+   const invite=document.getElementById('inviteUrl');
+   const result={stylesheet,joinColor,
+    heading:getComputedStyle(wait.querySelector('h2')).color,
+    actionDisplay:getComputedStyle(actions).display,
+    roomCodeBackground:getComputedStyle(roomCode).backgroundColor,
+    inviteMinHeight:parseFloat(getComputedStyle(invite).minHeight),
+    buttons:['begin','saveRoomLoadout','leave','copyInvite'].every(id=>!!document.getElementById(id)),
+    hasFiveSlots:!!document.getElementById('onlineSlots')};
+   wait.style.display=oldDisplay;
+   return result;
+  });
+  if(!roomUI.stylesheet||roomUI.actionDisplay!=='flex'||
+     !roomUI.joinColor.includes('gradient')||roomUI.inviteMinHeight<40||
+     !roomUI.buttons||!roomUI.hasFiveSlots)
+   throw Error('Multiplayer waiting room UI consistency regression '+JSON.stringify(roomUI));
   await embedded.evaluate(()=>parent.postMessage({type:'moji:embeddedBattle',active:true},location.origin));
   await page.waitForFunction(()=>Math.abs(document.getElementById('fullscreenParityCheck').getBoundingClientRect().width-innerWidth)<4,{timeout:9000});
   await page.setViewportSize({width:844,height:390});
