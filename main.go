@@ -281,7 +281,7 @@ type Player struct {
 	UltimateCharge, UltimateAim float64
 	UltimateSpent, UltimateAiming bool
 	UltimateAimUntil, UltimateWindupUntil float64
-	InvincibleUntil, InvisibleUntil, SlowedUntil, NamepuUntil float64
+	InvincibleUntil, InvisibleUntil, HardenedUntil, NamepuUntil float64
 	UltimateSerial int
 	LastUltimate string
 	NamepuUsed bool
@@ -367,7 +367,7 @@ func (r *Room) state() map[string]any {
 		}
 		char:=p.Ch
         if now<p.NamepuUntil {char="😐"}
-        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"slowLeft":math.Max(0,p.SlowedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind})
+        players = append(players, map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"hardenedLeft":math.Max(0,p.HardenedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind})
 	}
 	bullets := make([]map[string]any, 0, len(r.Bullets))
 	for _, b := range r.Bullets {
@@ -552,7 +552,7 @@ func ultimateCost(id string) int {
 func chooseUltimate(id string) string { if ultimateCost(id)>0 {return id}; return "roman" }
 func ultimateLaunch(room *Room,p *Player,now float64) {
  if p.Ultimate=="roman" {p.UltimateWindupUntil=now+1;return}
- if p.Ultimate=="slow" {angle:=p.UltimateAim;room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*610,VY:math.Sin(angle)*610,Damage:60,TTL:2.5,Owner:p.ID,Ch:"鈍化弾",Special:"slow"})}
+ if p.Ultimate=="slow" {angle:=p.UltimateAim;room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*610,VY:math.Sin(angle)*610,Damage:60,TTL:2.5,Owner:p.ID,Ch:"硬化弾",Special:"slow"})}
 }
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
@@ -768,14 +768,14 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.CastPending = false
 			pp.PendingUntil = 0
 			pp.UltimateCharge=0;pp.UltimateSpent=false;pp.UltimateAiming=false;pp.UltimateAim=0
-			pp.UltimateAimUntil=0;pp.UltimateWindupUntil=0;pp.InvincibleUntil=0;pp.InvisibleUntil=0;pp.SlowedUntil=0;pp.NamepuUntil=0
+			pp.UltimateAimUntil=0;pp.UltimateWindupUntil=0;pp.InvincibleUntil=0;pp.InvisibleUntil=0;pp.HardenedUntil=0;pp.NamepuUntil=0
 			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false
 		}
 		room.broadcast()
 	case "ultimate":
 		if room.Phase!="playing" || !p.Alive || p.UltimateSpent || p.UltimateCharge < float64(ultimateCost(p.Ultimate)) {return}
 		now:=float64(time.Now().UnixNano())/1e9
-		if now<room.DanceUntil {return}
+		if now<room.DanceUntil || now<p.HardenedUntil {return}
 		p.UltimateSpent=true;p.UltimateAiming=false;p.UltimateSerial++;p.LastUltimate=p.Ultimate;p.Fire=false;p.CastPending=false
 		switch p.Ultimate {
 		case "roman","slow":p.UltimateAiming=true;p.UltimateAim=p.Aim;p.UltimateAimUntil=now+5
@@ -786,7 +786,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		}
 		room.broadcast()
 	case "ultimate-aim":
-		if room.Phase!="playing" || !p.Alive || !p.UltimateAiming {return}
+		if room.Phase!="playing" || !p.Alive || !p.UltimateAiming || float64(time.Now().UnixNano())/1e9<p.HardenedUntil {return}
 		var angle float64
 		parseInput(m,"aim",&angle)
 		if math.IsNaN(angle)||math.IsInf(angle,0) {return}
@@ -796,7 +796,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		// Reliable one-shot cast: a quick mobile tap is not lost between 50ms input updates.
 		if room.Phase != "playing" || !p.Alive { return }
 		now:=float64(time.Now().UnixNano())/1e9
-		if p.UltimateAiming || now<p.UltimateWindupUntil || now<p.NamepuUntil || now<room.DanceUntil {return}
+		if p.UltimateAiming || now<p.UltimateWindupUntil || now<p.NamepuUntil || now<room.DanceUntil || now<p.HardenedUntil {return}
 		var selected int
 		var castAim float64
 		parseInput(m, "selected", &selected)
@@ -906,7 +906,7 @@ func hitFromBullet(room *Room, target *Player, bullet Bullet, now float64) {
  wasAlive:=target.Alive
  if bullet.Special=="roman" { // A landed Roman Cannon instantly defeats every non-invincible player, regardless of shield.
   hit(target,target.HP,true,now)
- } else {hit(target,bullet.Damage,bullet.Pierce,now)}
+ } else {hit(target,bullet.Damage,bullet.Pierce || bullet.Special=="slow",now)}
  if wasAlive && !target.Alive && bullet.Owner!=target.ID {
   for _,p:=range room.Players {if p.ID==bullet.Owner {p.Kills++;break}}
  }
@@ -938,7 +938,7 @@ func (a *Arena) tick(dt float64) {
 			if p.UltimateAiming && now>=p.UltimateAimUntil {p.UltimateAiming=false;ultimateLaunch(room,p,now)}
 			if p.UltimateWindupUntil>0 && now>=p.UltimateWindupUntil {
 				angle:=p.UltimateAim
-				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*650,VY:math.Sin(angle)*650,Damage:600,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
+				room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*590,VY:math.Sin(angle)*590,Damage:600,TTL:2.8,Owner:p.ID,Ch:"ロマン砲",Special:"roman"})
 				p.UltimateWindupUntil=0
 			}
 			dx, dy := 0.0, 0.0
@@ -954,13 +954,13 @@ func (a *Arena) tick(dt float64) {
 			if p.Keys["w"] {
 				dy--
 			}
-			if now<room.DanceUntil || now<p.NamepuUntil || (p.UltimateWindupUntil>0 && now<p.UltimateWindupUntil) {dx=0;dy=0}
+			if now<room.DanceUntil || now<p.NamepuUntil || now<p.HardenedUntil || (p.UltimateWindupUntil>0 && now<p.UltimateWindupUntil) {dx=0;dy=0}
 			mag := math.Hypot(dx, dy)
 			if mag == 0 {
 				mag = 1
 			}
 			speed:=215.0
-			if now<p.SlowedUntil {speed*=.65}
+			// Hardened players cannot move; no movement-speed multiplier remains.
 			nx := bound(p.X+dx/mag*speed*dt, 22, worldW-22)
 			collide := false
 			for _, o := range obs {
@@ -996,7 +996,7 @@ func (a *Arena) tick(dt float64) {
 			if castNow {
 				castSelected, castAim = p.PendingSelected, p.PendingAim
 			}
-			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
+			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || now<p.HardenedUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			if castSelected < 0 || castSelected >= len(p.Slots) {
@@ -1084,9 +1084,9 @@ func (a *Arena) tick(dt float64) {
 			struck := false
 			for _, p := range room.Players {
 				if p.ID != b.Owner && p.Alive && dist(p.X, p.Y, b.X, b.Y) < func() float64 { if b.Special=="roman" { return 43 }; return 30 }() {
-					protected := now<p.InvincibleUntil || (now<p.ShieldUntil && p.Shield>0) || now<room.DanceUntil
+					protected := now<p.InvincibleUntil || now<room.DanceUntil
 					if now>=room.DanceUntil {hitFromBullet(room,p,b,now)}
-					if b.Special=="slow" && !protected {p.SlowedUntil=now+4.5}
+					if b.Special=="slow" && !protected {p.HardenedUntil=now+3;p.Fire=false;p.CastPending=false}
 					struck = true
 					break
 				}
