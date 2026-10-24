@@ -94,6 +94,14 @@ const { chromium } = require('playwright');
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=roman]').click();
   if(!await cpuGuide.isHidden())throw Error('CPU choice should not reopen help');
   if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=roman] svg').count())throw Error('new roman cannon icon missing');
+  const sharedBazooka=await page.evaluate(()=>{
+   const choice=document.querySelector('#loadoutPanel .ultimate-option[data-ultimate=roman] svg')?.outerHTML;
+   const guide=document.querySelector('#loadoutPanel .ultimate-guide-icon svg')?.outerHTML;
+   const battle=document.querySelector('#gameScreen .ultimate-icon svg')?.outerHTML;
+   return {choice,guide,battle};
+  });
+  if(!sharedBazooka.choice?.includes('rotate(-24 48 49)')||sharedBazooka.choice!==sharedBazooka.guide||sharedBazooka.choice!==sharedBazooka.battle)
+   throw Error('Roman bazooka icon differs between selection, guide and CPU battle');
   if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow] svg').count())throw Error('new slow-shot icon missing');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
