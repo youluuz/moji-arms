@@ -269,7 +269,20 @@ function boot(){
     others.length===1?'CPU '+(Number(others[0].id?.split('-')[1]||0)+1):
     others.length>1?'未確定（CPU残り'+others.length+'体）':'引き分け';
    const title=document.getElementById('resultTitle');
-   if(title)title.textContent='🏆 優勝：'+winner;
+   if(title){
+    title.textContent='🏆 優勝：'+winner;
+    // Personal KOs earned during THIS match, not lifetime achievements.
+    // Keep the existing result layout, even for CPU custom games or a defeat.
+    let tally=document.getElementById('cpuResultKills');
+    if(!tally){
+     tally=document.createElement('div');
+     tally.id='cpuResultKills';
+     tally.className='moji-result-kills';
+     tally.setAttribute('role','status');
+     title.insertAdjacentElement('afterend',tally);
+    }
+    tally.textContent='⚔ この試合の合計キル数：'+playerKills;
+   }
    const status=document.getElementById('status');
    if(status)status.textContent='試合終了｜優勝：'+winner;
    return value;
