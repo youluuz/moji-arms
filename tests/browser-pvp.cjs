@@ -133,6 +133,24 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
      if(volume!==.10)throw Error(mode+': BGM startup volume '+volume);
      if(!await page.locator('#gameArea .ultimate-cast').isVisible())throw Error(mode+': missing ultimate cast button');
+     const hardenedControls=await page.evaluate(()=>{
+      const p=roomState.players.find(p=>p.id===myId),original=p.hardenedLeft;
+      p.hardenedLeft=2;
+      const can=kind=>window.MojiUltMulti.canUseSlot(kind);
+      const capabilities={heal:can('heal'),defense:can('defense'),attack:can('attack'),pierce:can('pierce'),homing:can('homing'),locked:window.MojiUltMulti.locked()};
+      const defensive=activeSetup.slots.findIndex(s=>s.kind==='defense');
+      const healing=activeSetup.slots.findIndex(s=>s.kind==='heal');
+      document.querySelector('#cards [data-slot="'+defensive+'"]')?.click();
+      capabilities.selectGuard=selected===defensive;
+      document.querySelector('#cards [data-slot="'+healing+'"]')?.click();
+      capabilities.selectHeal=selected===healing;
+      p.hardenedLeft=original;selected=0;
+      return capabilities;
+     });
+     if(!hardenedControls.heal||!hardenedControls.defense||hardenedControls.attack||
+        hardenedControls.pierce||hardenedControls.homing||hardenedControls.locked||
+        !hardenedControls.selectGuard||!hardenedControls.selectHeal)
+      throw Error(mode+': Hardened mobile/desktop controls must keep heal and defense usable: '+JSON.stringify(hardenedControls));
      const st=await page.evaluate(()=>({id:myId,all:roomState.players.map(p=>({id:p.id,ultimate:p.ultimate,charge:p.ultimateCharge}))}));
      if(!st.all.every(p=>p.ultimate==='roman'&&p.charge===0))throw Error(mode+': ultimate state mismatch '+JSON.stringify(st));
     }
