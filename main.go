@@ -1051,7 +1051,7 @@ func (a *Arena) tick(dt float64) {
 				p.ShieldUntil = now + 1.8
 				p.GuardSlot = p.Selected
 			case "heal":
-				p.HP = math.Min(600, p.HP+float64(n*4))
+				p.HP = math.Min(600, p.HP+float64(n)*3.4)
 			}
 			p.Last[castSelected] = now + slotCooldown(kind, n)
 			p.Casts++
@@ -1331,7 +1331,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=88"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=91"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=91"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=91"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=2"><script defer src="/weapon-visuals-v86.js?v=91"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=77"><link rel="stylesheet" href="/ultimate-ui.css?v=88"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=91"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=92"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=2"><script defer src="/weapon-visuals-v86.js?v=92"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1348,6 +1348,10 @@ func mobilePatchedIndex(source string) string {
 	source = strings.Replace(source, `if(/\p{Script=Han}/u.test(ch))return 12; // fallback only for unregistered ideographs`,
 		`if(/\p{Script=Han}/u.test(ch))return null; // unknown ideographs have no invented value`, 1)
 	source = strings.Replace(source, "bgmAudio.volume=.24", "bgmAudio.volume=.10", 1)
+	// Reduce both solo modes from HP 4 to HP 3.4 per character stroke (-15%).
+	// This updates the legacy inline battle logic, not just its displayed guide.
+	source = regexp.MustCompile(`(HEAL_PER_STROKE\s*=\s*)4\b`).ReplaceAllString(source, "${1}3.4")
+
 	// The original HTML only embeds a small demonstration dictionary. Merge the
 	// complete Unihan-based table before any match, then refresh equipped values.
 	strokeLoader := `Object.assign(dict, {'イ':2,'ー':1});
