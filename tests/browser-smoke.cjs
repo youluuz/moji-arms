@@ -82,6 +82,21 @@ const { chromium } = require('playwright');
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
+   if(mode==='normal'){
+    const dbg=await page.evaluate(()=>{
+     const funcs=['act','recordCast','moveActor','damage','update','updateGame','tick','loop','render','draw','drawGame','spawnEnemy','enemyAI','enemyAttack','reset','startGame','endGame','finishGame','checkWin','checkEnd','shoot','fire','step','handleBullets','collision','updateBullets'];
+     const found=Object.fromEntries(funcs.filter(k=>typeof window[k]==='function').map(k=>[k,window[k].toString().slice(0,12000)]));
+     const values={};
+     for(const k of ['enemy','player','slots','bullets','obstacles','running','matchToken','WORLD_W','WORLD_H','enemies','cpuCount','selected']){
+      try{values[k]=Array.isArray(window[k])?window[k].slice(0,3):window[k]}catch(e){values[k]=String(e)}
+     }
+     const screen=document.getElementById('gameScreen');
+     return {found,values,gameMarkup:screen?.outerHTML.slice(0,16000),
+       controls:document.getElementById('loadoutPanel')?.outerHTML.slice(0,13000),
+       scripts:[...document.scripts].map(x=>({src:x.src,len:x.text.length,head:x.text.slice(0,80)})).slice(-18)};
+    });console.log('CPU_ENGINE_DIAG',JSON.stringify(dbg));
+   }
+
    await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
    const cover=await page.evaluate(()=>({
      width:WORLD_W,height:WORLD_H,
