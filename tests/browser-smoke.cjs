@@ -281,13 +281,18 @@ const { chromium } = require('playwright');
       Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
     const zone=document.getElementById('cpuMoveZone')?.getBoundingClientRect();
     const tip=document.querySelector('#gameScreen .moji-battle-howto');
-    return {cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
+    const battlefield=document.querySelector('#gameScreen .arena-shell');
+    const tr=tip?.getBoundingClientRect(),fieldRect=battlefield?.getBoundingClientRect();
+    const guideOutside=!!tr&&!!fieldRect&&
+     tip.parentElement===battlefield.parentElement&&tip.nextElementSibling===battlefield&&
+     tr.bottom<=fieldRect.top+2&&getComputedStyle(tip).position!=='absolute';
+    return {guideOutside,cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
       distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
       inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
       guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
    });
-   if(mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
+   if(!mobileBattleUI.guideOutside||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
       !mobileBattleUI.inside||!mobileBattleUI.touchRing||
       !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
     throw Error('CPU six-slot layout or circular mobile movement invalid '+JSON.stringify(mobileBattleUI));
@@ -458,10 +463,13 @@ const { chromium } = require('playwright');
    for(const unit of window.MojiCpuBots.getBots())if(unit.hp>0)damage(unit,100000,performance.now(),true,{owner:'p'});
    return {running,result:document.getElementById('result').classList.contains('show'),
     winner:document.getElementById('resultTitle')?.textContent,
-    alive:document.getElementById('cpuAliveCount')?.textContent};
+    alive:document.getElementById('cpuAliveCount')?.textContent,
+    totalKills:document.getElementById('cpuResultKills')?.textContent,
+    expectedKills:window.MojiCpuBots.kills()};
   });
   if(finalKill.running||!finalKill.result||!finalKill.winner?.includes('優勝：あなた')||
-     !finalKill.alive?.includes('生存 1 / 10人'))
+     !finalKill.alive?.includes('生存 1 / 10人')||
+     finalKill.expectedKills!==9||!finalKill.totalKills?.includes('合計キル数：9'))
    throw Error('CPU survivors or named winner incorrect after last bot: '+JSON.stringify(finalKill));
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
