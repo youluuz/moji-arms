@@ -5,7 +5,7 @@
 - **ゲーム本体**：Render Free Web Service（Go + WebSocket、1台、DBなし）。`render.yaml` と `Dockerfile` を用意済み。CPU戦・オンライン戦はすべて同じURLから遊ぶ。
 - **広告・紹介ページ**：GitHub Pages（public repository の Free 枠）。`docs/index.html` は公開用に準備済み。静的なのでRenderが休止中でも説明・シェアができる。
 - **費用**：ホスティング初期費用0円を目標。Renderでは **Free** を選び、課金方法の登録・追加サービス・アップグレードを避ける。独自ドメイン購入、広告出稿、外部DBは不要。
-- **確認済み**：GitHub ActionsのGo/JS/Chromium自動テスト。**未確認**：実際のRenderサービスがLiveであること、実スマホ・異なるWi-Fiでの通信、GitHub Pagesが有効であること。
+- **確認済み**：GitHub ActionsのGo/JS/Chromium自動テスト、GitHub Pagesが有効でデプロイ成功していること。**未確認**：公開Renderサービスの実URLでLiveと最新コミットを確認すること、実スマホ・異なるWi-Fiでの通信、外部からの紹介ページの表示。
 
 ## A. ゲーム本体を Render で公開（利用者のアカウント操作が必要）
 1. [Render Dashboard](https://dashboard.render.com/) にログイン。
@@ -24,10 +24,10 @@
 - **常時監視で「寝かせない」ためのHTTP pingを設定しない**。不要な稼働時間やアクセスを増やすので無料枠運用に不向き。
 - 送信されるHTMLは、対応ブラウザではサーバー起動時に生成したgzip圧縮データを使用し、公開アクセス時の帯域を節約する。
 
-## B. 宣伝ページを GitHub Pages で無料公開（利用者の設定操作が必要）
-1. [GitHubのPages設定](https://github.com/youluuz/moji-arms/settings/pages) を開く。
+## B. 無料宣伝ページ（GitHub Pagesは設定完了・ビルド成功）
+1. [GitHubのPages設定](https://github.com/youluuz/moji-arms/settings/pages) を開き、現在のデプロイURLを確認する。**Pages自体は有効化済み**。
 2. `Build and deployment` → `Source: Deploy from a branch` → `main` → `/docs` → `Save`。
-3. 公開されるURLの候補は `https://youluuz.github.io/moji-arms/`。**実際のURLはGitHub Pagesの設定画面で確認**。
+3. 紹介サイトのURLは [https://youluuz.github.io/moji-arms/](https://youluuz.github.io/moji-arms/)。GitHubのPages公開処理は成功済み。ただし外部端末からのアクセス確認は引き続き必要。
 4. `docs/index.html` の「無料でプレイ」のリンク先は想定Render URLを設定済み。**Renderの実際の公開URLが異なる場合は必ず置き換える**。本体では `/about.html` も利用できる。
 5. GitHub Pagesは無料の広告・説明ページであり、**オンラインルームはそこで直接稼働しない**。プレイボタンでRenderへ移動する設計。
 
@@ -58,3 +58,11 @@ GitHub Actions の **[Verify public game launch](https://github.com/youluuz/moji
 ## 維持・次の一手
 改善要望・バグ報告は [公開ベータの不具合フォーム](https://github.com/youluuz/moji-arms/issues/new/choose) へ（GitHubログインが必要、部屋コードなどの個人情報は非公開にすること）。、公開にあたっては [PROMOTION_KIT.md](./PROMOTION_KIT.md) の無料宣伝テンプレートを活用。
 参考： [Render Free](https://render.com/docs/free) / [Render Blueprint YAML](https://render.com/docs/blueprint-spec) / [GitHub Pages 設定](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+
+
+## 追加済みの無料宣伝機能（2026-10-24）
+- 紹介ページにX/Bluesky共有ボタンと紹介文コピー機能。ユーザー追跡の解析スクリプトなし。
+- 別Wi-Fiでの対戦手順、無料Renderが休止したときの対処、ブラウザ保存データに関するFAQ。
+- `/robots.txt`、`/sitemap.xml`、`/404.html` をGitHub Pagesの `docs/` に設置。検索エンジンへの掲載は保証されない。
+- `node tests/public-pages.cjs` で基本的な検索メタ・リンク・シェアUIをCI検査。
+- 最後の確認は [Verify public game launch](https://github.com/youluuz/moji-arms/actions/workflows/public-release.yml) を手動実行して、**Renderの正しいURLとコミットを照合**する。確認が取れるまではSNSの正式公開告知を保留する。
