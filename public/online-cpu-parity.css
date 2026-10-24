@@ -113,3 +113,10 @@ body.online-battle #gameArea .game-panel>.buttons{display:none!important}
  #onlineOutcome .online-outcome-card{max-height:92dvh;overflow:auto;padding:20px 14px}
  #onlineOutcome .online-outcome button{min-height:44px}
 }
+
+/* Synchronized online countdown and visible kill count, including phone sizes. */
+body.online-battle #gameArea .arena-shell{position:relative!important}
+body.online-battle #onlineCountdown{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;pointer-events:none;display:grid;place-items:center;min-width:92px;min-height:92px;padding:14px;border:3px solid #ffe0a3;border-radius:24px;background:#07182be8;color:#ffecb9;text-shadow:0 3px 14px #f4ae6988;box-shadow:0 0 35px #000a;font-size:clamp(55px,9vw,86px);font-weight:950;line-height:1}
+body.online-battle #onlineCountdown[hidden]{display:none!important}
+body.online-battle #gameArea #onlineKillScore{display:inline-block;float:none;padding:1px 8px;margin:0 0 0 8px;border:1px solid #d7b77b;border-radius:7px;background:#263a52;color:#ffe7b8;font-size:11px;font-weight:900;white-space:nowrap}
+@media(max-width:640px){body.online-battle #gameArea #onlineKillScore{padding:1px 4px;margin-left:4px;font-size:10px}body.online-battle #onlineCountdown{min-width:80px;min-height:80px;font-size:57px}}
