@@ -518,7 +518,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
  for _,mode:=range []string{"normal","custom"} {
   t.Run(mode,func(t *testing.T){
    now:=float64(time.Now().UnixNano())/1e9
-   shooter:=&Player{ID:"a",Alive:true,HP:600,X:400,Y:450,Keys:map[string]bool{}}
+   shooter:=&Player{ID:"a",C:&Client{send:make(chan []byte,40)},Alive:true,HP:600,X:400,Y:450,Keys:map[string]bool{}}
    shielded:=&Player{ID:"b",Alive:true,HP:600,X:800,Y:450,Keys:map[string]bool{"d":true},Fire:true,Shield:600,ShieldUntil:now+10,
     Ultimate:"invincible",UltimateCharge:280,
     Slots:[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}}
