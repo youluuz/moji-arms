@@ -50,6 +50,26 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    const r=document.getElementById('livePvPFrame').getBoundingClientRect();
    return Math.abs(r.width-innerWidth)<4&&Math.abs(r.height-innerHeight)<4;
   },{timeout:15000});
+  // Mobile landscape must also preserve six nonoverlapping equipment slots
+  // and keep the visual thumbstick exactly centered in the touch circle.
+  await inner.waitForFunction(()=>document.getElementById('cards')?.clientWidth>600,{timeout:12000});
+  const landscapeControls=await inner.evaluate(()=>{
+   const row=document.getElementById('cards');
+   const els=[...row.querySelectorAll(':scope > button[data-slot]'),
+      row.querySelector(':scope > .moji-ultimate-inline .ultimate-cast')];
+   const boxes=els.map(e=>e?.getBoundingClientRect());
+   const a=document.getElementById('moveZone').getBoundingClientRect();
+   const b=document.getElementById('movePad').getBoundingClientRect();
+   const overlaps=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&
+      Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
+   return {num:els.length,
+    separate:boxes.every((x,i)=>x&&boxes.slice(i+1).every(y=>y&&!overlaps(x,y))),
+    aligned:Math.hypot(a.left+a.width/2-b.left-b.width/2,a.top+a.height/2-b.top-b.height/2)<2,
+    allVisible:boxes.every(x=>x&&x.width>30&&x.right<=innerWidth+2)};
+  });
+  if(landscapeControls.num!==6||!landscapeControls.separate||
+     !landscapeControls.aligned||!landscapeControls.allVisible)
+   throw Error('Landscape ultimate overlay/joystick centering regression: '+JSON.stringify(landscapeControls));
   await guest.evaluate(()=>sock.close());
   await inner.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
   await inner.locator('#onlineRematch').click();
