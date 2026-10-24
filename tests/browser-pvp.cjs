@@ -82,6 +82,28 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      throw Error(mode+': consolidated weapon previews are hidden even when usage/effects help is open');
     await weaponHelp.locator('summary').click();
     if(await weaponHelp.evaluate(el=>el.open))throw Error(mode+': ordinary weapon guide did not close');
+    // Every PvP weapon input uses the new high-contrast surface, in both
+    // normal and custom rooms without changing the original input elements.
+    for(const p of pages){
+     const equipmentContrast=await p.evaluate(()=>{
+      const cards=[...document.querySelectorAll('#roomLoadoutMount #onlineSlots .online-slot')];
+      return {css:[...document.styleSheets].some(s=>s.href?.includes('loadout-contrast-v101.css')),
+       count:cards.length,
+       cards:cards.map(card=>{
+        const el=card.querySelector('.online-glyph-input');
+        const style=getComputedStyle(el),r=el.getBoundingClientRect();
+        const digits=card.querySelector('.slot-strokes'),ds=getComputedStyle(digits);
+        return {bg:style.backgroundColor,color:style.color,border:style.borderTopColor,
+         height:r.height,width:r.width,within:r.left>=0&&r.right<=innerWidth+2,
+         digitHeight:digits.getBoundingClientRect().height,digitColor:ds.color};
+       })};
+     });
+     if(!equipmentContrast.css||equipmentContrast.count!==5||
+        equipmentContrast.cards.some(x=>x.bg!=='rgb(9, 21, 37)'||
+          x.border!=='rgb(193, 219, 244)'||x.height<50||
+          x.width<50||!x.within||x.digitHeight<40))
+      throw Error(mode+': room equipment blending into background '+JSON.stringify(equipmentContrast));
+    }
     // Waiting room action placement: ready is directly to Start's RIGHT,
     // and each single-slot button only shuffles that one glyph.
     for(const p of pages){
