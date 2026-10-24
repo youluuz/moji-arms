@@ -95,6 +95,11 @@ func TestBattleCountdownSpawnsAndKillCredit(t *testing.T) {
  // A subsequent rematch resets per-round kills and opens another countdown.
  room.Phase="ended"
  a.handle(c1,[]byte(`{"type":"return-lobby"}`))
+ if p1.Ready||p2.Ready {t.Fatal("replay must wait for both players to reconfirm equipment")}
+ a.handle(c1,[]byte(`{"type":"start"}`))
+ if room.Phase!="lobby" {t.Fatal("host bypassed readiness after replay")}
+ confirm,_:=json.Marshal(map[string]any{"type":"setup","ch":"火","slots":slots,"ultimate":"roman"})
+ a.handle(c1,confirm);a.handle(c2,confirm)
  a.handle(c1,[]byte(`{"type":"start"}`))
  if room.Phase!="countdown"||p1.Kills!=0 {t.Fatal("rematch did not reset kills/countdown")}
 }
@@ -237,9 +242,19 @@ func TestRoomEquipmentEditsAndSameRoomRematch(t *testing.T) {
    len(room.Players)!=2||room.Phase!="lobby"||room.Winner!=""{
   t.Fatal("rematch must retain the original room and players")
  }
- if !room.Players[0].Ready||!room.Players[1].Ready {t.Fatal("rematch lobby not ready")}
+ if room.Players[0].Ready||room.Players[1].Ready {t.Fatal("rematch must require both players to reconfirm setup")}
+ lobbySnapshot:=room.state()["players"].([]map[string]any)
+ if lobbySnapshot[1]["slots"]==nil || lobbySnapshot[0]["slots"]==nil {t.Fatal("rematch lobby did not send authoritative saved equipment")}
  a.handle(first,[]byte(`{"type":"start"}`))
- if room.Phase!="countdown"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600{
+ if room.Phase!="lobby"{t.Fatal("host bypassed rematch ready requirement")}
+ hostSetup,_:=json.Marshal(map[string]any{"type":"setup","ch":room.Players[0].Ch,"slots":room.Players[0].Slots,"ultimate":"roman"})
+ a.handle(first,hostSetup)
+ slots[0]=Slot{Ch:"水",Kind:"attack",N:strokes("水")}
+ equipmentAgain,_:=json.Marshal(map[string]any{"type":"setup","ch":"水","slots":slots,"ultimate":"slow"})
+ a.handle(second,equipmentAgain)
+ if !room.Players[0].Ready||!room.Players[1].Ready||room.Players[1].Slots[0].Ch!="水" {t.Fatal("second round edited setup was not confirmed")}
+ a.handle(first,[]byte(`{"type":"start"}`))
+ if room.Phase!="countdown"||room.Players[1].Ultimate!="slow"||room.Players[1].HP!=600||room.Players[1].Slots[0].Ch!="水"{
   t.Fatal("second round did not start with updated equipment")
  }
  if strokes("イ")!=2 || strokes("ー")!=1 || strokes("フ")!=1 || strokes("ネ")!=4 {t.Fatal("kana stroke regression")}
