@@ -44,9 +44,23 @@ body.online-battle #gameArea .weapon .card-cooldown{
  font-size:10px!important;
 }
 body.online-battle #gameArea .weapon .card-track{height:5px!important}
+body.online-battle #gameArea .hud{
+ padding-right:clamp(192px,30%,224px)!important;
+}
 body.online-battle #onlineBattleScoreboard.moji-battle-score{
- display:flex!important;flex-direction:row!important;align-items:center!important;
- flex-wrap:wrap;justify-content:flex-end;gap:4px!important;
+ width:clamp(184px,28%,217px)!important;right:3px!important;
+ display:grid!important;grid-template-columns:74px minmax(0,1fr)!important;
+ grid-template-rows:auto auto;column-gap:3px!important;row-gap:2px!important;
+ align-items:center!important;justify-content:stretch!important;
+}
+body.online-battle #gameArea #onlineSpectatorCount{
+ grid-column:1;grid-row:1;width:100%;min-width:0;
+}
+body.online-battle #gameArea #onlineStatus{
+ grid-column:2;grid-row:1;width:100%!important;min-width:0;
+}
+body.online-battle #gameArea #onlineKillScore{
+ grid-column:1 / -1;grid-row:2;width:100%!important;
 }
 body.online-battle #onlineSpectatorCount{
  display:inline-flex!important;align-items:center;justify-content:center;
@@ -100,7 +114,11 @@ body.online-battle.online-spectating #gameArea #controls{display:none!important}
  body.online-battle #gameArea .weapon{min-height:78px!important;padding:3px 1px!important}
  body.online-battle #gameArea .weapon .wchar{font-size:20px!important}
  body.online-battle #gameArea .weapon .wkind{font-size:9px!important}
- body.online-battle #gameArea #onlineSpectatorCount{padding:2px 3px;font-size:10px!important}
+ body.online-battle #gameArea .hud{padding-right:173px!important}
+ body.online-battle #onlineBattleScoreboard.moji-battle-score{
+  width:168px!important;grid-template-columns:68px minmax(0,1fr)!important;
+ }
+ body.online-battle #gameArea #onlineSpectatorCount{padding:2px 3px;font-size:9px!important}
  body.online-battle #onlineWatchControls{gap:4px!important}
  body.online-battle #onlineWatchControls button{font-size:10px;padding:4px 5px;min-height:30px}
  body.online-battle #onlineWatchTarget{font-size:10px}
