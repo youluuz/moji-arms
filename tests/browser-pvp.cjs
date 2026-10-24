@@ -73,7 +73,20 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     }
     if(!await host.locator('#begin').isEnabled())throw Error(mode+': host start disabled');
     await host.locator('#begin').click();
-    await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing',{timeout:15000})));
+    await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='countdown',{timeout:12000})));
+    for(const p of pages){
+      const state=await p.evaluate(()=>({
+       phase:roomState.phase,seconds:roomState.countdownLeft,
+       x:roomState.players.map(p=>({x:p.x,y:p.y})),
+       overlay:!document.getElementById('onlineCountdown')?.hidden,
+       killText:document.getElementById('onlineKillScore')?.textContent,
+       kills:roomState.players.map(x=>x.kills)
+      }));
+      if(!state.overlay||state.seconds<=0||state.seconds>3.2||!state.kills.every(x=>x===0)||
+       state.killText!=='⚔ キル 0'||Math.hypot(state.x[0].x-state.x[1].x,state.x[0].y-state.x[1].y)<900)
+       throw Error(mode+': server-side spawn/countdown/kill UI invalid '+JSON.stringify(state));
+    }
+    await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing'&&document.getElementById('onlineCountdown')?.hidden,{timeout:15000})));
     for(let i=0;i<2;i++){
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
