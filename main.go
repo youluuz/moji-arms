@@ -796,12 +796,15 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		// Reliable one-shot cast: a quick mobile tap is not lost between 50ms input updates.
 		if room.Phase != "playing" || !p.Alive { return }
 		now:=float64(time.Now().UnixNano())/1e9
-		if p.UltimateAiming || now<p.UltimateWindupUntil || now<p.NamepuUntil || now<room.DanceUntil || now<p.HardenedUntil {return}
+		if p.UltimateAiming || now<p.UltimateWindupUntil || now<p.NamepuUntil || now<room.DanceUntil {return}
 		var selected int
 		var castAim float64
 		parseInput(m, "selected", &selected)
 		parseInput(m, "aim", &castAim)
 		if selected < 0 || selected >= len(p.Slots) || math.IsNaN(castAim) || math.IsInf(castAim, 0) { return }
+		// Hardening seals offense, but does not stop healing or shielding.
+		kind:=p.Slots[selected].Kind
+		if now<p.HardenedUntil && kind!="heal" && kind!="defense" {p.CastPending=false;return}
 		p.PendingSelected = selected
 		p.PendingAim = castAim
 		p.CastPending = true
@@ -996,7 +999,7 @@ func (a *Arena) tick(dt float64) {
 			if castNow {
 				castSelected, castAim = p.PendingSelected, p.PendingAim
 			}
-			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || now<p.HardenedUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
+			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			if castSelected < 0 || castSelected >= len(p.Slots) {
@@ -1012,6 +1015,10 @@ func (a *Arena) tick(dt float64) {
 			}
 			slot := p.Slots[castSelected]
 			kind, n := slot.Kind, slot.N
+			if now<p.HardenedUntil && kind!="defense" && kind!="heal" {
+				p.CastPending=false
+				continue
+			}
 			switch kind {
 			case "attack", "pierce", "homing":
 				speed := 420.0
