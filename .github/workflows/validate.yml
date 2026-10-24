@@ -29,6 +29,7 @@ jobs:
           node --check scripts/public-release-check.mjs
           node --check public/mobile-input-v70.js
           node tests/input-safety.cjs
+          node tests/public-pages.cjs
           node --check public/arena-expansion-v72.js
           node tests/check-html-scripts.cjs
       - name: Build the Render binary
