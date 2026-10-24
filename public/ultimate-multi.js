@@ -32,11 +32,15 @@ function boot(){
  });
  function locked(){
   const p=roomState?.players?.find(p=>p.id===myId);
-  return Boolean(p&&(p.ultimateAiming||p.hardenedLeft>0||p.namepuLeft>0||p.danceLeft>0));
+  return Boolean(p&&((p.ultimateAiming&&!(p.hardenedLeft>0))||p.namepuLeft>0||p.danceLeft>0));
+ }
+ function canUseSlot(kind){
+  const p=roomState?.players?.find(p=>p.id===myId);
+  return !locked()&&!(p?.hardenedLeft>0&&kind!=='heal'&&kind!=='defense');
  }
  function onFieldPointer(e){
   const p=roomState?.players?.find(p=>p.id===myId);
-  if(p?.hardenedLeft>0)return true;
+  if(p?.hardenedLeft>0)return Boolean(p.ultimateAiming);
   if(!p?.ultimateAiming)return false;
   // Aiming consumes only the battlefield tap, not joystick or equipment controls.
   if(e.pointerType==='mouse'&&e.button!==0)return true;
@@ -56,7 +60,7 @@ function boot(){
    banner.hidden=!own.ultimateAiming;
    if(!banner.hidden)banner.textContent=def.name+' 照準中・残り'+Math.ceil(own.ultimateAimLeft)+'秒';
    hardenBanner.hidden=!(own.hardenedLeft>0);
-   if(!hardenBanner.hidden)hardenBanner.textContent='🔒 硬直中・残り'+own.hardenedLeft.toFixed(1)+'秒（移動・攻撃不可）';
+   if(!hardenBanner.hidden)hardenBanner.textContent='🔒 硬直 '+own.hardenedLeft.toFixed(1)+'秒｜移動・攻撃・必殺技不可／回復・防御OK';
    for(const p of m.players){
     const serial=p.ultimateSerial||0,last=heard.get(p.id)||0;
     if(serial>last && p.lastUltimate)U.play(p.lastUltimate);
@@ -103,7 +107,7 @@ function boot(){
    document.getElementById('onlineOutcomeTitle').textContent=U.victoryPhrase();
   }
  }
- window.MojiUltMulti={chosen:()=>chosen,locked,onFieldPointer,onState,drawWorld,finish};
+ window.MojiUltMulti={chosen:()=>chosen,locked,canUseSlot,onFieldPointer,onState,drawWorld,finish};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
