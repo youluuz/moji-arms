@@ -42,8 +42,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    const r=el.getBoundingClientRect();
    return Math.abs(r.width-innerWidth)<4&&Math.abs(r.height-innerHeight)<4;
   },{timeout:15000});
-  if(await inner.locator('#cards .weapon').count()!==5||!await inner.locator('#enemyBar').isVisible())
-   throw Error('actual embedded online match has not adopted CPU five-card / dual-HP HUD');
+  if(await inner.locator('#cards .weapon').count()!==5||!await inner.locator('#selfBar').isVisible()||
+     await inner.locator('#enemyBar').count()!==0||await inner.locator('#cards .weapon-output').count()!==5)
+   throw Error('embedded online match must have five weapon stats and only personal HP');
   await host.setViewportSize({width:844,height:390});
   await host.waitForFunction(()=>{
    const r=document.getElementById('livePvPFrame').getBoundingClientRect();
