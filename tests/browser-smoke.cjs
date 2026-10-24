@@ -200,6 +200,8 @@ const { chromium } = require('playwright');
   if(discoVisual.discoVisible<150||discoVisual.auraVisible<200||discoVisual.shotVisible<250||
      !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
    throw Error('Avatar dance aura, disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
+  if(await page.evaluate(()=>window.MojiWeaponVisual.types.attack.color)!=='#dbff70')
+   throw Error('Normal shot should be lime-gold, not avatar blue');
   const preview=await page.evaluate(()=>[...document.querySelectorAll('#abilityGuide .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
   if(preview.length!==5||preview[0].mark!=='●'||preview[3].mark!=='◆'||preview[4].mark!=='◎'||!preview.every(p=>p.stats.includes('CT')))
    throw Error('Solo integrated usage/effect guide missing weapon trajectory and stats '+JSON.stringify(preview));
@@ -245,19 +247,26 @@ const { chromium } = require('playwright');
     })(),
     healMetric:window.MojiWeaponVisual.metric('heal',10)
    }));
-   // The ultimate cast slot must stay inside the arena, never over a glyph
-  // slot on small mobile viewports; the help text must not swallow taps.
-  const mobileBattleUI=await page.evaluate(()=>{
-   const box=s=>document.querySelector(s)?.getBoundingClientRect();
-   const ult=box('#gameScreen .ultimate-cast'),arena=box('#gameScreen .arena-shell');
-   const weapons=box('#weapons'),tip=document.querySelector('#gameScreen .moji-battle-howto');
-   return {inside:!!ult&&!!arena&&ult.left>=arena.left-2&&ult.right<=arena.right+2&&ult.bottom<=arena.bottom+2,
-    noGlyphOverlap:!!ult&&!!weapons&&ult.bottom<=weapons.top+2,
-    guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
-  });
-  if(!mobileBattleUI.inside||!mobileBattleUI.noGlyphOverlap||
-     !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
-   throw Error('CPU mobile ultimate text/glyph overlap or gameplay guide missing '+JSON.stringify(mobileBattleUI));
+   // Reserve a true sixth equipment cell. No ultimate/regular overlap.
+   const mobileBattleUI=await page.evaluate(()=>{
+    const weapons=document.getElementById('weapons');
+    const regular=[...weapons.querySelectorAll('.weapon')];
+    const ult=document.querySelector('#gameScreen .ultimate-cast');
+    const rects=[...regular,ult].map(el=>el.getBoundingClientRect());
+    const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
+      Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
+    const zone=document.getElementById('cpuMoveZone')?.getBoundingClientRect();
+    const tip=document.querySelector('#gameScreen .moji-battle-howto');
+    return {cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
+      distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
+      inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
+      touchRing:zone&&Math.abs(zone.width-zone.height)<2,
+      guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
+   });
+   if(mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
+      !mobileBattleUI.inside||!mobileBattleUI.touchRing||
+      !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
+    throw Error('CPU six-slot layout or circular mobile movement invalid '+JSON.stringify(mobileBattleUI));
   if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
       beforeStart.killScore!=='⚔ キル 0'||!beforeStart.scoreLocation.isRight||!beforeStart.scoreLocation.besideHp||
       !beforeStart.scoreLocation.visible||beforeStart.healMetric!=='回復34'||
