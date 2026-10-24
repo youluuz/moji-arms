@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
    for(let i=0;i<850;i++){
     const ch=window.MojiRandom.roll();
     const n=getStrokeCount(ch);
-    if(/\\p{Script=Han}/u.test(ch)){han++;if(n>=16)heavy++;if(n>=45)extreme++;}
+    if(/\p{Script=Han}/u.test(ch)){han++;if(n>=16)heavy++;if(n>=45)extreme++;}
     else other++;
    }
    return {han,heavy,extreme,other};
