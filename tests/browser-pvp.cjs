@@ -155,20 +155,29 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       throw Error(mode+': self-only HP, active weapon stats or bullet renderer missing '+JSON.stringify(parity));
      const danceVisual=await page.evaluate(()=>{
       const saved=window.MojiWeaponVisual.drawMirrorBall;
-      const positions=[];
+      const savedAura=window.MojiWeaponVisual.drawDanceAura;
+      const positions=[],auraPositions=[];
       window.MojiWeaponVisual.drawMirrorBall=(ctx,x,y,t)=>{positions.push({x,y,t})};
+      window.MojiWeaponVisual.drawDanceAura=(ctx,x,y,t)=>{auraPositions.push({x,y,t})};
       try{
        const players=roomState.players.map(p=>({...p,danceLeft:2,namepuLeft:0}));
        const ctx=document.createElement('canvas').getContext('2d');
        window.MojiUltMulti.drawWorld(ctx,{...roomState,players});
-      }finally{window.MojiWeaponVisual.drawMirrorBall=saved}
+      }finally{
+       window.MojiWeaponVisual.drawMirrorBall=saved;
+       window.MojiWeaponVisual.drawDanceAura=savedAura;
+      }
       const shell=document.querySelector('#gameArea .game-wrap');
       const labels=[...shell.querySelectorAll('.ultimate-aiming-banner')].map(x=>x.style.top||getComputedStyle(x).top);
-      return {count:positions.length,expected:roomState.players.filter(p=>p.alive).length,
+      return {count:positions.length,auraCount:auraPositions.length,expected:roomState.players.filter(p=>p.alive).length,
        mirrorPosition:positions.length&&Math.round(positions[0].y-roomState.players.find(p=>p.alive).y),
+       avatarAuraCentered:auraPositions.every(p=>roomState.players.some(f=>f.x===p.x&&f.y===p.y)),
+       survivorText:document.getElementById('onlineStatus')?.textContent,
        labels,hasShotScale:window.MojiWeaponVisual.drawProjectile.toString().includes('cx.scale(1.14,1.14)')};
      });
-     if(danceVisual.count!==danceVisual.expected||danceVisual.mirrorPosition!==-126||
+     if(danceVisual.count!==danceVisual.expected||danceVisual.auraCount!==danceVisual.expected||
+        !danceVisual.avatarAuraCentered||danceVisual.mirrorPosition!==-126||
+        !danceVisual.survivorText?.includes('生存 '+danceVisual.expected+' / ')||
         !danceVisual.hasShotScale||!danceVisual.labels.length)
       throw Error(mode+': mirror-ball effects or raised onscreen labels missing '+JSON.stringify(danceVisual));
      const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
@@ -218,6 +227,24 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     await guest.evaluate(()=>sock.close());
     await host.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
     if(!await host.locator('#onlineRematch').isVisible())throw Error(mode+': missing same-room rematch button');
+    // Every participant sees a shared winner announcement; there is no
+    // separate defeat screen even when the local player loses.
+    const sharedResults=await host.evaluate(()=>{
+     const realTitle=document.getElementById('onlineOutcomeTitle')?.textContent||'';
+     const ownName=roomState.players.find(p=>p.id===myId)?.name||'';
+     const resultScreen=document.getElementById('onlineOutcome');
+     const winnerReported=realTitle.includes('優勝：'+ownName)&&
+      document.getElementById('onlineOutcomeEnglish').textContent==='MATCH RESULT';
+     const simulated={...roomState,winner:'other-winner',
+      players:[...roomState.players,{id:'other-winner',name:'対戦相手',alive:true}]};
+     finish(simulated);
+     const loserTitle=document.getElementById('onlineOutcomeTitle').textContent;
+     return {winnerReported,loserTitle,hasDefeat:resultScreen.classList.contains('defeat'),
+      label:document.getElementById('onlineOutcomeEnglish').textContent};
+    });
+    if(!sharedResults.winnerReported||sharedResults.loserTitle!=='🏆 優勝：対戦相手'||
+        sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT')
+      throw Error(mode+': champion name is not shared on winner/loser results '+JSON.stringify(sharedResults));
     await host.locator('#onlineRematch').click();
     await host.waitForFunction(()=>roomState?.phase==='lobby',{timeout:15000});
     const back=await host.evaluate(()=>({code:roomState.code,phase:roomState.phase,players:roomState.players.length,
