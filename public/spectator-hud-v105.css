@@ -1,0 +1,117 @@
+/* v10.5 PvP: more battlefield, denser top HUD, legible equipment, spectators.
+   Loaded last so layout doesn't revert to older mobile breakpoints. */
+body.online-battle #gameArea>.battle-head{
+ flex:0 0 28px!important;min-height:28px!important;
+ padding:1px 6px!important;
+}
+body.online-battle #gameArea .battle-title{font-size:14px!important}
+body.online-battle #gameArea .battle-head .subtle{font-size:10px!important}
+body.online-battle #gameArea .hud{
+ flex:0 0 36px!important;min-height:36px!important;
+ padding:2px 4px 1px!important;gap:6px!important;
+}
+body.online-battle #gameArea .combat-hp .hud-line{
+ font-size:11px!important;line-height:1.15!important;margin-bottom:2px!important;
+}
+body.online-battle #gameArea .combat-hp .hp-bar{height:8px!important}
+body.online-battle #gameArea .battle-meta{
+ flex:0 0 23px!important;padding:0 4px 1px!important;
+ line-height:1.1!important;font-size:11px!important;
+}
+body.online-battle #gameArea .battle-zone-info{
+ margin-top:1px!important;line-height:1.1!important;
+}
+body.online-battle #gameArea .weaponrow{
+ flex:0 0 96px!important;min-height:96px!important;gap:6px!important;
+ padding:3px 1px 1px!important;
+}
+body.online-battle #gameArea .weapon{
+ min-height:88px!important;
+ padding:5px 3px!important;
+}
+body.online-battle #gameArea .weapon .wchar{
+ font-size:clamp(22px,2.6vw,29px)!important;
+ line-height:1.02!important;font-weight:950!important;
+}
+body.online-battle #gameArea .weapon .wkind{
+ font-size:clamp(10px,1.05vw,12px)!important;
+ line-height:1.13!important;
+}
+body.online-battle #gameArea .weapon .weapon-output{
+ font-size:clamp(9px,1vw,11px)!important;line-height:1.15!important;
+}
+body.online-battle #gameArea .weapon .card-cooldown{
+ font-size:10px!important;
+}
+body.online-battle #gameArea .weapon .card-track{height:5px!important}
+body.online-battle #onlineBattleScoreboard.moji-battle-score{
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ flex-wrap:wrap;justify-content:flex-end;gap:4px!important;
+}
+body.online-battle #onlineSpectatorCount{
+ display:inline-flex!important;align-items:center;justify-content:center;
+ border:1px solid #a2d5f0;border-radius:9px;background:#122d47;
+ color:#ddf2ff!important;padding:2px 6px;
+ white-space:nowrap;font-size:clamp(10px,1vw,12px)!important;
+ font-weight:900;line-height:1.25
+}
+body.online-battle #onlineWatchControls:not([hidden]){
+ display:flex;flex:0 0 auto;gap:8px;align-items:center;
+ justify-content:center;flex-wrap:wrap;margin:3px 0;
+ padding:3px 6px;background:#123451;border:1px solid #648cb2;
+ border-radius:9px;
+}
+body.online-battle #onlineWatchControls[hidden]{display:none!important}
+body.online-battle #onlineWatchControls button{
+ cursor:pointer;border:1px solid #93b8d6;border-radius:7px;
+ padding:5px 9px;color:#ffe0a2;background:#213c59;font-weight:800;
+ font-size:12px;min-height:32px;
+}
+body.online-battle #onlineWatchTarget{
+ font-size:12px;font-weight:900;color:#d6efff;min-width:90px;text-align:center
+}
+body.online-battle.online-spectating #gameArea .weaponrow{display:none!important}
+body.online-battle.online-spectating #gameArea #controls{display:none!important}
+#onlineDeathChoice[hidden]{display:none!important}
+#onlineDeathChoice{
+ position:fixed;inset:0;z-index:900;display:grid;place-items:center;
+ padding:20px;background:#050d1999;backdrop-filter:blur(5px)
+}
+#onlineDeathChoice .online-death-panel{
+ width:min(420px,100%);padding:22px;
+ background:linear-gradient(140deg,#203958,#10243d);
+ border:2px solid #dfb875;border-radius:18px;box-shadow:0 16px 45px #0009;
+ text-align:center;color:#f1f8ff
+}
+#onlineDeathChoice strong{display:block;color:#ffe3a6;font-size:26px}
+#onlineDeathChoice p{font-size:13px;line-height:1.6}
+#onlineDeathChoice .online-death-panel>div{display:flex;gap:9px;justify-content:center}
+#onlineDeathChoice button{
+ min-height:47px;flex:1 1 0;cursor:pointer;
+ font-size:14px;font-weight:900;border-radius:11px;
+ border:1px solid #e6bc75;background:#d9aa60;color:#14233c
+}
+#onlineDeathChoice button+button{background:#243f5a;color:#f1f7ff;border-color:#809fbd}
+@media(max-width:700px){
+ body.online-battle #gameArea>.battle-head{flex-basis:25px!important;min-height:25px!important}
+ body.online-battle #gameArea .hud{flex-basis:34px!important;min-height:34px!important}
+ body.online-battle #gameArea .battle-meta{flex-basis:20px!important;font-size:10px!important}
+ body.online-battle #gameArea .weaponrow{flex-basis:84px!important;min-height:84px!important;gap:3px!important}
+ body.online-battle #gameArea .weapon{min-height:78px!important;padding:3px 1px!important}
+ body.online-battle #gameArea .weapon .wchar{font-size:20px!important}
+ body.online-battle #gameArea .weapon .wkind{font-size:9px!important}
+ body.online-battle #gameArea #onlineSpectatorCount{padding:2px 3px;font-size:10px!important}
+ body.online-battle #onlineWatchControls{gap:4px!important}
+ body.online-battle #onlineWatchControls button{font-size:10px;padding:4px 5px;min-height:30px}
+ body.online-battle #onlineWatchTarget{font-size:10px}
+}
+@media(max-height:460px) and (orientation:landscape){
+ body.online-battle #gameArea>.battle-head{flex-basis:20px!important;min-height:20px!important}
+ body.online-battle #gameArea .hud{flex-basis:30px!important;min-height:30px!important}
+ body.online-battle #gameArea .battle-meta{flex-basis:17px!important;font-size:9px!important}
+ body.online-battle #gameArea .weaponrow{flex-basis:63px!important;min-height:63px!important}
+ body.online-battle #gameArea .weapon{min-height:56px!important}
+ body.online-battle #gameArea .weapon .wchar{font-size:16px!important}
+ body.online-battle #gameArea .weapon .wkind{font-size:8px!important}
+ body.online-battle #gameArea .weapon .weapon-output{font-size:8px!important}
+}
