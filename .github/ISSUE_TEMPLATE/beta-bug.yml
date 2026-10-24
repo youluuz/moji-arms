@@ -1,0 +1,70 @@
+name: "🐛 文字武装・公開ベータの不具合"
+description: "CPU・オンライン・スマホの不具合を報告（個人情報は書かないでください）"
+title: "[不具合] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        遊んでくれてありがとう！ 試合のルームコード、本名、メールアドレス、IPアドレスなどの個人情報は投稿しないでください。
+        問題が起きた画面・操作だけを教えてください。
+  - type: dropdown
+    id: mode
+    attributes:
+      label: プレイモード
+      options:
+        - 通常CPU
+        - カスタムCPU
+        - 通常オンライン
+        - カスタムオンライン
+        - ロビー・装備・ガチャ
+        - その他
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: 利用環境
+      options:
+        - Windows PC
+        - Mac
+        - iPhone / iPad
+        - Android
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際に起きたこと
+      description: "何が起きましたか？ 結果画面・文字の重なり・通信エラーなどを教えてください。"
+      placeholder: "例：横向きのときに必殺技ボタンが通常武装に重なった"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現する操作
+      placeholder: |
+        1. モードを選択
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 本来どうなってほしいか
+  - type: input
+    id: browser
+    attributes:
+      label: ブラウザ（任意）
+      placeholder: "例：Chrome / Safari / Edge"
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 公開情報の確認
+      options:
+        - label: "スクリーンショットや入力欄に個人情報・部屋コードを含めていません"
+          required: true
