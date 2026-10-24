@@ -280,6 +280,9 @@ function boot(){
    if(old>0&&actor.hp<=0)playerKills++;
   }
   if(rest[0]?.ultimate==='slow'&&actor.hp>0){actor.hardenUntil=now+3000;actor.nextDecision=Math.min(actor.nextDecision||now,now+250)}
+  // Update the survivor badge immediately when a CPU dies, not only on
+  // the next animation frame (which can be delayed on mobile browsers).
+  if(actor.hp!==old)updateHpDisplay();
   if(actor.hp<=0 && !alive().length && running){
    running=false;
    document.getElementById('status').textContent='🏆 勝利！ すべてのCPUを撃破！';
