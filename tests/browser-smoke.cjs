@@ -419,6 +419,15 @@ const { chromium } = require('playwright');
     picker.querySelectorAll('.ultimate-option').length===6);
   });
   if(!onlinePosition)throw Error('online ultimate picker must appear just below five-character selection section');
+  const weaponGuideBeforeJoin=page.locator('#joinArea #mojiOnlineAbilityGuide');
+  if(await weaponGuideBeforeJoin.count()!==1||await weaponGuideBeforeJoin.evaluate(el=>el.open)||
+      await page.locator('#onlineSlots .online-slot > .moji-preview').count())
+   throw Error('Online shots must appear inside a closed use/effect guide, not as extra equipment panels');
+  await weaponGuideBeforeJoin.locator('summary').click();
+  if(!await weaponGuideBeforeJoin.locator('.moji-weapon-help .moji-preview').first().isVisible()||
+     await weaponGuideBeforeJoin.locator('.moji-preview').count()!==5)
+   throw Error('Pre-join use/effect guide must contain all 5 projectile and action examples');
+  await weaponGuideBeforeJoin.locator('summary').click();
   if(await page.evaluate(()=>window.MojiUltMulti.chosen())!=='namepu')throw Error('solo/online ultimate choice not shared');
   const onlineGuide=page.locator('#joinArea .ultimate-guide');
   const onlineHelp=page.locator('#joinArea .ultimate-guide-toggle');
