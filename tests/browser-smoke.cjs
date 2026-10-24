@@ -118,6 +118,8 @@ const { chromium } = require('playwright');
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow]').click();
   if(!((await cpuGuide.innerText()).includes('硬化弾')&&(await cpuGuide.innerText()).includes('2段階操作')&&(await cpuGuide.innerText()).includes('3秒間')))
    throw Error('CPU hardening-shot guide must explain the 3-second immobilization');
+  if(!(await cpuGuide.innerText()).includes('回復と防御は使用できる'))
+   throw Error('CPU hardening-shot guide must clearly allow healing and shielding');
   for(const [id,phrase] of [['roman','即死'],['invincible','2.8秒'],['dance','マップ全域'],['invisible','4秒']]){
    await page.locator('#loadoutPanel .ultimate-option[data-ultimate="'+id+'"]').click();
    if(!(await cpuGuide.innerText()).includes(phrase))throw Error('CPU '+id+' guide lacks '+phrase);
@@ -146,8 +148,9 @@ const { chromium } = require('playwright');
    text:document.querySelector('#loadoutPanel [data-ultimate="slow"] .ultimate-option-title')?.textContent,
    svg:document.querySelector('#loadoutPanel [data-ultimate="slow"] svg')?.outerHTML
   }));
-  if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M43 16 72 19 87 40'))
-   throw Error('Hardening icon must show the crystal-lock silhouette: '+JSON.stringify(hardeningArt).slice(0,120));
+  if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M23 13H45L43 53H30')||
+     !hardeningArt.svg?.includes('x="62" y="59" width="28" height="25"'))
+   throw Error('Hardening icon must show two feet and a visible ankle padlock: '+JSON.stringify(hardeningArt).slice(0,120));
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
   if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',275],['invincible',280],['dance',280],['invisible',240],['namepu',160]]))throw Error('shared specs mismatch');
@@ -203,6 +206,25 @@ const { chromium } = require('playwright');
    });
    if(hardenEffect.remaining<2950||hardenEffect.remaining>3050||hardenEffect.hp!==440||hardenEffect.shield!==900)
     throw Error(mode+' CPU hardening bullet should freeze 3s through a shield: '+JSON.stringify(hardenEffect));
+   // While movement is locked, a bot should still use its heal and guard skills.
+   await page.evaluate(()=>{
+    const b=window.MojiCpuBots.getBots()[1];
+    b.hp=180;b.nextDecision=0;
+    for(const slot of b.loadout)slot.ready=['heal','defense'].includes(slot.kind)?0:performance.now()+5000;
+   });
+   await page.waitForFunction(()=>{
+    const b=window.MojiCpuBots.getBots()[1];
+    return b?.hp>180 && b?.hardenUntil>performance.now();
+   },{timeout:2200});
+   await page.evaluate(()=>{
+    const b=window.MojiCpuBots.getBots()[1];
+    b.hp=600;b.shield=0;b.nextDecision=0;
+    for(const slot of b.loadout)slot.ready=slot.kind==='defense'?0:performance.now()+5000;
+   });
+   await page.waitForFunction(()=>{
+    const b=window.MojiCpuBots.getBots()[1];
+    return b?.shield>0 && b?.hardenUntil>performance.now();
+   },{timeout:1700});
    const playerKill=await page.evaluate(()=>{
     const b=window.MojiCpuBots.getBots()[2],now=performance.now();
     b.hp=600;b.shield=900;b.shieldEnd=now+5000;
@@ -340,7 +362,7 @@ const { chromium } = require('playwright');
   if(!await onlineGuide.isHidden())throw Error('online guide must default to collapsed');
   await page.locator('#joinArea .ultimate-option[data-ultimate=slow]').click();
   await onlineHelp.click();
-  if(!((await onlineGuide.innerText()).includes('硬化弾')&&(await onlineGuide.innerText()).includes('3秒間')&&(await onlineGuide.innerText()).includes('無敵')))
+  if(!((await onlineGuide.innerText()).includes('硬化弾')&&(await onlineGuide.innerText()).includes('3秒間')&&(await onlineGuide.innerText()).includes('無敵')&&(await onlineGuide.innerText()).includes('回復と防御')))
    throw Error('online hardening guide did not reflect stun and invincibility rules');
   await onlineHelp.click();
   const onlineArrow=onlineHelp.locator('.ultimate-guide-chevron');
