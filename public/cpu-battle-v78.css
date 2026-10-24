@@ -19,3 +19,11 @@
  #cpuCountSetting{padding:8px 10px;max-width:100%;margin:5px 0}
  #cpuBotCount{max-width:none;font-size:15px}
 }
+
+/* Match scoreboard and map-centered 3, 2, 1 start sequence. */
+#gameScreen .arena-shell{position:relative!important}
+#cpuKillScore{position:absolute;top:40px;left:10px;z-index:25;pointer-events:none}
+.match-kill-score,.online-kill-score{padding:5px 10px;border:1px solid #e7c47c;border-radius:10px;background:#10233ee8;color:#fff0c4;font-size:12px;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
+.match-countdown{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;pointer-events:none;width:clamp(84px,15vw,132px);height:clamp(84px,15vw,132px);border:3px solid #ffdb92;border-radius:26px;background:#0b1a30dc;box-shadow:0 0 35px #071222cf,0 0 34px #ffd17488;color:#ffe5ac;font-size:clamp(48px,9vw,82px);font-weight:1000;text-align:center;line-height:clamp(84px,15vw,132px);text-shadow:0 2px 12px #ffac5b88}
+.match-countdown[hidden]{display:none!important}
+@media(max-width:650px){#cpuKillScore{top:32px;left:5px;font-size:11px;padding:3px 6px}}
