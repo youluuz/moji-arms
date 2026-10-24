@@ -71,7 +71,7 @@ function boot(){
  function drawWorld(c,m){
   const t=performance.now();
   for(const p of m.players){
-   if(!p.alive)continue;
+   if(!p.alive || (p.invisibleLeft>0 && p.id!==myId))continue;
    c.save();c.textAlign='center';
    if(p.invincibleLeft>0){
     c.font='900 20px Georgia,serif';c.fillStyle='#fff1a8';c.shadowColor='#ffe9a5';c.shadowBlur=19;
@@ -79,6 +79,7 @@ function boot(){
    }
    if(p.danceLeft>0||p.namepuLeft>0){
     window.MojiWeaponVisual?.drawMirrorBall(c,p.x,p.y-126,t);
+    window.MojiWeaponVisual?.drawDanceAura(c,p.x,p.y,t);
     c.font='bold 25px sans-serif';c.fillStyle='#ffebaa';c.shadowColor='#f7a6dd';c.shadowBlur=11;
     c.fillText(p.namepuLeft>0?'😐 ♪ ♫':'♪ ♫ ♪',p.x,p.y-79+Math.sin(t/145)*7);
    }
@@ -105,7 +106,8 @@ function boot(){
   const won=m.winner===myId,me=m.players.find(p=>p.id===myId);
   if(won&&me?.namepuUsed){
    document.querySelector('#onlineOutcome .online-outcome-card').classList.add('ultimate-gold-win');
-   document.getElementById('onlineOutcomeTitle').textContent=U.victoryPhrase();
+   document.getElementById('onlineOutcomeTitle').textContent='優勝：'+(me.name||'あなた')+' 👑';
+   document.getElementById('onlineOutcomeReward').textContent+=(document.getElementById('onlineOutcomeReward').textContent?' ／ ':'')+U.victoryPhrase();
   }
  }
  window.MojiUltMulti={chosen:()=>chosen,locked,canUseSlot,onFieldPointer,onState,drawWorld,finish};
