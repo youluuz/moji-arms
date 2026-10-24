@@ -93,7 +93,7 @@ body:not(.online-battle) #waitArea #roster{
  margin:10px 0
 }
 body:not(.online-battle) #waitArea .room-ready-actions{
- display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;
+ display:flex!important;align-items:stretch;flex-wrap:wrap;gap:8px;
  border:1px solid #6487a9!important;
  border-radius:12px;padding:10px!important;
  background:#102941f0!important;backdrop-filter:blur(10px);
