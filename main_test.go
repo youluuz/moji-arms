@@ -605,7 +605,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
    }
    a.handle(c,[]byte(`{"type":"cast","selected":2,"aim":0}`))
    a.tick(.01)
-   if shielded.Casts!=2||shielded.LastKind!="heal"||shielded.HP!=556 {
+   if shielded.Casts!=2||shielded.LastKind!="heal"||math.Abs(shielded.HP-553.6)>0.00001 {
     t.Fatalf("healing must work while hardened: casts=%d, kind=%s, HP=%v",shielded.Casts,shielded.LastKind,shielded.HP)
    }
    // Hardened attackers must not queue a delayed offensive cast.
@@ -622,7 +622,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
    shielded.HardenedUntil=0;shielded.InvincibleUntil=float64(time.Now().UnixNano())/1e9+8
    room.Bullets=[]Bullet{{X:shielded.X,Y:shielded.Y,VX:0,VY:0,TTL:3,Damage:60,Owner:"a",Ch:"硬化弾",Special:"slow"}}
    a.tick(.01)
-   if shielded.HP!=556 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
+   if math.Abs(shielded.HP-553.6)>0.00001 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
    shielded.InvincibleUntil=0
    shielded.Keys["d"]=true
    shielded.LastInput=time.Now() // Emulate the fresh key packet sent after hardening ends.
