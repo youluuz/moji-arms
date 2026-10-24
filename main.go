@@ -999,7 +999,7 @@ func (a *Arena) tick(dt float64) {
 			if castNow {
 				castSelected, castAim = p.PendingSelected, p.PendingAim
 			}
-			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || p.UltimateAiming || (!p.Fire && !castNow) || len(p.Slots) != 5 {
+			if !p.Alive || now<p.NamepuUntil || now<room.DanceUntil || now<p.UltimateWindupUntil || (p.UltimateAiming && now>=p.HardenedUntil) || (!p.Fire && !castNow) || len(p.Slots) != 5 {
 				continue
 			}
 			if castSelected < 0 || castSelected >= len(p.Slots) {
