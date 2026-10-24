@@ -9,6 +9,25 @@ import (
 )
 
 
+func TestDynamicMapSizeForTwoThroughTenCombatants(t *testing.T) {
+ last:=0.0
+ for players:=2;players<=10;players++ {
+  scale:=mapScale(players)
+  expected:=.8+float64(players-2)*.7/8
+  if math.Abs(scale-expected)>1e-10 || scale<=last {t.Fatalf("%d players: unexpected map scale %v",players,scale)}
+  w,h:=mapDimensions(players)
+  if w!=math.Round(2300*scale)||h!=math.Round(1300*scale) {t.Fatalf("%d players: bad arena size %v x %v",players,w,h)}
+  room:=&Room{Shrink:"normal",Phase:"countdown",Players:make([]*Player,players)}
+  state:=room.state()
+  world:=state["world"].(map[string]float64)
+  if world["w"]!=w||world["h"]!=h||world["scale"]!=scale {t.Fatalf("%d players: state world disagrees with physics",players)}
+  zone:=room.zone()
+  if math.Abs(zone["x"]-w/2)>.001||math.Abs(zone["y"]-h/2)>.001 {t.Fatalf("%d players: wrong safety circle center",players)}
+  last=scale
+ }
+ if mapScale(1)!=.8||mapScale(11)!=1.5 {t.Fatal("map size must remain bounded at min/max")}
+}
+
 func TestBattleCountdownSpawnsAndKillCredit(t *testing.T) {
  a:=&Arena{rooms:map[string]*Room{}}
  mk:=func(id string)*Client{return &Client{send:make(chan []byte,128),pid:id}}
