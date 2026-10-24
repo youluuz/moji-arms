@@ -465,12 +465,12 @@ func TestExpandedArenaCPUAndOnlineAssets(t *testing.T) {
 }
 
 func TestSixUltimatesChargeAndServerRules(t *testing.T) {
- specs:=map[string]int{"roman":300,"slow":260,"invincible":280,"dance":280,"invisible":240,"namepu":160}
+ specs:=map[string]int{"roman":320,"slow":275,"invincible":280,"dance":280,"invisible":240,"namepu":160}
  for id,want:=range specs {if got:=ultimateCost(id);got!=want {t.Fatalf("ultimate %s: got %d want %d",id,got,want)}}
  if ultimateCost("unknown")!=0 || chooseUltimate("unknown")!="roman" {t.Fatal("invalid ultimate must default safely")}
  c1:=&Client{send:make(chan []byte,64),pid:"a"}
  c2:=&Client{send:make(chan []byte,64),pid:"b"}
- p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:300,Keys:map[string]bool{}}
+ p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:900,Y:500,Ultimate:"roman",UltimateCharge:320,Keys:map[string]bool{}}
  q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:980,Y:500,Ultimate:"invincible",UltimateCharge:280,Keys:map[string]bool{}}
  room:=&Room{Code:"ULT",Phase:"playing",Mode:"normal",Theme:"shrine",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,q}}
  c1.room=room;c2.room=room
@@ -480,14 +480,22 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  if p.UltimateSerial!=1 {t.Fatal("second ultimate illegally activated")}
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
- if p.UltimateAiming || p.UltimateWindupUntil<=0 {t.Fatal("roman target should start 0.4s windup")}
+ if p.UltimateAiming || math.Abs(p.UltimateWindupUntil-(float64(time.Now().UnixNano())/1e9+1))>.12 {t.Fatal("roman target should start 1s windup")}
  p.UltimateWindupUntil=float64(time.Now().UnixNano())/1e9-.01
  a.tick(.01)
- if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=420 {t.Fatal("roman cannon not emitted at expected power")}
+ if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=600 {t.Fatal("roman cannon not emitted at expected power")}
  a.handle(c2,[]byte(`{"type":"ultimate"}`))
  if q.InvincibleUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("invulnerability not activated")}
  hp:=q.HP;hit(q,999,true,float64(time.Now().UnixNano())/1e9)
  if q.HP!=hp {t.Fatal("invincible should also block penetrating and area damage")}
+ // Roman Cannon must defeat a fully shielded target in one hit, but never ignore invincibility.
+ hitFromBullet(room,q,room.Bullets[0],float64(time.Now().UnixNano())/1e9)
+ if q.HP!=hp || !q.Alive {t.Fatal("Roman cannon illegally defeated an invincible player")}
+ now:=float64(time.Now().UnixNano())/1e9
+ victim:=&Player{ID:"c",C:&Client{send:make(chan []byte,64)},Alive:true,HP:600,Shield:600,ShieldUntil:now+5}
+ room.Players=append(room.Players,victim)
+ hitFromBullet(room,victim,room.Bullets[0],now)
+ if victim.HP!=0 || victim.Alive || p.Kills!=1 {t.Fatal("Roman cannon must instantly defeat shielded victims and credit shooter")}
  // Invincibility protects HP, but must not lock ordinary attacks.
  q.Slots=[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}
  a.handle(c2,[]byte("{\"type\":\"cast\",\"selected\":0,\"aim\":3.14}"))
@@ -496,13 +504,40 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
  p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=160
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
- if p.NamepuUntil<=float64(time.Now().UnixNano())/1e9 || !p.NamepuUsed {t.Fatal("namepu 5-second self-dance was not enabled")}
+ if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5.5))>.12 || !p.NamepuUsed {t.Fatal("namepu 5.5-second self-dance was not enabled")}
  hp=p.HP;hit(p,10,true,float64(time.Now().UnixNano())/1e9)
  if p.HP!=hp-10 {t.Fatal("namepu must not grant damage resistance")}
- p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=260;p.NamepuUntil=0
+ p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=275;p.NamepuUntil=0
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
- if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" {t.Fatal("slow ultimate should fire targeted projectile")}
+ if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" || room.Bullets[len(room.Bullets)-1].Damage!=60 {t.Fatal("slow ultimate must still deal 60 damage")}
+}
+func TestDanceFreezesEveryoneRegardlessOfMapDistance(t *testing.T) {
+ for _,mode:=range []string{"normal","custom"} {
+  t.Run(mode,func(t *testing.T){
+   c1:=&Client{send:make(chan []byte,24),pid:"a"}
+   c2:=&Client{send:make(chan []byte,24),pid:"b"}
+   p:=&Player{ID:"a",C:c1,Alive:true,HP:600,X:35,Y:35,Ultimate:"dance",UltimateCharge:280,Keys:map[string]bool{"d":true}}
+   q:=&Player{ID:"b",C:c2,Alive:true,HP:600,X:1800,Y:1000,Keys:map[string]bool{"a":true},Fire:true,
+    Slots:[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}}
+   room:=&Room{Code:"DANCE",Phase:"playing",Mode:mode,Theme:"night",Shrink:"normal",Started:time.Now(),Players:[]*Player{p,q},
+    Bullets:[]Bullet{{X:q.X,Y:q.Y,VX:0,VY:0,Damage:70,TTL:3,Owner:p.ID,Ch:"火"}}}
+   c1.room=room;c2.room=room
+   a:=&Arena{rooms:map[string]*Room{"DANCE":room}}
+   a.handle(c1,[]byte(`{"type":"ultimate"}`))
+   if room.DanceUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("global dance did not activate")}
+   a.tick(.05)
+   if p.X!=35 || p.Y!=35 || q.X!=1800 || q.Y!=1000 || q.Casts!=0 || q.HP!=600 {
+    t.Fatalf("distant combatants must freeze and ignore damage: p=(%v,%v), q=(%v,%v), casts=%d, hp=%v",p.X,p.Y,q.X,q.Y,q.Casts,q.HP)
+   }
+   if math.Hypot(p.X-q.X,p.Y-q.Y)<1900 {t.Fatal("test opponents must be on distant sides of arena")}
+   st:=room.state()
+   players:=st["players"].([]map[string]any)
+   for _,unit:=range players {
+    if left:=unit["danceLeft"].(float64);left<=0 {t.Fatalf("all clients must see global dance, got %v",left)}
+   }
+  })
+ }
 }
 func TestUltimateAssetsSharedAcrossModes(t *testing.T){
  read:=func(path string)string{t.Helper();v,e:=gameFiles.ReadFile(path);if e!=nil{t.Fatal(e)};return string(v)}
@@ -542,13 +577,13 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
     case "roman","slow":
      if !p.UltimateAiming||p.UltimateAimUntil<=now {t.Fatal("aimed ability must request targeting")}
     case "invincible":
-     if p.InvincibleUntil<=now {t.Fatal("invincible was not set")}
+     if math.Abs(p.InvincibleUntil-(float64(time.Now().UnixNano())/1e9+2.8))>.15 {t.Fatal("invincible must last 2.8 seconds")}
     case "dance":
-     if room.DanceUntil<=now {t.Fatal("dance did not synchronize to all players")}
+     if math.Abs(room.DanceUntil-(float64(time.Now().UnixNano())/1e9+2))>.15 {t.Fatal("dance must affect whole room for 2 seconds")}
     case "invisible":
-     if p.InvisibleUntil<=now {t.Fatal("invisibility was not set")}
+     if math.Abs(p.InvisibleUntil-(float64(time.Now().UnixNano())/1e9+4))>.15 {t.Fatal("invisibility must last 4 seconds")}
     case "namepu":
-     if p.NamepuUntil<=now||!p.NamepuUsed {t.Fatal("namepu activation was not recorded")}
+     if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5.5))>.15||!p.NamepuUsed {t.Fatal("namepu stun must last 5.5 seconds")}
     }
     arena.handle(c,[]byte(`{"type":"ultimate"}`))
     if p.UltimateSerial!=1 {t.Fatal("second ultimate triggered in same match")}
