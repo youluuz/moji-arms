@@ -60,7 +60,7 @@ function boot(){
   const launch=()=>{
    if(!isReady())return;
    const bullet={x:player.x,y:player.y,vx:Math.cos(angle)*(id==='roman'?590:610),vy:Math.sin(angle)*(id==='roman'?590:610),
-    n:(id==='roman'?600:60)/DAMAGE_PER_STROKE,owner:'p',life:2.8,ch:id==='roman'?'ロマン砲':'硬化弾',homing:false,pierce:false,ultimate:id};
+    n:(id==='roman'?600:60)/DAMAGE_PER_STROKE,owner:'p',life:id==='roman'?3.1:2.8,ch:id==='roman'?'ロマン砲':'硬化弾',homing:false,pierce:false,ultimate:id};
    bullets.push(bullet);specialBullets.add(bullet);
    if(id==='roman')battleShots++;
   };
