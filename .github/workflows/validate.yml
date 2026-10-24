@@ -26,6 +26,9 @@ jobs:
           node --check public/ultimate-cpu.js
           node --check public/ultimate-multi.js
           node --check public/roman-effects-v97.js
+          node --check public/mobile-stick-dock-v100.js
+          node --check public/launch-nav.js
+          node -e "const a=require('./public/notices.json');if(!Array.isArray(a.notices)||!a.notices.length)process.exit(1)"
           node --check scripts/public-release-check.mjs
           node --check public/mobile-input-v70.js
           node tests/input-safety.cjs
