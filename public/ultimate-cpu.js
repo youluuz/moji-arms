@@ -187,7 +187,11 @@ function boot(){
   if(usedNamepu&&result.classList.contains('show')&&typeof player!=='undefined'&&player.hp>0){
    result.classList.add('ultimate-namepu-victory');
    const title=document.getElementById('resultTitle');
-   if(!result.dataset.ultimateNamepu){result.dataset.ultimateNamepu='1';title.textContent='🏆 優勝：あなた｜'+U.victoryPhrase()}
+   if(!result.dataset.ultimateNamepu){
+    result.dataset.ultimateNamepu='1';
+    const displayName=window.MojiLoginWinnerName?.()||'あなた';
+    title.textContent='🏆 優勝：'+displayName+'｜'+U.victoryPhrase();
+   }
   }else if(!result.classList.contains('show')){result.classList.remove('ultimate-namepu-victory');delete result.dataset.ultimateNamepu}
   // Keep ultimate timers and the simulation live at full refresh rate, but
   // paint its separate transparent canvas at 30fps on touch phones.
