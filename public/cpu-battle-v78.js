@@ -144,6 +144,13 @@ function updateHpDisplay(){
  const living=alive(),near=living.sort((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)-Math.hypot(player.x-b.x,player.y-b.y))[0];
  const name=document.getElementById('cpuCountLive');
  if(name)name.textContent='◆ CPU 残り '+living.length+' / '+chosenCount+'体　MAP ×'+mapFactor.toFixed(2);
+ const counter=document.getElementById('cpuAliveCount');
+ if(counter){
+  const total=chosenCount+1;
+  const count=living.length+(player.hp>0?1:0);
+  counter.textContent='👥 生存 '+count+' / '+total+'人';
+  counter.setAttribute('aria-label','生存プレイヤー '+count+'人、参加 '+total+'人');
+ }
  if(near){
   document.getElementById('ehp').textContent=Math.ceil(near.hp);
   document.getElementById('ebar').style.width=Math.max(0,near.hp/MAX_HP*100)+'%';
@@ -167,7 +174,7 @@ function boot(){
  const hud=document.querySelector('#gameScreen .hud .hud-line span');
  const arena=document.querySelector('#gameScreen .arena-shell');
  if(arena&&!document.getElementById('cpuKillScore')){
-  arena.insertAdjacentHTML('beforeend','<div id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</div><div id="cpuBattleCountdown" class="match-countdown" role="status" aria-live="polite" hidden>3</div>');
+  arena.insertAdjacentHTML('beforeend','<div id="cpuAliveCount" class="match-alive-count" role="status" aria-live="off">👥 生存 2 / 2人</div><div id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</div><div id="cpuBattleCountdown" class="match-countdown" role="status" aria-live="polite" hidden>3</div>');
  }
  const other=document.querySelectorAll('#gameScreen .hud .hud-line>span:first-child')[1];
  if(other)other.innerHTML='<span id="cpuCountLive">◆ CPU 残り 1 / 1体</span>';
@@ -210,6 +217,7 @@ function boot(){
     const x=bot.x-cam.x,y=bot.y-cam.y;
     if(x<-90||y<-160||x>cpuView.w+90||y>cpuView.h+90)continue;
     window.MojiWeaponVisual?.drawMirrorBall(cx,x,y-126,now);
+    window.MojiWeaponVisual?.drawDanceAura(cx,x,y,now);
     cx.save();cx.fillStyle='#ffebaa';cx.font='bold 24px sans-serif';
     cx.shadowColor='#f7a6dd';cx.shadowBlur=11;cx.fillText('♪ ♫ ♪',x,y-76+Math.sin(now/135)*7);cx.restore();
    }
@@ -238,6 +246,24 @@ function boot(){
   cx.restore();
   updateHpDisplay();
  };
+ // Replace the old lose-only result with a neutral winner announcement.
+ // In CPU free-for-all, losing with several surviving CPUs does not yet
+ // establish an individual champion, so state that honestly.
+ if(typeof showResult==='function'){
+  const oldResult=showResult;
+  showResult=function(won,...args){
+   const value=oldResult.call(this,won,...args);
+   const others=alive();
+   const winner=won?'あなた':
+    others.length===1?'CPU '+(Number(others[0].id?.split('-')[1]||0)+1):
+    others.length>1?'未確定（CPU残り'+others.length+'体）':'引き分け';
+   const title=document.getElementById('resultTitle');
+   if(title)title.textContent='🏆 優勝：'+winner;
+   const status=document.getElementById('status');
+   if(status)status.textContent='試合終了｜優勝：'+winner;
+   return value;
+  };
+ }
  const originalDamage=damage;
  damage=function(actor,amount,now,pierce,...rest){
   if(match!==matchToken||!bots.includes(actor))return originalDamage.call(this,actor,amount,now,pierce,...rest);
