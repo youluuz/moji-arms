@@ -22,6 +22,18 @@
   const note=document.getElementById('randomNotice');
   if(note)note.textContent='🔗 空欄の'+filled.length+'枠には仮装備を設定しました。ルーム待機室で自由に編集できます。';
  }
+ // Invitation URLs use the shared login page. After the player enters,
+ // open the actual online room rather than ignoring ?room=ABC123.
+ const invite=new URLSearchParams(location.search).get('room')||'';
+ if(/^[A-Z0-9]{6}$/i.test(invite)){
+  const entry=document.getElementById('enterLobby');
+  entry?.addEventListener('click',()=>{
+   if(document.getElementById('loginScreen')?.classList.contains('hidden') &&
+      typeof window.openEmbeddedMultiplayer==='function'){
+    window.openEmbeddedMultiplayer('join',invite.toUpperCase());
+   }
+  });
+ }
  const button=document.getElementById('createRoomNow');
  // Capture before the legacy click handler checks for required slots. Its
  // original validation still rejects malformed or out-of-range user input.
