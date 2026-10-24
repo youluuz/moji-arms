@@ -211,6 +211,7 @@ function boot(){
   if(match!==matchToken||!bots.includes(actor))return originalDamage.call(this,actor,amount,now,pierce,...rest);
   if(window.MojiCpuUltimateState?.danceActive?.())return;
   if(actor.hp<=0)return;
+  if(rest[0]?.ultimate==='roman'){amount=Math.max(amount,actor.hp);pierce=true} // Guaranteed KO without piercing obstacles.
   if(!pierce&&actor.shieldEnd>now&&actor.shield>0){
    const absorbed=Math.min(actor.shield,amount);actor.shield-=absorbed;amount-=absorbed;
   }
@@ -219,7 +220,7 @@ function boot(){
    battleDamage+=Math.max(0,old-actor.hp);
    if(old>0&&actor.hp<=0)playerKills++;
   }
-  if(rest[0]?.ultimate==='slow'&&actor.hp>0)actor.slowUntil=now+3000;
+  if(rest[0]?.ultimate==='slow'&&actor.hp>0)actor.slowUntil=now+4500;
   if(actor.hp<=0 && !alive().length && running){
    running=false;
    document.getElementById('status').textContent='🏆 勝利！ すべてのCPUを撃破！';
