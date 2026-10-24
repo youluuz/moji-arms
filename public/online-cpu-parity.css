@@ -133,3 +133,38 @@ body.online-battle #onlineStatus{
 @media(max-width:600px){
  body.online-battle #onlineStatus{padding:3px 7px;min-height:24px;font-size:11px}
 }
+
+/* Place BOTH stats in the HUD's upper-right without covering the minimap.
+   The mini-map stays inside the arena canvas, below this HUD row. */
+body.online-battle #gameArea .hud{
+ position:relative!important;box-sizing:border-box!important;
+ padding-right:clamp(135px,31%,162px)!important;
+}
+body.online-battle #gameArea #onlineBattleScoreboard.moji-battle-score{
+ position:absolute!important;z-index:25;right:4px;top:50%;
+ transform:translateY(-50%);width:clamp(127px,29%,154px);
+ display:flex!important;flex-direction:column;align-items:stretch;
+ justify-content:center;gap:2px;pointer-events:none;
+}
+body.online-battle #gameArea #onlineBattleScoreboard #onlineStatus,
+body.online-battle #gameArea #onlineBattleScoreboard #onlineKillScore{
+ position:static!important;float:none!important;margin:0!important;
+ display:block!important;box-sizing:border-box!important;width:100%;
+ min-height:0!important;padding:1px 4px!important;
+ border-radius:6px!important;font-size:10px!important;
+ line-height:1.18!important;text-align:center;white-space:nowrap;
+ font-weight:900!important;
+}
+body.online-battle #gameArea #onlineBattleScoreboard #onlineStatus{
+ color:#d3fff1!important;
+}
+@media(max-width:640px){
+ body.online-battle #gameArea .hud{padding-right:136px!important}
+ body.online-battle #gameArea #onlineBattleScoreboard.moji-battle-score{
+  width:130px;right:2px;gap:1px
+ }
+ body.online-battle #gameArea #onlineBattleScoreboard #onlineStatus,
+ body.online-battle #gameArea #onlineBattleScoreboard #onlineKillScore{
+  padding:1px 2px!important;font-size:9px!important;line-height:1.1!important
+ }
+}
