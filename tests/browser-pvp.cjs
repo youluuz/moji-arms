@@ -53,14 +53,22 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      const state=await page.evaluate(()=>({waiting:document.body.classList.contains('online-waiting'),entryHidden:getComputedStyle(document.getElementById('joinArea')).display==='none',code:roomState?.code}));
      if(!state.waiting||!state.entryHidden||state.code!==code)throw Error(mode+': did not auto-switch to joined room: '+JSON.stringify(state));
     }
-    // See each pre-match weapon's actual projectile silhouette and current power.
-    const previews=await host.evaluate(()=>[...document.querySelectorAll('#onlineSlots .moji-preview')].map(e=>({
-     kind:e.dataset.kind,stats:e.textContent,shot:e.querySelector('.moji-preview-shot')?.textContent
-    })));
-    if(previews.length!==5||previews[0].kind!=='attack'||previews[3].kind!=='pierce'||
-       previews[4].kind!=='homing'||previews[0].shot!=='●'||previews[3].shot!=='◆'||previews[4].shot!=='◎'||
-       !previews.every(p=>p.stats.includes('CT')))
-     throw Error(mode+': missing real preview of normal, piercing and homing shots '+JSON.stringify(previews));
+    // Shot animation and stats belong to the collapsible how-to/effects guide,
+    // not to each individual equipment input slot.
+    const previews=await host.evaluate(()=>({
+     slotPreviews:document.querySelectorAll('#onlineSlots .online-slot > .moji-preview').length,
+     joinGuide:document.querySelector('#mojiOnlineAbilityGuide')?.open,
+     waitGuide:document.querySelector('#waitArea details.online-guide')?.open,
+     items:[...document.querySelectorAll('#waitArea details.online-guide .moji-preview')].map(e=>({
+      kind:e.dataset.kind,stats:e.textContent,shot:e.querySelector('.moji-preview-shot')?.textContent
+     }))
+    }));
+    if(previews.slotPreviews!==0||previews.joinGuide!==false||previews.waitGuide!==false||
+       previews.items.length!==5||previews.items[0].kind!=='attack'||previews.items[3].kind!=='pierce'||
+       previews.items[4].kind!=='homing'||previews.items[0].shot!=='●'||
+       previews.items[3].shot!=='◆'||previews.items[4].shot!=='◎'||
+       !previews.items.every(p=>p.stats.includes('CT')))
+     throw Error(mode+': ability-guide shot/usage previews missing or still duplicated in slots '+JSON.stringify(previews));
     // The ordinary-ability guide has an explicit down arrow when closed and up arrow when open.
     const weaponHelp=host.locator('#waitArea details.online-guide');
     if(!(await weaponHelp.locator('summary').innerText()).includes('▼')||!(await weaponHelp.locator('summary').innerText()).includes('開く'))
@@ -70,6 +78,8 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        !(await weaponHelp.locator('summary').innerText()).includes('▲')||
        !(await weaponHelp.locator('summary').innerText()).includes('閉じる'))
      throw Error(mode+': ordinary weapon guide did not visibly open');
+    if(!await weaponHelp.locator('.moji-weapon-help .moji-preview').first().isVisible())
+     throw Error(mode+': consolidated weapon previews are hidden even when usage/effects help is open');
     await weaponHelp.locator('summary').click();
     if(await weaponHelp.evaluate(el=>el.open))throw Error(mode+': ordinary weapon guide did not close');
     // Both phones must be able to edit weapons and ultimate after joining the room.
