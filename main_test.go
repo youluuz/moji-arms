@@ -27,6 +27,12 @@ func TestDynamicMapSizeForTwoThroughTenCombatants(t *testing.T) {
   last=scale
  }
  if mapScale(1)!=.8||mapScale(11)!=1.5 {t.Fatal("map size must remain bounded at min/max")}
+ frozen:=&Room{Phase:"playing",StartedPlayers:10,Players:make([]*Player,6)}
+ w,h:=frozen.dimensions()
+ if w!=3450||h!=1950||frozen.zone()["r"]!=1350*1.5 {t.Fatal("live match map must retain original 10-player dimensions after disconnects")}
+ frozen.Phase="lobby";frozen.StartedPlayers=0
+ if w2,_:=frozen.dimensions();w2>=w {t.Fatal("rematch lobby should recalculate map size for new player count")}
+
 }
 
 func TestBattleCountdownSpawnsAndKillCredit(t *testing.T) {
@@ -101,20 +107,20 @@ func TestStrokesAndCooldown(t *testing.T) {
 }
 func TestZoneAndRooms(t *testing.T) {
 	room := &Room{Shrink: "none", Phase: "playing", Started: time.Now().Add(-120 * time.Second),Players:[]*Player{{ID:"A"}, {ID:"B"}}}
-	if room.zone()["r"] != 1350 {
+	if room.zone()["r"] != 1350*mapScale(2) {
 		t.Fatal("no shrink")
 	}
 	room.Shrink = "instant"
-	if room.zone()["r"] != 180 {
+	if room.zone()["r"] != 180*mapScale(2) {
 		t.Fatal("instant shrink")
 	}
 	room.Shrink = "fast"
-	if room.zone()["r"] != 180 {
+	if room.zone()["r"] != 180*mapScale(2) {
 		t.Fatal("fast shrink")
 	}
 	room.Shrink = "normal"
 	room.Started = time.Now()
-	if room.zone()["r"] < 1349 {
+	if room.zone()["r"] < 1349*mapScale(2) {
 		t.Fatal("normal shrink starts full")
 	}
 	obs := newObstacles("shrine")
