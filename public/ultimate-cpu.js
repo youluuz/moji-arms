@@ -105,21 +105,23 @@ function boot(){
   c.save();c.textAlign='center';
   if(now<immortalUntil){
    c.font='900 18px Georgia,serif';c.fillStyle='#ffe7a1';c.shadowColor='#ffeeb7';c.shadowBlur=14;
-   for(let i=0;i<3;i++){let a=now/420+i*Math.PI*2/3;c.fillText('無敵',x+46*Math.cos(a),y+29*Math.sin(a))}
+   for(let i=0;i<3;i++){let a=now/420+i*Math.PI*2/3;c.fillText('無敵',x+46*Math.cos(a),y-12+29*Math.sin(a))}
   }
   if(now<namepuUntil||now<danceUntil){
-   c.font='bold 26px sans-serif';c.fillStyle='#ffe49a';c.fillText(now<namepuUntil?'😐':'♪ ♫ ♪',x,y-54+Math.sin(now/135)*6);
-   c.font='bold 21px sans-serif';c.fillText('♪',x-30,y-37);c.fillText('♫',x+29,y-32);
+   window.MojiWeaponVisual?.drawMirrorBall(c,x,y-126,now);
+   c.font='bold 26px sans-serif';c.fillStyle='#ffe49a';c.fillText(now<namepuUntil?'😐':'♪ ♫ ♪',x,y-76+Math.sin(now/135)*6);
+   c.font='bold 21px sans-serif';c.fillText('♪',x-30,y-55);c.fillText('♫',x+29,y-50);
    if(now<danceUntil&&typeof enemy!=='undefined'){
     const ex=enemy.x-cam.x,ey=enemy.y-cam.y;
-    c.font='bold 25px sans-serif';c.fillText('♪ ♫ ♪',ex,ey-55+Math.sin(now/135)*7);
-    c.font='bold 19px sans-serif';c.fillText('♬',ex-27,ey-36);c.fillText('♪',ex+28,ey-35);
+    window.MojiWeaponVisual?.drawMirrorBall(c,ex,ey-126,now);
+    c.font='bold 25px sans-serif';c.fillText('♪ ♫ ♪',ex,ey-76+Math.sin(now/135)*7);
+    c.font='bold 19px sans-serif';c.fillText('♬',ex-27,ey-55);c.fillText('♪',ex+28,ey-54);
    }
   }
-  if(now<invisibleUntil){c.fillStyle='#8ceeff';c.font='12px sans-serif';c.fillText('透明化中',x,y-47)}
-  if(aiming){c.font='bold 20px serif';c.fillStyle='#ffdc9b';c.shadowBlur=16;c.shadowColor='#ffb960';c.fillText(curr().name,x,y-58)}
+  if(now<invisibleUntil){c.fillStyle='#8ceeff';c.font='12px sans-serif';c.fillText('透明化中',x,y-64)}
+  if(aiming){c.font='bold 20px serif';c.fillStyle='#ffdc9b';c.shadowBlur=16;c.shadowColor='#ffb960';c.fillText(curr().name,x,y-76)}
   for(const b of specialBullets){if(!bullets.includes(b))continue;
-   c.font=b.ultimate==='roman'?'900 31px Georgia,serif':'bold 21px serif';c.fillStyle=b.ultimate==='roman'?'#ffe4a1':'#bdd5ff';c.shadowColor=b.ultimate==='roman'?'#ff9c35':'#7aaeff';c.shadowBlur=22;
+   c.font=b.ultimate==='roman'?'900 35px Georgia,serif':'bold 24px serif';c.fillStyle=b.ultimate==='roman'?'#ffe4a1':'#bdd5ff';c.shadowColor=b.ultimate==='roman'?'#ff9c35':'#7aaeff';c.shadowBlur=25;
    c.fillText(b.ch,b.x-cam.x,b.y-cam.y-13);
   }
   c.restore();
