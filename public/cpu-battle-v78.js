@@ -5,7 +5,7 @@ const kinds=['attack','defense','heal','pierce','homing'];
 const samples=['炎','氷','雷','風','光','影','剣','盾','星','龍','月','桜','嵐','薔','鐵','龘'];
 const bots=[]; // Keep the same array for cover-generation collision checks.
 window.enemies=bots;
-let match=-1, chosenCount=1, initialized=false, roundStartAt=0, playerKills=0;
+let match=-1, chosenCount=1, initialized=false, roundStartAt=0, playerKills=0, mapFactor=1;
 const roll=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=roll(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
 function alive(){return bots.filter(b=>b.hp>0);}
@@ -44,8 +44,8 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  // Wider, collision-checked initial positions across the playable map.
  // The instant-safe-zone variant must remain within its 180-unit radius.
  const instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
- const cx=instant?900:1150,cy=instant?525:650;
- const rx=instant?136:750,ry=instant?136:430;
+ const cx=WORLD_W/2,cy=WORLD_H/2;
+ const rx=(instant?136:750)*mapFactor,ry=(instant?136:430)*mapFactor;
  for(let attempt=0;attempt<115;attempt++){
   const angle=(index/total)*Math.PI*2+attempt*.12;
   const x=Math.max(40,Math.min(WORLD_W-40,cx+rx*Math.cos(angle)));
@@ -57,11 +57,20 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  }
  // Fallback remains inside bounds / the safe zone even on crowded maps.
  const angle=index/total*Math.PI*2;
- return {x:cx+Math.cos(angle)*(instant?115:630),y:cy+Math.sin(angle)*(instant?115:345)};
+ return {x:cx+Math.cos(angle)*(instant?115:630)*mapFactor,y:cy+Math.sin(angle)*(instant?115:345)*mapFactor};
 }
 function startRound(token,now){
  bots.length=0;
  chosenCount=countSetting();
+ // Two total fighters use 80% of the legacy map; ten use 150%.
+ const participants=chosenCount+1;
+ mapFactor=.8+(participants-2)*.7/8;
+ WORLD_W=Math.round(2300*mapFactor);
+ WORLD_H=Math.round(1300*mapFactor);
+ window.MojiBattleMap={w:WORLD_W,h:WORLD_H,scale:mapFactor,players:participants};
+ // Generate fresh cover within the new bounds. Legacy init built for 2300x1300.
+ obstacles=buildObstacles();
+ zoneRadius=(zoneSetting==='instant'?180:1350)*mapFactor;
  playerKills=0;roundStartAt=now+3000;
  if(typeof enemy==='undefined'||!enemy)return;
  const own=spawnPosition(0,chosenCount+1,now,true);player.x=own.x;player.y=own.y;
@@ -130,7 +139,7 @@ function projectileTarget(b){
 function updateHpDisplay(){
  const living=alive(),near=living.sort((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)-Math.hypot(player.x-b.x,player.y-b.y))[0];
  const name=document.getElementById('cpuCountLive');
- if(name)name.textContent='◆ CPU 残り '+living.length+' / '+chosenCount+'体';
+ if(name)name.textContent='◆ CPU 残り '+living.length+' / '+chosenCount+'体　MAP ×'+mapFactor.toFixed(2);
  if(near){
   document.getElementById('ehp').textContent=Math.ceil(near.hp);
   document.getElementById('ebar').style.width=Math.max(0,near.hp/MAX_HP*100)+'%';
@@ -247,8 +256,9 @@ function boot(){
     if(now>=bot.nextDecision){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
    }
    const elapsed=(now-startTime)/1000;
-   zoneRadius=zoneSetting==='none'?1350:zoneSetting==='instant'?180:Math.max(180,1350-1170*Math.min(1,elapsed/({slow:180,normal:120,fast:70}[zoneSetting]||120)));
-   const center={x:900,y:525};
+   zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:
+    Math.max(180*mapFactor,(1350-1170*Math.min(1,elapsed/({slow:180,normal:120,fast:70}[zoneSetting]||120)))*mapFactor);
+   const center={x:WORLD_W/2,y:WORLD_H/2};
    const outside=Math.hypot(player.x-center.x,player.y-center.y)>zoneRadius;
    zoneWarningUpdate(outside,now);
    for(const actor of [player,...alive()]){
@@ -276,11 +286,11 @@ function boot(){
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
    }
   }
-  document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':'安全エリア半径：'+Math.round(zoneRadius)+' / 1350';
+  document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':'安全エリア半径：'+Math.round(zoneRadius)+' / '+Math.round(1350*mapFactor);
   draw(now);
   if(running)requestAnimationFrame(t=>loop(t,token));
  };
- window.MojiCpuBots={getBots:()=>bots,count:countSetting,kills:()=>playerKills,countdownLeft:()=>Math.max(0,(roundStartAt-performance.now())/1000),lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
+ window.MojiCpuBots={getBots:()=>bots,count:countSetting,dimensions:()=>({w:WORLD_W,h:WORLD_H,scale:mapFactor}),kills:()=>playerKills,countdownLeft:()=>Math.max(0,(roundStartAt-performance.now())/1000),lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
