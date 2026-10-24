@@ -42,6 +42,15 @@ var gameFiles embed.FS
 var dictionary map[string]int
 
 const W, H = 2300.0, 1300.0
+// Both dimensions scale uniformly with the number of combatants.
+func mapScale(players int) float64 {
+ if players<2 {players=2};if players>10 {players=10}
+ return .8 + float64(players-2)*.7/8
+}
+func mapDimensions(players int) (float64,float64) {
+ k:=mapScale(players)
+ return math.Round(W*k),math.Round(H*k)
+}
 const maxRooms = 150
 
 func init() {
@@ -309,13 +318,16 @@ func (r *Room) elapsed() float64 {
 	}
 	return math.Max(0, time.Since(r.Started).Seconds()*1000)
 }
+func (r *Room) dimensions() (float64,float64) { return mapDimensions(len(r.Players)) }
 func (r *Room) zone() map[string]float64 {
-	rad := 1350.0
+ w,h:=r.dimensions()
+ scale:=mapScale(len(r.Players))
+	rad := 1350.0*scale
 	switch r.Shrink {
 	case "none":
-		rad = 1350
+		rad = 1350*scale
 	case "instant":
-		rad = 180
+		rad = 180*scale
 	default:
 		seconds := 120.0
 		if r.Shrink == "slow" {
@@ -323,9 +335,9 @@ func (r *Room) zone() map[string]float64 {
 		} else if r.Shrink == "fast" {
 			seconds = 70
 		}
-		rad = math.Max(180, 1350-1170*math.Min(1, r.elapsed()/1000/seconds))
+		rad = math.Max(180*scale, (1350-1170*math.Min(1, r.elapsed()/1000/seconds))*scale)
 	}
-	return map[string]float64{"x": W / 2, "y": H / 2, "r": rad}
+	return map[string]float64{"x": w / 2, "y": h / 2, "r": rad}
 }
 func (r *Room) broadcast() {
 	data := r.state()
@@ -363,7 +375,8 @@ func (r *Room) state() map[string]any {
 	if r.Winner != "" {
 		win = r.Winner
 	}
-	return map[string]any{"type": "state", "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
+	w,h:=r.dimensions()
+	return map[string]any{"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(len(r.Players))}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -453,13 +466,19 @@ func obstacleParts(layout string, x, y, w, h, t float64, orientation int) []Obst
 	}
 	return []Obstacle{rect(x,y,w,h)}
 }
-func newObstacles(theme string) []Obstacle {
+func newObstacles(theme string) []Obstacle { return newObstaclesSized(theme,W,H,2,"normal") }
+func newObstaclesSized(theme string, width,height float64, players int, shrink string) []Obstacle {
+ scale:=mapScale(players)
+ spawnX,spawnY:=600.0*scale,380.0*scale
+ if shrink=="instant" {spawnX,spawnY=145*scale,145*scale}
 	kinds := map[string][]string{"shrine": {"stone", "gate", "pillar"}, "sakura": {"hedge", "fence", "lantern"}, "night": {"wall", "barrier", "crystal"}}[theme]
 	if len(kinds) == 0 { kinds = []string{"wall", "barrier", "crystal"} }
-	out := make([]Obstacle, 0, 28)
-	// 16 structures: straight, L, straight, T, straight, U, repeated.
-	// 2-part and 3-part pieces share an expiry time and disappear together.
-	for groups, attempts := 0, 0; groups < 16 && attempts < 1400; attempts++ {
+	out := make([]Obstacle, 0, 60)
+	// Keep comparable cover density as the world grows with players.
+	groupsTarget:=int(math.Round(16*scale*scale))
+	if groupsTarget<9 {groupsTarget=9}
+	if groupsTarget>40 {groupsTarget=40}
+	for groups, attempts := 0, 0; groups < groupsTarget && attempts < 3500; attempts++ {
 		style := kinds[groups%len(kinds)]
 		layout := ""
 		switch groups%6 {
@@ -480,25 +499,23 @@ func newObstacles(theme string) []Obstacle {
 			wid = 175 + mathrand.Float64()*80
 			hei = 165 + mathrand.Float64()*75
 		}
-		x := 105 + mathrand.Float64()*(W-wid-210)
-		y := 105 + mathrand.Float64()*(H-hei-210)
+		x := 105 + mathrand.Float64()*(width-wid-210)
+		y := 105 + mathrand.Float64()*(height-hei-210)
 		thickness := 43 + mathrand.Float64()*17
 		parts := obstacleParts(layout,x,y,wid,hei,thickness,mathrand.Intn(4))
 		blocked := false
 		for _, part := range parts {
-			if part.X < 65 || part.Y < 65 || part.X+part.W > W-65 || part.Y+part.H > H-65 ||
-				circleRect(W/2,H/2,235,part) {
+			if part.X < 65 || part.Y < 65 || part.X+part.W > width-65 || part.Y+part.H > height-65 ||
+				circleRect(width/2,height/2,180*scale,part) {
 				blocked = true
 				break
 			}
 			// Reserve all spawn circles, not only the currently joined players.
-			for participants := 2; participants <= 10 && !blocked; participants++ {
-				for index := 0; index < participants; index++ {
-					angle := 2 * math.Pi * float64(index) / float64(participants)
-					px := W/2 + 360*math.Cos(angle)
-					py := H/2 + 290*math.Sin(angle)
-					if circleRect(px,py,38,part) { blocked = true; break }
-				}
+			for index := 0; index < players && !blocked; index++ {
+				angle := 2 * math.Pi * float64(index) / float64(players)
+				px := width/2 + spawnX*math.Cos(angle)
+				py := height/2 + spawnY*math.Sin(angle)
+				if circleRect(px,py,55,part) { blocked = true }
 			}
 			for _, old := range out {
 				if part.X < old.X+old.W+65 && part.X+part.W > old.X-65 &&
@@ -722,14 +739,17 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		room.Bullets = nil
 		room.Winner = ""
 		room.DanceUntil=0
+		worldW,worldH:=room.dimensions()
+		factor:=mapScale(len(room.Players))
+		room.Obstacles=newObstaclesSized(room.Theme,worldW,worldH,len(room.Players),room.Shrink)
 		for i, pp := range room.Players {
 			angle := 2 * math.Pi * float64(i) / float64(len(room.Players))
-			rx, ry := 600.0, 380.0
+			rx, ry := 600.0*factor, 380.0*factor
 			if room.Shrink == "instant" {
-				rx, ry = 145, 145 // maximally spaced within initial radius 180
+				rx, ry = 145*factor, 145*factor // initial safe-zone radius scales too
 			}
-			pp.X = W/2 + rx*math.Cos(angle)
-			pp.Y = H/2 + ry*math.Sin(angle)
+			pp.X = worldW/2 + rx*math.Cos(angle)
+			pp.Y = worldH/2 + ry*math.Sin(angle)
 			pp.HP = 600
 			pp.Alive = true
 			pp.Shield = 0
@@ -900,6 +920,7 @@ func (a *Arena) tick(dt float64) {
 		}
 		zone := room.zone()
 		radius := zone["r"]
+		worldW,worldH:=room.dimensions()
 		obs := make([]Obstacle, 0, len(room.Obstacles))
 		for _, o := range room.Obstacles {
 			if room.elapsed() < o.Expires {
@@ -934,7 +955,7 @@ func (a *Arena) tick(dt float64) {
 			}
 			speed:=215.0
 			if now<p.SlowedUntil {speed*=.65}
-			nx := bound(p.X+dx/mag*speed*dt, 22, W-22)
+			nx := bound(p.X+dx/mag*speed*dt, 22, worldW-22)
 			collide := false
 			for _, o := range obs {
 				if circleRect(nx, p.Y, 20, o) {
@@ -945,7 +966,7 @@ func (a *Arena) tick(dt float64) {
 			if !collide {
 				p.X = nx
 			}
-			ny := bound(p.Y+dy/mag*speed*dt, 22, H-22)
+			ny := bound(p.Y+dy/mag*speed*dt, 22, worldH-22)
 			collide = false
 			for _, o := range obs {
 				if circleRect(p.X, ny, 20, o) {
@@ -956,7 +977,7 @@ func (a *Arena) tick(dt float64) {
 			if !collide {
 				p.Y = ny
 			}
-			if now>=room.DanceUntil && dist(p.X, p.Y, W/2, H/2) > radius {
+			if now>=room.DanceUntil && dist(p.X, p.Y, worldW/2, worldH/2) > radius {
 				hit(p, 32*dt, true, now)
 			}
 			// Keep a one-shot tap for the final 400ms of cooldown.
@@ -1039,7 +1060,7 @@ func (a *Arena) tick(dt float64) {
 			b.X += b.VX * dt
 			b.Y += b.VY * dt
 			b.TTL -= dt
-			if b.TTL <= 0 || b.X < 0 || b.X > W || b.Y < 0 || b.Y > H {
+			if b.TTL <= 0 || b.X < 0 || b.X > worldW || b.Y < 0 || b.Y > worldH {
 				continue
 			}
 			if !b.Pierce {
