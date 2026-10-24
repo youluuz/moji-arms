@@ -15,6 +15,8 @@ function boot(){
  if(!U.byId[chosen])chosen='roman';
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
  let immortalUntil=0,invisibleUntil=0,slowUntil=0,namepuUntil=0,danceUntil=0;
+ // v7.8 CPU opponents respect player invisibility and global dance freeze.
+ window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil};
  let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
  let specialBullets=new Set();
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;shell.append(banner);
