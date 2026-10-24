@@ -1,10 +1,20 @@
+# 文字武装 — 無料公開ベータ用（Render Blueprint）
+# WebSocket対戦にはGoサーバーが必要なため static site ではなく web service を使う。
 services:
   - type: web
     name: moji-arms-online
     runtime: docker
     plan: free
+    branch: main
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
+    # CIに失敗した版を公開しない。無料枠の無駄なビルドも防ぐ。
+    autoDeployTrigger: checksPass
+    buildFilter:
+      ignoredPaths:
+        - README.md
+        - docs/**
+        - .github/**
     envVars:
       - key: PORT
         value: 10000
