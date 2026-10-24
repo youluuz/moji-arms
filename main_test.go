@@ -9,6 +9,25 @@ import (
 )
 
 
+func TestBrowserIconEmbeddedOnSoloAndOnlinePages(t *testing.T) {
+ icon,err:=gameFiles.ReadFile("public/mojibusou-icon.png")
+ if err!=nil {t.Fatal("browser icon must be included in embedded game files:",err)}
+ if len(icon)<1000 || string(icon[:8])!="\x89PNG\r\n\x1a\n" {t.Fatal("browser icon is missing or not a valid PNG")}
+ solo,err:=gameFiles.ReadFile("public/index.html")
+ if err!=nil{t.Fatal(err)}
+ head:=mobilePatchedIndex(string(solo))
+ if !strings.Contains(head,`rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"`) ||
+    !strings.Contains(head,`rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"`) {
+  t.Fatal("landing page must expose the approved game browser/mobile icon")
+ }
+ online,err:=gameFiles.ReadFile("public/multiplayer.html")
+ if err!=nil{t.Fatal(err)}
+ if !strings.Contains(string(online),`href="mojibusou-icon.png?v=1"`) ||
+    !strings.Contains(string(online),`rel="apple-touch-icon"`) {
+  t.Fatal("online page must use the same browser icon")
+ }
+}
+
 func TestDynamicMapSizeForTwoThroughTenCombatants(t *testing.T) {
  last:=0.0
  for players:=2;players<=10;players++ {
