@@ -423,11 +423,11 @@ function showGame(m){
  window.MojiOnlineUltimateDock?.();
  activeSetup.slots.forEach((slot,i)=>{
   const card=$('cards').children[i],remaining=self?.cooldowns?.[i]||0;
-  card.title=onlineNames[slot.kind]+'｜'+window.MojiWeaponVisual.metric(slot.kind,slot.n)+'｜CT '+window.MojiWeaponVisual.cooldown(slot.kind,slot.n)+'｜'+window.MojiWeaponVisual.types[slot.kind].note;
+  const weaponInfo=onlineNames[slot.kind]+'｜'+window.MojiWeaponVisual.metric(slot.kind,slot.n)+'｜CT '+window.MojiWeaponVisual.cooldown(slot.kind,slot.n)+'｜'+window.MojiWeaponVisual.types[slot.kind].note;
   const duration=onlineCD(slot.kind,slot.n)/1000;
   card.classList.toggle('active',i===selected);
   card.classList.toggle('harden-blocked',Boolean(self?.hardenedLeft>0&&!['heal','defense'].includes(slot.kind)));
-  card.title=self?.hardenedLeft>0?(['heal','defense'].includes(slot.kind)?'硬直中も使用可能':'硬直中は発動不可'):'';
+  card.title=weaponInfo+(self?.hardenedLeft>0?'｜'+(['heal','defense'].includes(slot.kind)?'硬直中も使用可能':'硬直中は発動不可'):'');
   card.setAttribute('aria-pressed',String(i===selected));
   card.querySelector('.card-cooldown').textContent=remaining?remaining.toFixed(1)+'s':'準備OK';
   card.querySelector('.progress').style.width=Math.max(0,100-Math.min(100,remaining/duration*100))+'%';
