@@ -77,37 +77,30 @@ const { chromium } = require('playwright');
   if(chosen!=='namepu')throw Error('CPU skill picker not persisted');
   for(const mode of ['normal','custom']){
    await page.locator('#modeSelect').selectOption(mode);
+   await page.locator('#cpuBotCount').selectOption('3');
    await page.locator('#shuffleLoadout').click();
    await page.locator('#start').click();
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
-   if(mode==='normal'){
-    const dbg=await page.evaluate(()=>{
-     const funcs=['act','recordCast','moveActor','damage','update','updateGame','tick','loop','render','draw','drawGame','spawnEnemy','enemyAI','enemyAttack','reset','startGame','endGame','finishGame','checkWin','checkEnd','shoot','fire','step','handleBullets','collision','updateBullets'];
-     const found=Object.fromEntries(funcs.filter(k=>typeof window[k]==='function').map(k=>[k,window[k].toString().slice(0,12000)]));
-     const values={};
-     for(const k of ['enemy','player','slots','bullets','obstacles','running','matchToken','WORLD_W','WORLD_H','enemies','cpuCount','selected']){
-      try{values[k]=Array.isArray(window[k])?window[k].slice(0,3):window[k]}catch(e){values[k]=String(e)}
-     }
-     const screen=document.getElementById('gameScreen');
-     return {found,values,gameMarkup:screen?.outerHTML.slice(0,16000),
-       controls:document.getElementById('loadoutPanel')?.outerHTML.slice(0,13000),
-       scripts:[...document.scripts].map(x=>({src:x.src,len:x.text.length,head:x.text.slice(0,80)})).slice(-18)};
-    });console.log('CPU_ENGINE_DIAG',JSON.stringify(dbg));
-    const deeper=await page.evaluate(()=>{
-      const source=[...document.scripts].filter(x=>x.text.length>200000)[0]?.text||'';
-      const terms=['function start','function begin','function finish','function damage','function recordCast','function moveActor','function steerHoming','function draw','function reset','function act','function shoot','function loop','function init','function spawn','const enemy=','let enemy=','enemy={','function drawActor','function check','function circleRect','function updateHUD'];
-      const segments={};for(const term of terms){const at=source.indexOf(term);if(at>=0)segments[term]=source.slice(Math.max(0,at-200),at+1900)}
-      const drawCode=typeof draw==='function'?draw.toString():'';
-      const vars={};
-      for(const key of ['enemy','enemies','player','slots','bullets','obstacles','running','matchToken','selected','mapTheme','WORLD_W','zoneRadius','DAMAGE_PER_STROKE']){
-       try{const v=eval(key);vars[key]=Array.isArray(v)?v.slice(0,4):v}catch(e){vars[key]=String(e)}
-      }
-      return {segments,drawTail:drawCode.slice(-10500),funcNames:Object.keys(window).filter(x=>typeof window[x]==='function'&&/game|enemy|win|start|end|spawn|fire|draw|ready|restart|battle|shoot|hit|loop/i.test(x)).slice(0,180),vars};
-    });console.log('CPU_ENGINE_DEEP',JSON.stringify(deeper));
-   }
-
+   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
+   const botStats=await page.evaluate(()=>({
+    number:window.MojiCpuBots.getBots().length,
+    loadouts:window.MojiCpuBots.getBots().map(b=>b.loadout.map(s=>s.kind)),
+    hasSelector:document.getElementById('cpuBotCount')?.value,
+    alive:window.MojiCpuBots.getBots().filter(b=>b.hp>0).length
+   }));
+   if(botStats.number!==3||botStats.hasSelector!=='3'||botStats.alive!==3||
+      !botStats.loadouts.every(row=>['attack','defense','heal','pierce','homing'].every(k=>row.includes(k))))
+     throw Error(mode+' bot loadout/count mismatch '+JSON.stringify(botStats));
+   // Spawn a genuine CPU projectile directly atop another CPU to exercise
+   // the new non-player collision and damage pipeline.
+   const crossfire=await page.evaluate(()=>{
+    const bots=window.MojiCpuBots.getBots(),a=bots[0],b=bots[1];
+    b.hp=500;bullets.push({x:b.x,y:b.y,vx:0,vy:0,n:6,owner:'e',sourceId:a.id,life:2,ch:'火',pierce:true,homing:false});
+    return {target:b.id,before:b.hp};
+   });
+   await page.waitForFunction(()=>window.MojiCpuBots.getBots()[1]?.hp<500,{timeout:12000});
    await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
    const cover=await page.evaluate(()=>({
      width:WORLD_W,height:WORLD_H,
