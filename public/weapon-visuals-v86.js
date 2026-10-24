@@ -118,6 +118,57 @@ function onlineEquipped(){
   n:row.querySelector('input.slot-strokes')?.value||0
  }));
 }
+/* v9.6: pre-match equipment details matching the actual combat formulas.
+   No stat or state changes: preview only, works before and after room creation. */
+function renderOnlineStats(){
+ const editor=document.querySelector('#onlineSlots');
+ if(!editor)return;
+ const rows=[...editor.querySelectorAll('.online-slot')],host=document.querySelector('#waitArea #roomLoadoutArea');
+ let summary=host?.querySelector('#roomWeaponSummary');
+ if(host&&!summary){
+  summary=document.createElement('section');summary.id='roomWeaponSummary';
+  summary.className='moji-room-summary';summary.setAttribute('aria-label','試合前の武装性能一覧');
+  summary.innerHTML='<div class="moji-room-summary-head"><strong>⚔ 武装性能プレビュー</strong><small>画数・能力に合わせて更新。変更後は保存して確定</small></div><div class="moji-room-summary-grid"></div>';
+  host.querySelector('#roomLoadoutMount')?.insertAdjacentElement('beforebegin',summary);
+ }
+ const grid=summary?.querySelector('.moji-room-summary-grid');
+ rows.forEach((row,i)=>{
+  const kind=row.querySelector('.online-kind')?.value||weaponOrder[i];
+  const type=types[kind]||types.attack;
+  const ch=row.querySelector('.online-glyph-input')?.value.trim()||'—';
+  const n=row.querySelector('.slot-strokes')?.value||0;
+  const ready=ch!=='—'&&safeN(n)>0;
+  const effect=ready?metric(kind,n):'未設定';
+  const ct=ready?cooldown(kind,n):'—';
+  let stat=row.querySelector('.moji-setup-stat');
+  if(!stat){
+   stat=document.createElement('div');stat.className='moji-setup-stat';
+   stat.setAttribute('aria-label','この装備の性能');row.append(stat);
+  }
+  stat.dataset.kind=kind;stat.style.setProperty('--weapon-accent',type.color);
+  const statHtml='<strong>'+type.marker+' '+effect+'</strong><span>CT '+ct+'</span><small>'+type.note+'</small>';
+  if(stat.innerHTML!==statHtml)stat.innerHTML=statHtml;
+  if(!grid)return;
+  let card=grid.querySelector('[data-room-slot="'+i+'"]');
+  if(!card){
+   card=document.createElement('div');card.className='moji-room-weapon';
+   card.dataset.roomSlot=String(i);
+   card.innerHTML='<span class="moji-room-weapon-id"></span><span class="moji-room-weapon-char"></span><span class="moji-room-weapon-type"></span><strong class="moji-room-weapon-metric"></strong><small class="moji-room-weapon-ct"></small>';
+   grid.append(card);
+  }
+  card.dataset.kind=kind;card.style.setProperty('--weapon-accent',type.color);
+  for(const [sel,value] of [
+   ['.moji-room-weapon-id','SLOT '+(i+1)],
+   ['.moji-room-weapon-char',ch],
+   ['.moji-room-weapon-type',type.marker+' '+type.name],
+   ['.moji-room-weapon-metric',effect],
+   ['.moji-room-weapon-ct','CT '+ct]
+  ]){
+   const el=card.querySelector(sel);if(el.textContent!==value)el.textContent=value;
+  }
+  card.title=type.name+'：'+effect+' ／ CT '+ct+' ／ '+type.note;
+ });
+}
 function preMatchOnline(){
  const editor=document.querySelector('#joinArea .online-loadout')||
               document.querySelector('#roomLoadoutMount .online-loadout');
@@ -147,6 +198,7 @@ function preMatchOnline(){
  }
  // The five setup inputs now stay compact: no separate animated panel per slot.
  document.querySelectorAll('#onlineSlots .online-slot > .moji-preview').forEach(e=>e.remove());
+ renderOnlineStats();
 }
 function preMatchSolo(){
  const host=document.querySelector('#loadoutPanel'),setup=document.querySelector('#lobbyScreen #setup');
@@ -197,10 +249,12 @@ function bootstrap(){
  lobby?.addEventListener('change',preMatchSolo,true);
  // Randomization updates several role and stroke inputs in one click.
  lobby?.addEventListener('click',()=>setTimeout(preMatchSolo,0),true);
- online?.addEventListener('input',preMatchOnline,true);
- online?.addEventListener('change',preMatchOnline,true);
+ // Stroke auto-calculation happens inside input listeners; defer the preview.
+ const scheduleOnlineStats=()=>requestAnimationFrame(preMatchOnline);
+ online?.addEventListener('input',scheduleOnlineStats);
+ online?.addEventListener('change',scheduleOnlineStats);
  if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);document.querySelector('#joinArea')?.addEventListener('click',scheduled,true);document.querySelector('#waitArea')?.addEventListener('click',scheduled,true);online.addEventListener('click',()=>setTimeout(preMatchOnline,0),true);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap,{once:true});else bootstrap();
-window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,drawDanceAura,preMatchSolo,preMatchOnline,syncSoloBattle};
+window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,drawDanceAura,preMatchSolo,preMatchOnline,renderOnlineStats,syncSoloBattle};
 })();
