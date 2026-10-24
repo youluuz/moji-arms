@@ -41,7 +41,7 @@ function boot(){
  // v7.8 CPU opponents respect player invisibility and global dance freeze.
  window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil};
  let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
- let specialBullets=new Set();
+ let specialBullets=new Set(),romanImpacts=[];
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;shell.append(banner);
  const fx=document.createElement('canvas');fx.className='ultimate-solo-overlay';Object.assign(fx.style,{position:'absolute',pointerEvents:'none',zIndex:11});shell.append(fx);
  const howto=document.createElement('div');
@@ -54,7 +54,7 @@ function boot(){
  choose(chosen);
  function reset(){
   charge=0;spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
-  immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();
+  immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();romanImpacts=[];
   lastActive=true;banner.hidden=true;prevEnemyHP=600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
@@ -127,9 +127,11 @@ function boot(){
   const dpr=Math.min(document.body.classList.contains('mobile-touch-input')?1.5:2,Math.max(1,devicePixelRatio||1)),w=Math.round(size.width*dpr),h=Math.round(size.height*dpr);
   if(fx.width!==w||fx.height!==h){fx.width=w;fx.height=h}
   const c=fx.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);c.setTransform(dpr*size.width/cpuView.w,0,0,dpr*size.height/cpuView.h,0,0);
-  if(!isReady())return;
+  if(!isReady()&&!romanImpacts.length)return;
   const x=player.x-cam.x,y=player.y-cam.y;
   c.save();c.textAlign='center';
+  if(windupUntil>now)window.MojiRomanFX?.drawCharge(c,x,y,now,1-(windupUntil-now)/1000);
+  for(const effect of romanImpacts)window.MojiRomanFX?.drawImpact(c,effect.x-cam.x,effect.y-cam.y,now-effect.at);
   if(now<immortalUntil){
    c.font='900 18px Georgia,serif';c.fillStyle='#ffe7a1';c.shadowColor='#ffeeb7';c.shadowBlur=14;
    for(let i=0;i<3;i++){let a=now/420+i*Math.PI*2/3;c.fillText('無敵',x+46*Math.cos(a),y-12+29*Math.sin(a))}
@@ -150,8 +152,11 @@ function boot(){
   if(now<invisibleUntil){c.fillStyle='#8ceeff';c.font='12px sans-serif';c.fillText('透明化中',x,y-64)}
   if(aiming){c.font='bold 20px serif';c.fillStyle='#ffdc9b';c.shadowBlur=16;c.shadowColor='#ffb960';c.fillText(curr().name,x,y-76)}
   for(const b of specialBullets){if(!bullets.includes(b))continue;
-   c.font=b.ultimate==='roman'?'900 35px Georgia,serif':'bold 24px serif';c.fillStyle=b.ultimate==='roman'?'#ffe4a1':'#bdd5ff';c.shadowColor=b.ultimate==='roman'?'#ff9c35':'#7aaeff';c.shadowBlur=25;
-   c.fillText(b.ch,b.x-cam.x,b.y-cam.y-13);
+   if(b.ultimate==='roman')window.MojiRomanFX?.drawShot(c,b.x-cam.x,b.y-cam.y,Math.atan2(b.vy,b.vx),now);
+   else {
+    c.font='bold 24px serif';c.fillStyle='#bdd5ff';c.shadowColor='#7aaeff';c.shadowBlur=25;
+    c.fillText(b.ch,b.x-cam.x,b.y-cam.y-13);
+   }
   }
   c.restore();
  }
@@ -167,7 +172,11 @@ function boot(){
    if(invisibleUntil>now){enemy.ready=Math.max(enemy.ready||0,now+120);}
    // Projectiles that hit terrain must not apply hardening. Only actual hit
    // collision inside cpu-battle-v78.js awards the hardening effect.
-   for(const b of [...specialBullets])if(!bullets.includes(b))specialBullets.delete(b);
+   for(const b of [...specialBullets])if(!bullets.includes(b)){
+    if(b.ultimate==='roman')romanImpacts.push({x:b.x,y:b.y,at:now});
+    specialBullets.delete(b);
+   }
+   romanImpacts=romanImpacts.filter(e=>now-e.at<720).slice(-8);
   }
   // Match start and slot reconfiguration rebuild the legacy #weapons DOM.
   // Keep the SAME ultimate button (and its listener) attached as slot six.
