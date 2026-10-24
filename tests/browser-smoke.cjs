@@ -159,19 +159,23 @@ const { chromium } = require('playwright');
    const discoPixels=c.getImageData(0,0,140,140).data;
    let discoVisible=0;for(let i=3;i<discoPixels.length;i+=4)if(discoPixels[i]>60)discoVisible++;
    c.clearRect(0,0,140,140);
+   renderer.drawDanceAura(c,70,70,1400);
+   const auraPixels=c.getImageData(0,0,140,140).data;
+   let auraVisible=0;for(let i=3;i<auraPixels.length;i+=4)if(auraPixels[i]>60)auraVisible++;
+   c.clearRect(0,0,140,140);
    renderer.drawProjectile(c,{x:70,y:70,ch:'火',homing:true,owner:'p'});
    const shotPixels=c.getImageData(0,0,140,140).data;
    let shotVisible=0;for(let i=3;i<shotPixels.length;i+=4)if(shotPixels[i]>60)shotVisible++;
    const label=document.querySelector('#gameScreen .ultimate-aiming-banner');
    const css=label&&getComputedStyle(label);
-   return {discoVisible,shotVisible,scaledProjectile:renderer.drawProjectile.toString().includes('cx.scale(1.14,1.14)'),
+   return {discoVisible,auraVisible,shotVisible,scaledProjectile:renderer.drawProjectile.toString().includes('cx.scale(1.14,1.14)'),
     raisedLabel:[...document.styleSheets].some(sheet=>{
       try{return [...sheet.cssRules].some(rule=>rule.selectorText==='.ultimate-aiming-banner'&&rule.style.top==='9%')}catch(e){return false}
      })};
   });
-  if(discoVisual.discoVisible<150||discoVisual.shotVisible<250||
+  if(discoVisual.discoVisible<150||discoVisual.auraVisible<200||discoVisual.shotVisible<250||
      !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
-   throw Error('Visual disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
+   throw Error('Avatar dance aura, disco-ball, 14%-larger projectiles or higher onscreen label missing '+JSON.stringify(discoVisual));
   const preview=await page.evaluate(()=>[...document.querySelectorAll('#abilityGuide .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
   if(preview.length!==5||preview[0].mark!=='●'||preview[3].mark!=='◆'||preview[4].mark!=='◎'||!preview.every(p=>p.stats.includes('CT')))
    throw Error('Solo integrated usage/effect guide missing weapon trajectory and stats '+JSON.stringify(preview));
@@ -372,9 +376,13 @@ const { chromium } = require('playwright');
   if(!firstKill.running||firstKill.otherAlive!==8)throw Error('Killing one CPU ended multiplayer solo prematurely: '+JSON.stringify(firstKill));
   const finalKill=await page.evaluate(()=>{
    for(const unit of window.MojiCpuBots.getBots())if(unit.hp>0)damage(unit,100000,performance.now(),true,{owner:'p'});
-   return {running,result:document.getElementById('result').classList.contains('show')};
+   return {running,result:document.getElementById('result').classList.contains('show'),
+    winner:document.getElementById('resultTitle')?.textContent,
+    alive:document.getElementById('cpuAliveCount')?.textContent};
   });
-  if(finalKill.running||!finalKill.result)throw Error('CPU free-for-all victory did not finish after last bot: '+JSON.stringify(finalKill));
+  if(finalKill.running||!finalKill.result||!finalKill.winner?.includes('優勝：あなた')||
+     !finalKill.alive?.includes('生存 1 / 10人'))
+   throw Error('CPU survivors or named winner incorrect after last bot: '+JSON.stringify(finalKill));
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
 
