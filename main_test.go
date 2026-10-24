@@ -512,6 +512,40 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
  if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" || room.Bullets[len(room.Bullets)-1].Ch!="硬化弾" || room.Bullets[len(room.Bullets)-1].Damage!=60 {t.Fatal("slow ultimate must still deal 60 damage")}
 }
+// Invisibility must disable target acquisition and collision for homing
+// missiles, including missiles fired before invisibility was activated.
+func TestInvisibleCompletelyDefeatsHomingAcrossOnlineModes(t *testing.T) {
+ for _,mode:=range []string{"normal","custom"} {
+  t.Run(mode,func(t *testing.T){
+   now:=float64(time.Now().UnixNano())/1e9
+   attacker:=&Player{ID:"a",C:&Client{send:make(chan []byte,40)},Alive:true,HP:600,X:350,Y:400,Keys:map[string]bool{}}
+   hidden:=&Player{ID:"b",C:&Client{send:make(chan []byte,40)},Alive:true,HP:600,X:850,Y:500,InvisibleUntil:now+4,Keys:map[string]bool{}}
+   decoy:=&Player{ID:"c",C:&Client{send:make(chan []byte,40)},Alive:true,HP:600,X:1690,Y:1000,Keys:map[string]bool{}}
+   room:=&Room{Code:"INVIS",Phase:"playing",Mode:mode,Theme:"night",Shrink:"none",
+    Started:time.Now(),Players:[]*Player{attacker,hidden,decoy}}
+   a:=&Arena{rooms:map[string]*Room{"INVIS":room}}
+   homing:=Bullet{X:hidden.X,Y:hidden.Y,VX:200,VY:0,TTL:2,Damage:120,Owner:"a",Ch:"追",Homing:true}
+   // Already-in-flight homing projectile intersects hidden player but cannot hit.
+   room.Bullets=[]Bullet{homing}
+   a.tick(.01)
+   if hidden.HP!=600 || !hidden.Alive || len(room.Bullets)!=1 {
+    t.Fatalf("invisible target was struck by a homing missile: hp=%v bullets=%d",hidden.HP,len(room.Bullets))
+   }
+   // Test direct damage entry too: effects must not bypass the collision rule.
+   hitFromBullet(room,hidden,homing,float64(time.Now().UnixNano())/1e9)
+   if hidden.HP!=600 {t.Fatal("homing hit direct path ignored invisibility")}
+   // Ordinary non-homing weapon shots still hit; invisibility is not invulnerability.
+   room.Bullets=[]Bullet{{X:hidden.X,Y:hidden.Y,VX:0,VY:0,TTL:2,Damage:70,Owner:"a",Ch:"火"}}
+   a.tick(.01)
+   if hidden.HP!=530 {t.Fatalf("ordinary bullet damage should remain, hp=%v",hidden.HP)}
+   // As soon as invisibility ends homing projectiles may lock and hit again.
+   hidden.InvisibleUntil=0
+   room.Bullets=[]Bullet{homing}
+   a.tick(.01)
+   if hidden.HP!=410 {t.Fatalf("homing should reacquire a visible target, hp=%v",hidden.HP)}
+  })
+ }
+}
 // A hardening shot immobilizes shielded targets but cannot override full
 // invincibility, and it resumes movement and attacks after three seconds.
 func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
