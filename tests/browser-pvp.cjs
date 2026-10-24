@@ -120,10 +120,20 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        x:roomState.players.map(p=>({x:p.x,y:p.y})),
        overlay:!document.getElementById('onlineCountdown')?.hidden,
        killText:document.getElementById('onlineKillScore')?.textContent,
-       kills:roomState.players.map(x=>x.kills)
+       kills:roomState.players.map(x=>x.kills),
+       scorePosition:(()=>{
+        const hud=document.querySelector('#gameArea .hud').getBoundingClientRect();
+        const score=document.getElementById('onlineBattleScoreboard').getBoundingClientRect();
+        const hp=document.getElementById('selfBar').getBoundingClientRect();
+        return {right:score.right<=hud.right+2&&score.left>hud.left+hud.width*.5,
+          noOverlap:score.left>=hp.right-4,visible:score.width>85&&score.height>18};
+       })(),
+       healingLabel:window.MojiWeaponVisual.metric('heal',10)
       }));
       if(!state.overlay||state.seconds<=0||state.seconds>3.2||!state.kills.every(x=>x===0)||
-       state.killText!=='⚔ キル 0'||Math.hypot(state.x[0].x-state.x[1].x,state.x[0].y-state.x[1].y)<900)
+       state.killText!=='⚔ キル 0'||!state.scorePosition.right||!state.scorePosition.noOverlap||
+       !state.scorePosition.visible||state.healingLabel!=='回復34'||
+       Math.hypot(state.x[0].x-state.x[1].x,state.x[0].y-state.x[1].y)<900)
        throw Error(mode+': server-side spawn/countdown/kill UI invalid '+JSON.stringify(state));
     }
     await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing'&&document.getElementById('onlineCountdown')?.hidden,{timeout:15000})));
