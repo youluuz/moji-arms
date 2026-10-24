@@ -27,7 +27,7 @@ func TestDynamicMapSizeForTwoThroughTenCombatants(t *testing.T) {
   last=scale
  }
  if mapScale(1)!=.8||mapScale(11)!=1.5 {t.Fatal("map size must remain bounded at min/max")}
- frozen:=&Room{Phase:"playing",StartedPlayers:10,Players:make([]*Player,6)}
+ frozen:=&Room{Phase:"playing",Shrink:"none",StartedPlayers:10,Players:make([]*Player,6)}
  w,h:=frozen.dimensions()
  if w!=3450||h!=1950||frozen.zone()["r"]!=1350*1.5 {t.Fatal("live match map must retain original 10-player dimensions after disconnects")}
  frozen.Phase="lobby";frozen.StartedPlayers=0
