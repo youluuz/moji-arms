@@ -29,7 +29,7 @@ function drawProjectile(cx,b){
  const kind=b.homing?'homing':b.pierce?'pierce':'attack';
  const own=b.owner==='p'||b.owner==='self'||b.own===true;
  const colors={attack:'#80b7ff',pierce:'#ffc077',homing:'#8af5e8'};
- cx.save();cx.translate(b.x,b.y);cx.lineWidth=2.7;cx.lineJoin='round';
+ cx.save();cx.translate(b.x,b.y);cx.scale(1.14,1.14);cx.lineWidth=2.7;cx.lineJoin='round';
  cx.shadowColor=colors[kind];cx.shadowBlur=14;
  if(kind==='attack'){
   cx.fillStyle='#225591';cx.strokeStyle='#b5deff';
@@ -51,6 +51,34 @@ function drawProjectile(cx,b){
  cx.lineWidth=1.3;cx.strokeStyle=own?'#ffe89a':'#ff92ae';
  cx.beginPath();cx.arc(0,0,kind==='pierce'?29:kind==='homing'?35:26,-Math.PI*.83,-Math.PI*.17);cx.stroke();
  cx.restore();return true;
+}
+// Disco ball is visual-only: no effect on reach, stun duration, or damage.
+function drawMirrorBall(cx,x,y,t){
+ if(!cx)return;
+ cx.save();cx.translate(x,y);cx.textAlign='center';cx.textBaseline='middle';
+ const sway=Math.sin(t/540)*3.4;
+ cx.strokeStyle='#b5cbea';cx.lineWidth=1.6;
+ cx.beginPath();cx.moveTo(sway,-36);cx.lineTo(sway,-17);cx.stroke();
+ cx.translate(sway,0);
+ // Moving pools of reflected light help identify a dancing fighter quickly.
+ for(let k=0;k<4;k++){
+  const a=t/540+k*Math.PI/2;
+  cx.save();cx.rotate(a);cx.fillStyle=k%2?'#b8c4ff35':'#ffe4aa35';
+  cx.beginPath();cx.moveTo(0,5);cx.lineTo(-6,40);cx.lineTo(6,40);cx.closePath();cx.fill();cx.restore();
+ }
+ cx.shadowColor='#f9e8ff';cx.shadowBlur=13;cx.fillStyle='#bacde2';cx.strokeStyle='#e6f7ff';cx.lineWidth=2;
+ cx.beginPath();cx.arc(0,0,18,0,Math.PI*2);cx.fill();cx.stroke();cx.shadowBlur=0;
+ cx.save();cx.beginPath();cx.arc(0,0,17,0,Math.PI*2);cx.clip();
+ for(let yy=-18,row=0;yy<21;yy+=8,row++){
+  for(let xx=-23+(row%2)*4;xx<25;xx+=9){
+   cx.fillStyle=((row+Math.round(xx/9)+Math.floor(t/180))%3===0)?'#ffffff':'#788fb6';
+   cx.fillRect(xx,yy,7,7);
+  }
+ }
+ cx.restore();
+ cx.strokeStyle='#f9f0ff';cx.lineWidth=1.5;
+ cx.beginPath();cx.arc(0,0,18,0,Math.PI*2);cx.stroke();
+ cx.restore();
 }
 function preMatchOnline(){
  const parent=document.querySelector('#onlineSlots');if(!parent)return;
@@ -124,5 +152,5 @@ function bootstrap(){
  if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);const editor=document.querySelector('#joinArea');editor?.addEventListener('click',scheduled,true);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap,{once:true});else bootstrap();
-window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,preMatchSolo,preMatchOnline,syncSoloBattle};
+window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,preMatchSolo,preMatchOnline,syncSoloBattle};
 })();
