@@ -35,6 +35,7 @@ function boot(){
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  const heard=new Map();
+ let lastRomanBullets=new Map(),romanImpacts=[];
  let held=false;
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;document.querySelector('#gameArea .game-wrap').append(banner);
  const howto=document.createElement('div');
@@ -79,6 +80,17 @@ function boot(){
   return true;
  }
  function onState(m){
+  // Effects follow authoritative projectile snapshots. No hit detection,
+  // damage changes or extra network packets are sent by this renderer.
+  const at=performance.now();
+  if(m.phase==='playing'||m.phase==='ended'){
+   const active=new Map();
+   for(const b of m.bullets||[])if(b.special==='roman')active.set(b.owner,b);
+   for(const [owner,b] of lastRomanBullets)if(!active.has(owner))
+    romanImpacts.push({x:b.x,y:b.y,at});
+   lastRomanBullets=active;
+   romanImpacts=romanImpacts.filter(b=>at-b.at<720).slice(-12);
+  } else {lastRomanBullets.clear();romanImpacts=[];}
   const own=m.players.find(p=>p.id===myId);
   if(!own)return;
   if(m.phase==='playing'||m.phase==='ended'){
@@ -117,6 +129,8 @@ function boot(){
     c.shadowBlur=0;c.fillStyle='#ecffff';c.font='bold 14px sans-serif';
     c.fillText('🔒 硬直 '+p.hardenedLeft.toFixed(1)+'秒',p.x,p.y-84);
    }
+   if(p.romanWindupLeft>0)
+    window.MojiRomanFX?.drawCharge(c,p.x,p.y,t,1-Math.min(1,p.romanWindupLeft));
    if(p.ultimateAiming){
     c.font='900 20px Georgia,serif';c.fillStyle='#ffe3a7';c.shadowColor='#ffb360';c.shadowBlur=14;
     c.fillText(p.ultimate==='roman'?'ロマン砲':'硬化弾',p.x,p.y-81);
@@ -124,10 +138,15 @@ function boot(){
    c.restore();
   }
   for(const b of m.bullets)if(b.special==='roman'||b.special==='slow'){
-   c.save();c.textAlign='center';c.font=b.special==='roman'?'900 35px Georgia,serif':'bold 26px serif';
-   c.fillStyle=b.special==='roman'?'#ffe6a4':'#a9bbff';c.shadowColor=b.special==='roman'?'#ffb44e':'#82adff';c.shadowBlur=26;
-   c.fillText(b.ch,b.x,b.y-14);c.restore();
+   if(b.special==='roman')window.MojiRomanFX?.drawShot(c,b.x,b.y,b.angle,t);
+   else{
+    c.save();c.textAlign='center';c.font='bold 26px serif';
+    c.fillStyle='#a9bbff';c.shadowColor='#82adff';c.shadowBlur=26;
+    c.fillText(b.ch,b.x,b.y-14);c.restore();
+   }
   }
+  for(const effect of romanImpacts)
+   window.MojiRomanFX?.drawImpact(c,effect.x,effect.y,t-effect.at);
  }
  function finish(m){
   const won=m.winner===myId,me=m.players.find(p=>p.id===myId);
