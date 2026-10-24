@@ -95,6 +95,17 @@ const { chromium } = require('playwright');
        controls:document.getElementById('loadoutPanel')?.outerHTML.slice(0,13000),
        scripts:[...document.scripts].map(x=>({src:x.src,len:x.text.length,head:x.text.slice(0,80)})).slice(-18)};
     });console.log('CPU_ENGINE_DIAG',JSON.stringify(dbg));
+    const deeper=await page.evaluate(()=>{
+      const source=[...document.scripts].filter(x=>x.text.length>200000)[0]?.text||'';
+      const terms=['function start','function begin','function finish','function damage','function recordCast','function moveActor','function steerHoming','function draw','function reset','function act','function shoot','function loop','function init','function spawn','const enemy=','let enemy=','enemy={','function drawActor','function check','function circleRect','function updateHUD'];
+      const segments={};for(const term of terms){const at=source.indexOf(term);if(at>=0)segments[term]=source.slice(Math.max(0,at-200),at+1900)}
+      const drawCode=typeof draw==='function'?draw.toString():'';
+      const vars={};
+      for(const key of ['enemy','enemies','player','slots','bullets','obstacles','running','matchToken','selected','mapTheme','WORLD_W','zoneRadius','DAMAGE_PER_STROKE']){
+       try{const v=eval(key);vars[key]=Array.isArray(v)?v.slice(0,4):v}catch(e){vars[key]=String(e)}
+      }
+      return {segments,drawTail:drawCode.slice(-10500),funcNames:Object.keys(window).filter(x=>typeof window[x]==='function'&&/game|enemy|win|start|end|spawn|fire|draw|ready|restart|battle|shoot|hit|loop/i.test(x)).slice(0,180),vars};
+    });console.log('CPU_ENGINE_DEEP',JSON.stringify(deeper));
    }
 
    await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
