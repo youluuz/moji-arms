@@ -83,7 +83,8 @@ function preMatchSolo(){
 }
 function syncSoloBattle(slots){
  const row=document.querySelector('#gameScreen .weaponrow')||
-           document.querySelector('#gameScreen .cards');
+           document.querySelector('#gameScreen .cards')||
+           document.querySelector('#gameScreen .weapon')?.parentElement;
  if(!row||!Array.isArray(slots)||slots.length!==5)return;
  const buttons=[...row.children].filter(e=>e.nodeType===1).slice(0,5);
  if(buttons.length!==5)return;
