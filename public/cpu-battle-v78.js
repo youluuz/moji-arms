@@ -6,6 +6,17 @@ const samples=['炎','氷','雷','風','光','影','剣','盾','星','龍','月'
 const bots=[]; // Keep the same array for cover-generation collision checks.
 window.enemies=bots;
 let match=-1, chosenCount=1, initialized=false, roundStartAt=0, playerKills=0, mapFactor=1;
+// Use the NAME entered on the common login screen in every solo result,
+// including the special Namepu ending. Never interpret saved career stats as
+// a player's identity, and never inject this user text as HTML.
+function loginWinnerName(){
+ let name='';
+ try{name=sessionStorage.getItem('moji_player_name')||'';}catch(_){}
+ if(!name){try{name=localStorage.getItem('moji_player_name')||'';}catch(_){}}
+ if(!name)name=document.querySelector('#loginScreen input[name="name"],#loginScreen #playerName,#loginScreen #loginName')?.value||'';
+ return String(name).trim().slice(0,32)||'あなた';
+}
+window.MojiLoginWinnerName=loginWinnerName;
 const roll=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=roll(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
 function alive(){return bots.filter(b=>b.hp>0);}
@@ -265,7 +276,7 @@ function boot(){
   showResult=function(won,...args){
    const value=oldResult.call(this,won,...args);
    const others=alive();
-   const winner=won?'あなた':
+   const winner=won?loginWinnerName():
     others.length===1?'CPU '+(Number(others[0].id?.split('-')[1]||0)+1):
     others.length>1?'未確定（CPU残り'+others.length+'体）':'引き分け';
    const title=document.getElementById('resultTitle');
