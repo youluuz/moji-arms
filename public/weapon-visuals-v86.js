@@ -80,49 +80,77 @@ function drawMirrorBall(cx,x,y,t){
  cx.beginPath();cx.arc(0,0,18,0,Math.PI*2);cx.stroke();
  cx.restore();
 }
+// Put projectile examples INSIDE the existing how-to/effects explanations,
+// rather than showing a second set of large panels under the equipment editor.
+const weaponOrder=['attack','defense','heal','pierce','homing'];
+function guideWeaponExamples(equipment){
+ return weaponOrder.map(kind=>{
+  const item=equipment.find(s=>s.kind===kind);
+  return preview(kind,item?.n||0);
+ }).join('');
+}
+function onlineEquipped(){
+ const parent=document.querySelector('#onlineSlots');
+ if(!parent)return [];
+ return [...parent.querySelectorAll('.online-slot')].map((row,i)=>({
+  kind:row.querySelector('select.online-kind')?.value||weaponOrder[i],
+  n:row.querySelector('input.slot-strokes')?.value||0
+ }));
+}
 function preMatchOnline(){
- const parent=document.querySelector('#onlineSlots');if(!parent)return;
- parent.querySelectorAll('.online-slot').forEach((el,i)=>{
-  const kind=el.querySelector('select.online-kind')?.value||['attack','defense','heal','pierce','homing'][i];
-  const n=el.querySelector('input.slot-strokes')?.value;
-  let p=el.querySelector('.moji-preview');if(!p){el.insertAdjacentHTML('beforeend',preview(kind,n));p=el.querySelector('.moji-preview')}
-  const replacement=preview(kind,n);
-  if(p.dataset.kind!==kind||p.dataset.n!==String(n)) {
-   p.outerHTML=replacement.replace('data-kind="'+esc(kind)+'"','data-kind="'+esc(kind)+'" data-n="'+esc(n||'')+'"');
+ const editor=document.querySelector('#joinArea .online-loadout');
+ if(!editor)return;
+ // This guide is accessible before joining; the waiting-room guide is already
+ // present and receives the same content without any extra standalone preview.
+ let entry=document.querySelector('#joinArea #mojiOnlineAbilityGuide');
+ if(!entry){
+  entry=document.createElement('details');
+  entry.id='mojiOnlineAbilityGuide';entry.className='online-guide moji-ability-help';
+  entry.innerHTML='<summary><span class="online-guide-collapsed">▼ 5つの能力の使い方・効果を見る（発射イメージ付き）</span><span class="online-guide-expanded">▲ 使い方・効果を閉じる</span></summary>';
+  editor.insertAdjacentElement('afterend',entry);
+ }
+ const guides=[entry,document.querySelector('#waitArea details.online-guide')].filter(Boolean);
+ const contents=guideWeaponExamples(onlineEquipped());
+ for(const guide of guides){
+  let area=guide.querySelector('.moji-weapon-help');
+  if(!area){
+   area=document.createElement('section');area.className='moji-weapon-help';
+   area.innerHTML='<h3>武装の使い方・効果と発射イメージ</h3><p>● 青＝通常弾　◆ オレンジ＝貫通弾　◎ 水色＝追尾弾。戦闘中も同じ形で表示されます。</p><div class="moji-weapon-gallery-grid"></div>';
+   guide.append(area);
   }
- });
+  const grid=area.querySelector('.moji-weapon-gallery-grid');
+  if(grid.dataset.version!==contents){
+   grid.innerHTML=contents;grid.dataset.version=contents;
+  }
+ }
+ // The five setup inputs now stay compact: no separate animated panel per slot.
+ document.querySelectorAll('#onlineSlots .online-slot > .moji-preview').forEach(e=>e.remove());
 }
 function preMatchSolo(){
  const host=document.querySelector('#loadoutPanel'),setup=document.querySelector('#lobbyScreen #setup');
- if(!host||!setup)return;
- let pane=document.querySelector('#mojiWeaponPreview');
- if(!pane){pane=document.createElement('section');pane.id='mojiWeaponPreview';pane.className='moji-weapon-gallery';
-  pane.innerHTML='<h3>⚔ 武装の発射イメージ・性能</h3><p>● 通常弾／◆ 貫通弾／◎ 追尾弾は試合中も同じ形で表示されます。</p><div class="moji-weapon-gallery-grid"></div>';
-  host.append(pane);
- }
+ const articles=host?.querySelectorAll('#abilityGuide .ability-grid article');
+ if(!host||!setup||!articles||articles.length!==5)return;
+ // Remove v8.6's standalone panel; the original built-in ability-guide is
+ // already labeled “5つの能力の使い方・効果を見る”.
+ host.querySelector('#mojiWeaponPreview')?.remove();
  const rows=[...setup.querySelectorAll('.slot')].slice(0,5);
- const actual=rows.map((row,i)=>{
-  const equipment=typeof slots!=='undefined'&&Array.isArray(slots)?slots[i]:null;
+ const equipment=rows.map((row,i)=>{
+  const slot=typeof slots!=='undefined'&&Array.isArray(slots)?slots[i]:null;
   const selector=row.querySelector('select.kind,select[data-kind],select[data-role],select[name*="kind"],select[name*="role"]')||
     [...row.querySelectorAll('select')].find(e=>types[e.value]);
   const kind=(selector&&types[selector.value]?selector.value:null)||
-    (equipment&&types[equipment.kind]?equipment.kind:null)||
-    ['attack','defense','heal','pierce','homing'][i];
-  const n=row.querySelector('.strokes')?.value||equipment?.n;
-  return {kind,n};
+    (slot&&types[slot.kind]?slot.kind:null)||weaponOrder[i];
+  return {kind,n:row.querySelector('.strokes')?.value||slot?.n||0};
  });
- // Examples of ALL three projectile silhouettes stay visible even when the
- // player equips five copies of the same attack kind.
- const render=['attack','defense','heal','pierce','homing'].map(kind=>{
-  const item=actual.find(x=>x.kind===kind);
-  return preview(kind,item?.n||0);
- }).join('');
- const grid=pane.querySelector('.moji-weapon-gallery-grid');
- if(grid.dataset.version!==render){grid.innerHTML=render;grid.dataset.version=render}
- let summary=pane.querySelector('.moji-equipped-summary');
- if(!summary){summary=document.createElement('p');summary.className='moji-equipped-summary';pane.append(summary)}
- const equipped=actual.map((x,i)=>(i+1)+'：'+(types[x.kind]?.marker||'●')+' '+(types[x.kind]?.name||x.kind)+' '+metric(x.kind,x.n)).join('　');
- if(summary.textContent!=='装備中：'+equipped)summary.textContent='装備中：'+equipped;
+ for(let i=0;i<articles.length;i++){
+  const kind=weaponOrder[i],current=equipment.find(s=>s.kind===kind);
+  const html=preview(kind,current?.n||0);
+  let item=articles[i].querySelector('.moji-preview');
+  if(!item){articles[i].insertAdjacentHTML('beforeend',html);item=articles[i].querySelector('.moji-preview')}
+  else if(item.dataset.version!==html)item.outerHTML=html;
+  item=articles[i].querySelector('.moji-preview');
+  item.dataset.version=html;
+ }
 }
 function syncSoloBattle(slots){
  const row=document.querySelector('#gameScreen .weaponrow')||
