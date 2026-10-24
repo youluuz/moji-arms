@@ -73,18 +73,28 @@ function preMatchSolo(){
   host.append(pane);
  }
  const rows=[...setup.querySelectorAll('.slot')].slice(0,5);
- const render=rows.map((row,i)=>{
+ const actual=rows.map((row,i)=>{
   const equipment=typeof slots!=='undefined'&&Array.isArray(slots)?slots[i]:null;
   const selector=row.querySelector('select.kind,select[data-kind],select[data-role],select[name*="kind"],select[name*="role"]')||
-   [...row.querySelectorAll('select')].find(e=>types[e.value]);
+    [...row.querySelectorAll('select')].find(e=>types[e.value]);
   const kind=(selector&&types[selector.value]?selector.value:null)||
-   (equipment&&types[equipment.kind]?equipment.kind:null)||
-   ['attack','defense','heal','pierce','homing'][i];
+    (equipment&&types[equipment.kind]?equipment.kind:null)||
+    ['attack','defense','heal','pierce','homing'][i];
   const n=row.querySelector('.strokes')?.value||equipment?.n;
-  return preview(kind,n);
+  return {kind,n};
+ });
+ // Examples of ALL three projectile silhouettes stay visible even when the
+ // player equips five copies of the same attack kind.
+ const render=['attack','defense','heal','pierce','homing'].map(kind=>{
+  const item=actual.find(x=>x.kind===kind);
+  return preview(kind,item?.n||0);
  }).join('');
  const grid=pane.querySelector('.moji-weapon-gallery-grid');
  if(grid.dataset.version!==render){grid.innerHTML=render;grid.dataset.version=render}
+ let summary=pane.querySelector('.moji-equipped-summary');
+ if(!summary){summary=document.createElement('p');summary.className='moji-equipped-summary';pane.append(summary)}
+ const equipped=actual.map((x,i)=>(i+1)+'：'+(types[x.kind]?.marker||'●')+' '+(types[x.kind]?.name||x.kind)+' '+metric(x.kind,x.n)).join('　');
+ if(summary.textContent!=='装備中：'+equipped)summary.textContent='装備中：'+equipped;
 }
 function syncSoloBattle(slots){
  const row=document.querySelector('#gameScreen .weaponrow')||
