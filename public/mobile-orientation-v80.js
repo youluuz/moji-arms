@@ -45,7 +45,7 @@
   }
  }
  function install(){
-  const target=document.getElementById('modeTiles')||document.querySelector('#joinArea h2');
+  const target=document.getElementById('modeTiles')||document.querySelector('#waitArea h2')||document.querySelector('#joinArea h2');
   if(target&&!document.getElementById('mobileOrientationSetting')){
    const element=document.createElement('div');
    element.id='mobileOrientationSetting';
