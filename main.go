@@ -290,6 +290,7 @@ type Room struct {
 	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
 	Started                                                 time.Time
 	Public                                                  bool
+	StartedPlayers int
 	Players                                                 []*Player
 	Obstacles                                               []Obstacle
 	Bullets                                                 []Bullet
@@ -318,10 +319,11 @@ func (r *Room) elapsed() float64 {
 	}
 	return math.Max(0, time.Since(r.Started).Seconds()*1000)
 }
-func (r *Room) dimensions() (float64,float64) { return mapDimensions(len(r.Players)) }
+func (r *Room) combatants() int {if r.Phase!="lobby"&&r.StartedPlayers>=2{return r.StartedPlayers};return len(r.Players)}
+func (r *Room) dimensions() (float64,float64) { return mapDimensions(r.combatants()) }
 func (r *Room) zone() map[string]float64 {
  w,h:=r.dimensions()
- scale:=mapScale(len(r.Players))
+ scale:=mapScale(r.combatants())
 	rad := 1350.0*scale
 	switch r.Shrink {
 	case "none":
@@ -376,7 +378,7 @@ func (r *Room) state() map[string]any {
 		win = r.Winner
 	}
 	w,h:=r.dimensions()
-	return map[string]any{"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(len(r.Players))}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
+	return map[string]any{"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(r.combatants())}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -690,6 +692,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		// The match is finished: keep connections, invites, host and the same room code.
 		if room.Phase != "ended" { return }
 		room.Phase = "lobby"
+		room.StartedPlayers=0
 		room.Winner = ""
 		room.Message = "再戦の準備中（武装と必殺技を変更できます）"
 		room.Bullets = nil
@@ -734,13 +737,14 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			}
 		}
 		room.Phase = "countdown"
+		room.StartedPlayers=len(room.Players)
 		room.Message = "開始まで3秒"
 		room.Started = time.Now().Add(3*time.Second)
 		room.Bullets = nil
 		room.Winner = ""
 		room.DanceUntil=0
 		worldW,worldH:=room.dimensions()
-		factor:=mapScale(len(room.Players))
+		factor:=mapScale(room.combatants())
 		room.Obstacles=newObstaclesSized(room.Theme,worldW,worldH,len(room.Players),room.Shrink)
 		for i, pp := range room.Players {
 			angle := 2 * math.Pi * float64(i) / float64(len(room.Players))
