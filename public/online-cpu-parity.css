@@ -120,3 +120,16 @@ body.online-battle #onlineCountdown{position:absolute;left:50%;top:50%;transform
 body.online-battle #onlineCountdown[hidden]{display:none!important}
 body.online-battle #gameArea #onlineKillScore{display:inline-block;float:none;padding:1px 8px;margin:0 0 0 8px;border:1px solid #d7b77b;border-radius:7px;background:#263a52;color:#ffe7b8;font-size:11px;font-weight:900;white-space:nowrap}
 @media(max-width:640px){body.online-battle #gameArea #onlineKillScore{padding:1px 4px;margin-left:4px;font-size:10px}body.online-battle #onlineCountdown{min-width:80px;min-height:80px;font-size:57px}}
+
+/* Survivor score is always readable during solo-style online battles. */
+body.online-battle #onlineStatus{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:28px;padding:4px 12px;
+ background:#0b3544e8;border:1px solid #90ead7;
+ border-radius:10px;color:#d3fff1;font-size:clamp(11px,1.4vw,14px);
+ font-weight:950;font-variant-numeric:tabular-nums;white-space:nowrap;
+ box-shadow:0 0 13px #59e1db3b;
+}
+@media(max-width:600px){
+ body.online-battle #onlineStatus{padding:3px 7px;min-height:24px;font-size:11px}
+}
