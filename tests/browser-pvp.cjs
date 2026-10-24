@@ -231,6 +231,31 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        throw Error(mode+': server-side spawn/countdown/kill UI invalid '+JSON.stringify(state));
     }
     await Promise.all(pages.map(p=>p.waitForFunction(()=>roomState?.phase==='playing'&&document.getElementById('onlineCountdown')?.hidden,{timeout:15000})));
+    // A third browser opens the exact invite DURING the match, with no
+    // equipment configured. It must watch without joining as a combatant.
+    const viewerContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+    try{
+      const viewer=await viewerContext.newPage();
+      viewer.on('pageerror',e=>errors.push(mode+'/watcher: '+String(e)));
+      await viewer.goto(base+'/multiplayer.html?embedded=1&room='+code,{waitUntil:'domcontentloaded'});
+      await viewer.waitForFunction(()=>joinedAsSpectator===true&&roomState?.phase==='playing',{timeout:20000});
+      await host.waitForFunction(()=>roomState?.spectators===1,{timeout:12000});
+      const watchState=await viewer.evaluate(()=>({
+       players:roomState.players.length,viewers:roomState.spectators,
+       score:document.getElementById('onlineSpectatorCount')?.textContent,
+       watchUI:!document.getElementById('onlineWatchControls').hidden,
+       cards:document.querySelectorAll('#cards .card[data-slot]').length,
+       target:document.getElementById('onlineWatchTarget')?.textContent,
+       choiceHidden:document.getElementById('onlineDeathChoice')?.hidden
+      }));
+      if(watchState.players!==2||watchState.viewers!==1||watchState.score!=='👁 観戦 1'||
+         !watchState.watchUI||watchState.cards!==0||!watchState.target?.includes('観戦中')||
+         !watchState.choiceHidden)
+       throw Error(mode+': live invite did not enter read-only spectator mode '+JSON.stringify(watchState));
+      await viewer.locator('#onlineWatchNext').click();
+      await viewer.locator('#onlineWatchPrev').click();
+    }finally{await viewerContext.close()}
+    await host.waitForFunction(()=>roomState?.spectators===0,{timeout:10000});
     for(let i=0;i<2;i++){
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
