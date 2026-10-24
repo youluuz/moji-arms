@@ -23,6 +23,15 @@ function boot(){
   glyphSection.append(randomBar);
  }
  const battle=U.attachUI(document.querySelector('#gameArea .game-wrap'));battle.showBattle(true);
+ // Its dedicated sixth cell is installed after the server renders five
+ // regular cards (see showGame), never on top of the playable canvas.
+ battle.root.classList.add('moji-ultimate-inline');
+ window.MojiOnlineUltimateDock=()=>{
+  const row=document.getElementById('cards');
+  if(!row)return;
+  row.classList.add('moji-six-slot-row');
+  if(battle.root.parentElement!==row)row.append(battle.root);
+ };
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  const heard=new Map();
