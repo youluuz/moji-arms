@@ -309,7 +309,7 @@ const { chromium } = require('playwright');
      tr.bottom<=fieldRect.top+2&&getComputedStyle(tip).position!=='absolute';
     const outsideStick=!!zone&&document.getElementById('cpuMoveZone')?.closest('.moji-stick-dock')!==null&&
      (zone.right<=fieldRect.left+2||zone.top>=fieldRect.bottom-2);
-    return {guideOutside,outsideStick,cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
+    return {guideOutside,outsideStick,debug:{zone:zone&&{left:zone.left,right:zone.right,top:zone.top,bottom:zone.bottom},field:fieldRect&&{left:fieldRect.left,top:fieldRect.top,bottom:fieldRect.bottom},parent:document.getElementById('cpuMoveZone')?.parentElement?.className,body:document.body.className},cells:rects.length,sameRow:rects.every(r=>Math.abs(r.top-rects[0].top)<9),
       distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
       inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
