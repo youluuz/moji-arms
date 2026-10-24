@@ -98,12 +98,13 @@ function onlineEquipped(){
  }));
 }
 function preMatchOnline(){
- const editor=document.querySelector('#joinArea .online-loadout');
+ const editor=document.querySelector('#joinArea .online-loadout')||
+              document.querySelector('#roomLoadoutMount .online-loadout');
  if(!editor)return;
- // This guide is accessible before joining; the waiting-room guide is already
- // present and receives the same content without any extra standalone preview.
+ // This guide is accessible before joining. After joining, the original
+ // equipment editor moves into the waiting room; update the same guide there.
  let entry=document.querySelector('#joinArea #mojiOnlineAbilityGuide');
- if(!entry){
+ if(!entry&&editor.closest('#joinArea')){
   entry=document.createElement('details');
   entry.id='mojiOnlineAbilityGuide';entry.className='online-guide moji-ability-help';
   entry.innerHTML='<summary><span class="online-guide-collapsed">▼ 5つの能力の使い方・効果を見る（発射イメージ付き）</span><span class="online-guide-expanded">▲ 使い方・効果を閉じる</span></summary>';
