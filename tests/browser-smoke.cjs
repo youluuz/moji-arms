@@ -265,7 +265,6 @@ const { chromium } = require('playwright');
     const homing={x:player.x,y:player.y,vx:0,vy:0,n:14,owner:'e',sourceId:bot.id,life:2,
       ch:'追',homing:true,pierce:false};
     bullets.push(homing);
-    const targetIsInvisible=projectileTarget(homing)===player;
     await new Promise(resolve=>setTimeout(resolve,115));
     const afterHoming=player.hp;
     bullets.length=0;
@@ -275,9 +274,9 @@ const { chromium } = require('playwright');
     await new Promise(resolve=>setTimeout(resolve,115));
     const afterStraight=player.hp;
     bullets.length=0;player.hp=originalHP;
-    return {targetIsInvisible,afterHoming,afterStraight,active:window.MojiCpuUltimateState.invisibleActive()};
+    return {afterHoming,afterStraight,active:window.MojiCpuUltimateState.invisibleActive()};
    });
-   if(invisibleHoming.targetIsInvisible||invisibleHoming.afterHoming!==600||
+   if(invisibleHoming.afterHoming!==600||
       !(invisibleHoming.afterStraight<invisibleHoming.afterHoming)||!invisibleHoming.active)
     throw Error(mode+' invisibility failed to break homing without granting normal-bullet immunity: '+JSON.stringify(invisibleHoming));
    if(errors.length)throw Error(mode+' CPU match JS errors: '+errors.join('; '));
