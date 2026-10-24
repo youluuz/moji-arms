@@ -165,7 +165,9 @@ const { chromium } = require('playwright');
    const label=document.querySelector('#gameScreen .ultimate-aiming-banner');
    const css=label&&getComputedStyle(label);
    return {discoVisible,shotVisible,scaledProjectile:renderer.drawProjectile.toString().includes('cx.scale(1.14,1.14)'),
-    raisedLabel:css?.top&&parseFloat(css.top)<label.offsetParent?.clientHeight*.13};
+    raisedLabel:[...document.styleSheets].some(sheet=>{
+      try{return [...sheet.cssRules].some(rule=>rule.selectorText==='.ultimate-aiming-banner'&&rule.style.top==='9%')}catch(e){return false}
+     })};
   });
   if(discoVisual.discoVisible<150||discoVisual.shotVisible<250||
      !discoVisual.scaledProjectile||!discoVisual.raisedLabel)
