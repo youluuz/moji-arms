@@ -326,6 +326,25 @@ const { chromium } = require('playwright');
     throw Error(mode+' self-only HP/spawn/countdown/kill UI failed '+JSON.stringify(beforeStart));
    await page.waitForFunction(()=>window.MojiCpuBots.countdownLeft()<=0 && document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
 
+   // Send real Chromium touch pointer events to the MOVED joystick and
+   // confirm the actual CPU avatar moves; merely drawing a ring is not enough.
+   const preStick=await page.evaluate(()=>({x:player.x,y:player.y}));
+   const stick=await page.locator('#cpuMoveZone').boundingBox();
+   if(!stick||stick.width<60)throw Error('Joystick missing real thumb-sized touch target');
+   const startX=stick.x+stick.width/2,startY=stick.y+stick.height/2;
+   const cdp=await page.context().newCDPSession(page);
+   try{
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:startX,y:startY,id:1}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:startX+26,y:startY,id:1}]});
+    await page.waitForTimeout(290);
+   }finally{
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await cdp.detach();
+   }
+   const postStick=await page.evaluate(()=>({x:player.x,y:player.y}));
+   if(Math.hypot(postStick.x-preStick.x,postStick.y-preStick.y)<3)
+    throw Error(mode+' real outside-map CPU joystick could not move the fighter '+JSON.stringify({preStick,postStick,stick}));
+
    const botStats=await page.evaluate(()=>({
     number:window.MojiCpuBots.getBots().length,
     loadouts:window.MojiCpuBots.getBots().map(b=>b.loadout.map(s=>s.kind)),
