@@ -116,7 +116,12 @@ const { chromium } = require('playwright');
   await cpuHelp.click();
 
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow]').click();
-  if(!((await cpuGuide.innerText()).includes('鈍化弾')&&(await cpuGuide.innerText()).includes('2段階操作')))throw Error('CPU skill explanation did not update after selecting slow');
+  if(!((await cpuGuide.innerText()).includes('鈍化弾')&&(await cpuGuide.innerText()).includes('2段階操作')&&(await cpuGuide.innerText()).includes('4.5秒間')))
+   throw Error('CPU slow shot guide must reflect the 4.5-second slowdown');
+  for(const [id,phrase] of [['roman','即死'],['invincible','2.8秒'],['dance','マップ全域'],['invisible','4秒']]){
+   await page.locator('#loadoutPanel .ultimate-option[data-ultimate="'+id+'"]').click();
+   if(!(await cpuGuide.innerText()).includes(phrase))throw Error('CPU '+id+' guide lacks '+phrase);
+  }
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click();
   const cpuNamepuGuide=await cpuGuide.innerText();
   if(!cpuNamepuGuide.includes('真顔')||!cpuNamepuGuide.includes('5.5秒')||!cpuNamepuGuide.includes('超豪華'))throw Error('CPU namepu description omitted key game rules');
@@ -183,13 +188,21 @@ const { chromium } = require('playwright');
     return {target:b.id,before:b.hp};
    });
    await page.waitForFunction(()=>window.MojiCpuBots.getBots()[1]?.hp<500,{timeout:12000});
-   const playerKill=await page.evaluate(()=>{
-    const b=window.MojiCpuBots.getBots()[2];
-    b.hp=40;
-    damage(b,90,performance.now(),true,{owner:'p'});
-    return {kills:window.MojiCpuBots.kills(),score:document.querySelector('#cpuKillScore')?.textContent};
+   const slowDebuff=await page.evaluate(()=>{
+    const b=window.MojiCpuBots.getBots()[1],now=performance.now();
+    if(b.hp<=0)return {remaining:-1};
+    damage(b,1,now,false,{owner:'p',ultimate:'slow'});
+    return {remaining:b.slowUntil-now,damage:b.hp};
    });
-   if(playerKill.kills!==1)throw Error(mode+' CPU kill credit missing '+JSON.stringify(playerKill));
+   if(slowDebuff.remaining<4400||slowDebuff.remaining>4600)
+    throw Error(mode+' CPU slow shot did not apply 4.5 seconds: '+JSON.stringify(slowDebuff));
+   const playerKill=await page.evaluate(()=>{
+    const b=window.MojiCpuBots.getBots()[2],now=performance.now();
+    b.hp=600;b.shield=900;b.shieldEnd=now+5000;
+    damage(b,1,now,false,{owner:'p',ultimate:'roman'});
+    return {kills:window.MojiCpuBots.kills(),hp:b.hp,score:document.querySelector('#cpuKillScore')?.textContent};
+   });
+   if(playerKill.kills!==1||playerKill.hp!==0)throw Error(mode+' CPU Roman Cannon must instantly defeat shielded enemies: '+JSON.stringify(playerKill));
    await page.waitForFunction(()=>document.querySelector('#cpuKillScore')?.textContent?.includes('1'),{timeout:10000});
 
    await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
