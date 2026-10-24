@@ -731,9 +731,9 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
 }
 
 func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
- // Four modes share a slightly slower base attack and stronger tiered penalties after 20 and 40 strokes.
+ // Each stroke adds a growing CT penalty; 1 stroke is exactly 0.3 seconds in all four modes.
  for _,tc:=range []struct{n int; seconds float64}{
-  {1,1.0075},{10,2.47},{12,2.847},{20,4.355},{30,6.79},{40,9.225},{58,16.128},{84,26.099},
+  {1,0.3},{2,0.3429},{5,0.4824},{10,0.7509},{12,0.8709},{20,1.4229},{30,2.2749},{40,3.3069},{58,5.6181},{84,9.9861},
  } {
   if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
    t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
@@ -744,12 +744,12 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
  }
  index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"attack:1.3*Math.max(.65,.65+n*.125+Math.max(0,n-10)*.02)+Math.max(0,n-20)*.055+Math.max(0,n-40)*.14") {
+ if !strings.Contains(served,"attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))") {
   t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
  }
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  for _,expected:=range []string{
-  "attack:1.3*(.65+n*.125+Math.max(0,n-10)*.02)+Math.max(0,n-20)*.055+Math.max(0,n-40)*.14",
+  "attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))",
   "const duration=onlineCD(slot.kind,slot.n)/1000",
  } {
   if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
@@ -783,7 +783,7 @@ func TestOnlineCombatScreenMatchesCPUScreenshotLayout(t *testing.T) {
  for _,marker:=range []string{"#gameArea .weaponrow","#gameArea .arena-shell","#gameArea .battle-meta"} {
   if !strings.Contains(string(css),marker) {t.Errorf("CPU-style online battle CSS missing %s",marker)}
  }
- if slotCooldown("attack",58)<=slotCooldown("attack",40)+5 {t.Fatal("58-stroke glyph attack must have notably longer cooldown")}
+ if slotCooldown("attack",58)<=slotCooldown("attack",40)+2 {t.Fatal("58-stroke glyph attack must have notably longer cooldown")}
 }
 
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
@@ -807,7 +807,7 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
  ui,e:=gameFiles.ReadFile("public/ui-polish-v74.css");if e!=nil||!strings.Contains(string(ui),"#findRandomNow")||!strings.Contains(string(ui),".weaponrow") {t.Fatal("shared UI stylesheet missing")}
  servedBase,_:=gameFiles.ReadFile("public/index.html")
  served:=mobilePatchedIndex(string(servedBase))
- for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:1.3*Math.max","defense:1.4*(9+n*.4)"} {
+ for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:0.3*(1+0.14*(n-1)","defense:1.4*(9+n*.4)"} {
   if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
  }
  online,_:=gameFiles.ReadFile("public/multiplayer.html")
