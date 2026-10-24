@@ -1,0 +1,21 @@
+/* Configurable CPU free-for-all — keep the picker readable on phones and desktop. */
+#cpuCountSetting{
+ display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+ margin:8px 0 11px;padding:11px 14px;
+ background:linear-gradient(120deg,#233853,#152a40);border:1px solid #547294;
+ border-radius:12px;max-width:440px;
+}
+#cpuCountSetting[hidden]{display:none!important}
+#cpuCountSetting label{font-size:13px;font-weight:800;color:#f5dfa9}
+#cpuBotCount{
+ min-height:42px;width:100%;max-width:280px;
+ padding:7px 12px;color:#eef8ff;background:#0d2036;
+ border:1px solid #83a4c4;border-radius:9px;cursor:pointer;font:inherit
+}
+#cpuBotCount:focus-visible{outline:3px solid #ffd785;outline-offset:2px}
+#cpuCountSetting small{display:block;font-size:11px;line-height:1.5;color:#bed5ea}
+#cpuCountLive{font-weight:800;color:#ffe1b9}
+@media(max-width:600px){
+ #cpuCountSetting{padding:8px 10px;max-width:100%;margin:5px 0}
+ #cpuBotCount{max-width:none;font-size:15px}
+}
