@@ -291,6 +291,8 @@ function updateZoneWarning(me,m){
  $('onlineZoneWarning').classList.toggle('visible',outside);
  const now=performance.now();if(outside&&now-lastZoneAudioTime>1250){lastZoneAudioTime=now;playZoneWarning()}
 }
+// Phones use a reduced internal canvas resolution; hit tests still use view.w/h.
+const lowPowerMobile=window.matchMedia('(hover:none) and (pointer:coarse)').matches;
 function fitOnlineArena(){
  const shell=document.querySelector('#gameArea .game-wrap');if(!shell||!shell.clientWidth||!shell.clientHeight)return;
  const aspect=shell.clientWidth/shell.clientHeight;
@@ -300,7 +302,7 @@ function fitOnlineArena(){
  view.h=Math.min(worldH,Math.max(aspect<1?520:300,Math.round(view.w/aspect)));
  const scale=Math.min(shell.clientWidth/view.w,shell.clientHeight/view.h);
  cv.style.width=Math.floor(scale*view.w)+'px';cv.style.height=Math.floor(scale*view.h)+'px';
- const dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1));
+ const dpr=Math.min(lowPowerMobile?1.5:2,Math.max(1,window.devicePixelRatio||1));
  const pixelWidth=Math.round(view.w*dpr),pixelHeight=Math.round(view.h*dpr);
  if(cv.width!==pixelWidth||cv.height!==pixelHeight){
   cv.width=pixelWidth;cv.height=pixelHeight;
@@ -353,6 +355,7 @@ function showGame(m){
  document.body.classList.add('online-battle');document.body.classList.remove('online-waiting');
  $('waitArea').style.display='none';$('gameArea').style.display='flex';
  if(!inputTimer){
+  fitOnlineArena();
   inputTimer=setInterval(()=>{const p=roomState?.players.find(x=>x.id===myId);if(p&&roomState.phase==='playing')send({type:'input',keys:Object.keys(keys).filter(k=>keys[k]),aim,fire:down&&window.MojiUltMulti?.canUseSlot(activeSetup.slots[selected]?.kind),selected})},50);
   drawHandle=requestAnimationFrame(draw);
  }
@@ -386,7 +389,7 @@ function showGame(m){
  });
  // Server-announced events sound only on successful casts, not on every mouse click.
  for(const fighter of m.players){const serial=fighter.actionSerial||0;const prev=heardActions.get(fighter.id)||0;if(serial>prev&&m.phase==='playing'&&fighter.lastKind)playAbilitySound(fighter.lastKind,fighter.id===myId?.85:.22);heardActions.set(fighter.id,serial)}
- updateZoneWarning(self,m);fitOnlineArena();
+ updateZoneWarning(self,m);
  if(m.phase==='ended'&&!finished){finished=true;finish(m);}
 }
 function finish(m){
@@ -426,7 +429,13 @@ function finish(m){
  window.MojiUltMulti?.finish(m);
 }
 function stopInput(){if(inputTimer)clearInterval(inputTimer);inputTimer=null}
-function draw(){if(!roomState||roomState.phase==='lobby')return;const m=roomState,worldW=m.world?.w||2300,worldH=m.world?.h||1300,me=m.players.find(p=>p.id===myId)||m.players[0];if(!me)return;cam.x=Math.max(0,Math.min(Math.max(0,worldW-view.w),me.x-view.w/2));cam.y=Math.max(0,Math.min(Math.max(0,worldH-view.h),me.y-view.h/2));cx.clearRect(0,0,view.w,view.h);cx.save();cx.translate(-cam.x,-cam.y);const palettes={shrine:['#282016','#58452d','#e8c780'],sakura:['#2a1a2b','#71405a','#ffc1d9'],night:['#101d33','#28446b','#8bbaff']};const pal=palettes[m.theme];let grad=cx.createLinearGradient(0,0,worldW,worldH);grad.addColorStop(0,pal[0]);grad.addColorStop(1,pal[1]);cx.fillStyle=grad;cx.fillRect(0,0,worldW,worldH);cx.strokeStyle='#ffffff12';cx.lineWidth=1;for(let x=0;x<=worldW;x+=65){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,worldH);cx.stroke()}for(let y=0;y<=worldH;y+=65){cx.beginPath();cx.moveTo(0,y);cx.lineTo(worldW,y);cx.stroke()}cx.strokeStyle=pal[2];cx.lineWidth=12;cx.strokeRect(45,45,worldW-90,worldH-90);
+let lastOnlinePaint=0;
+function draw(now){
+ if(!roomState||roomState.phase==='lobby')return;
+ // WebSocket state and input cadence stay unchanged; throttle only heavy
+ // canvas drawing on phones to ~30 fps.
+ if(lowPowerMobile&&lastOnlinePaint&&now-lastOnlinePaint<33){drawHandle=requestAnimationFrame(draw);return;}
+ lastOnlinePaint=now;const m=roomState,worldW=m.world?.w||2300,worldH=m.world?.h||1300,me=m.players.find(p=>p.id===myId)||m.players[0];if(!me)return;cam.x=Math.max(0,Math.min(Math.max(0,worldW-view.w),me.x-view.w/2));cam.y=Math.max(0,Math.min(Math.max(0,worldH-view.h),me.y-view.h/2));cx.clearRect(0,0,view.w,view.h);cx.save();cx.translate(-cam.x,-cam.y);const palettes={shrine:['#282016','#58452d','#e8c780'],sakura:['#2a1a2b','#71405a','#ffc1d9'],night:['#101d33','#28446b','#8bbaff']};const pal=palettes[m.theme];let grad=cx.createLinearGradient(0,0,worldW,worldH);grad.addColorStop(0,pal[0]);grad.addColorStop(1,pal[1]);cx.fillStyle=grad;cx.fillRect(0,0,worldW,worldH);cx.strokeStyle='#ffffff12';cx.lineWidth=1;for(let x=0;x<=worldW;x+=65){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,worldH);cx.stroke()}for(let y=0;y<=worldH;y+=65){cx.beginPath();cx.moveTo(0,y);cx.lineTo(worldW,y);cx.stroke()}cx.strokeStyle=pal[2];cx.lineWidth=12;cx.strokeRect(45,45,worldW-90,worldH-90);
 // Screenshot-matched CPU arena atmosphere: themed floor crest and fixed decorative particles.
 cx.save();cx.textAlign='center';cx.textBaseline='middle';
 const emblem=m.theme==='sakura'?'花':m.theme==='night'?'月':'武';
