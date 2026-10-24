@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1426">
+<title>文字武装 | 1文字が武器になる無料ブラウザ対戦ゲーム</title>
+<meta name="description" content="好きな漢字・絵文字・記号を武装して戦え。文字武装はCPU戦もオンライン対戦も楽しめる無料のブラウザバトルゲーム。インストール不要。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="文字武装 | その一文字が、最強の武器。">
+<meta property="og:description" content="漢字も絵文字も武器になる。5つの文字を装備してCPU戦・最大10人のオンラインバトルへ。無料・ブラウザでプレイ。">
+<meta property="og:image" content="https://raw.githubusercontent.com/youluuz/moji-arms/main/public/mojibusou-icon.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/mojibusou-icon.png" type="image/png">
+<style>
+:root{color-scheme:dark;--bg:#091426;--panel:#13253d;--ink:#f4f7ff;--soft:#c2d4eb;--gold:#ffda91;--mint:#8aeddc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 50% -200px,#25466c 0%,#0d1c31 44%,var(--bg) 85%);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:var(--ink);line-height:1.7}
+a{color:inherit}
+header{position:sticky;top:0;z-index:5;background:#091426e9;border-bottom:1px solid #46627c80;backdrop-filter:blur(16px)}
+nav{max-width:1050px;margin:auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:950;letter-spacing:.07em;text-decoration:none}
+.brand img{width:37px;height:37px;border-radius:9px}
+nav .links{display:flex;align-items:center;gap:20px;font-size:13px;font-weight:750}
+nav .links a{text-decoration:none}
+nav .links a:hover{color:var(--gold)}
+.wrap{max-width:1050px;margin:auto;padding:0 22px}
+.hero{padding:77px 0 65px;display:grid;grid-template-columns:1.2fr .8fr;align-items:center;gap:35px}
+.eyebrow{color:var(--mint);font-size:12px;font-weight:900;letter-spacing:.22em}
+h1{font-size:clamp(43px,7.2vw,79px);line-height:1.12;letter-spacing:.045em;margin:17px 0 19px;font-weight:1000}
+h1 strong{color:var(--gold);text-shadow:0 0 27px #f8cd7440}
+.lead{max-width:620px;font-size:clamp(16px,2.2vw,19px);color:#d7e7f9;margin-bottom:28px}
+.actions{display:flex;flex-wrap:wrap;gap:12px}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:14px 24px;border-radius:12px;font-size:16px;font-weight:950;text-decoration:none;min-height:53px;transition:transform .13s}
+.cta:hover{transform:translateY(-2px)}
+.cta.primary{background:linear-gradient(120deg,#ffe19f,#c99542);color:#131c2b;box-shadow:0 8px 32px #ffd47c34}
+.cta.secondary{background:#213b59;border:1px solid #5d84aa}
+.micro{color:#a9bfdb;font-size:12px;margin:14px 0 0}
+.stage{min-height:355px;position:relative;border:1px solid #8eb6ce66;border-radius:26px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at center,#2e5369 1%,#12283f 55%,#0b1a2e);box-shadow:0 25px 90px #02091177,inset 0 0 42px #73e7db0e}
+.stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 35px,#9eaddd0e 36px),repeating-linear-gradient(90deg,transparent 0 35px,#9eaddd0e 36px);pointer-events:none}
+.fighter{position:absolute;display:grid;place-items:center;width:108px;height:108px;border-radius:24px;font-size:60px;font-weight:950;border:3px solid #dffcff;transform:rotate(-10deg);box-shadow:0 0 38px #62dcfa45;background:#184c6d;z-index:1}
+.fighter.one{left:12%;top:23%;color:#e8ffff}
+.fighter.two{right:10%;bottom:22%;background:#653245;border-color:#ffd5a8;box-shadow:0 0 40px #ffac8559;transform:rotate(10deg);color:#ffe8d3}
+.bolt{font-weight:950;font-size:67px;color:var(--gold);z-index:2;text-shadow:0 0 32px #ffdf9c}
+.stage-tag{position:absolute;bottom:16px;left:20px;color:#bfdbed;font-size:10px;letter-spacing:.22em;z-index:2}
+section{padding:33px 0 44px}section h2{font-size:clamp(25px,3.7vw,34px);margin:0 0 9px}section>p,.section-intro{color:var(--soft);margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.card{border-radius:18px;background:linear-gradient(150deg,#192d48,#112038);border:1px solid #5a789a7a;padding:20px}
+.card .emoji{font-size:30px}.card h3{margin:9px 0;font-size:18px;color:#ffe0a2}.card p{margin:0;color:var(--soft);font-size:14px}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mode{border:1px solid #6281a075;border-radius:15px;padding:18px;background:#15273f}
+.mode h3{margin:0 0 4px;color:#fff0c6}.mode p{margin:0;color:var(--soft);font-size:14px}
+.steps{list-style:none;counter-reset:step;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.steps li{padding:18px;border-radius:14px;background:#13273f;border:1px solid #61768b73;color:#d6e9fa;font-size:14px}
+.steps li::before{counter-increment:step;content:counter(step,decimal-leading-zero);display:block;color:var(--gold);font-size:27px;font-weight:950;margin-bottom:5px}
+.note{padding:17px 19px;border-left:3px solid #80daca;color:#c2d4e9;background:#102437;font-size:13px;border-radius:5px 13px 13px 5px}
+.bottom{text-align:center;padding:60px 20px;background:radial-gradient(ellipse at center,#26354c,#0b1527 75%);border-top:1px solid #3c5473}
+.bottom h2{font-size:32px;margin:0 0 12px}
+footer{border-top:1px solid #3247626b;color:#a9bed5;padding:20px 0 34px;font-size:12px}
+footer .wrap{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+footer a{color:#c9dff6}
+@media(max-width:750px){
+ .hero{grid-template-columns:1fr;padding:43px 0 35px}.stage{min-height:270px}
+ .grid,.steps{grid-template-columns:1fr}.modes{grid-template-columns:1fr}
+ nav .links{gap:11px;font-size:11px}.fighter{width:85px;height:85px;font-size:48px}
+ section{padding:20px 0 32px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><nav><a class="brand" href="/about.html"><img src="/mojibusou-icon.png" alt="" width="37" height="37">文字武装 <span style="color:#b5c9e3;font-size:10px">MOJIBUSOU</span></a><div class="links"><a href="#modes">モード</a><a href="#how">遊び方</a><a href="/">ゲームへ →</a></div></nav></header>
+<main>
+<div class="wrap"><div class="hero">
+ <div>
+  <div class="eyebrow">FREE BROWSER BATTLE · PUBLIC BETA</div>
+  <h1>その一文字が、<br><strong>最強の武器。</strong></h1>
+  <p class="lead">漢字、絵文字、アルファベット、記号。たった1文字が攻撃にも防御にもなる。<strong>文字武装</strong>は、5つの文字を装備して戦う無料のブラウザ対戦ゲーム。</p>
+  <div class="actions"><a class="cta primary" href="/">⚔ 無料でプレイ</a><button type="button" class="cta secondary" id="share" style="cursor:pointer;color:white">↗ 友達にシェア</button></div>
+  <p class="micro">インストール不要 · PC／スマホ対応 · CPU戦／オンライン対戦</p>
+ </div>
+ <div class="stage" role="img" aria-label="「文」と「龍」の文字が衝突するイメージビジュアル"><span class="fighter one">文</span><span class="bolt">⚡</span><span class="fighter two">龍</span><span class="stage-tag">EQUIP YOUR GLYPH. SURVIVE THE ARENA.</span></div>
+</div></div>
+<div class="wrap">
+<section><h2>文字で戦い方が変わる。</h2><p class="section-intro">装備の組み合わせから必殺技まで、自分だけの戦い方を作ろう。</p><div class="grid">
+ <div class="card"><div class="emoji">⚔️</div><h3>5つの文字を武装</h3><p>直進攻撃・貫通・ホーミング・防御・回復を好きな文字に組み合わせよう。画数によって性能と再使用時間が変化する。</p></div>
+ <div class="card"><div class="emoji">✨</div><h3>一発逆転の必殺技</h3><p>ロマン砲、硬化弾、ダンスなど個性豊かな必殺技から1つを選択。使いどころが勝負の分かれ目。</p></div>
+ <div class="card"><div class="emoji">🏆</div><h3>最大10人のバトル</h3><p>CPU相手に練習するもよし、ルームコードで友達を招くもよし。最後の生存者を目指せ。</p></div>
+</div></section>
+<section id="modes"><h2>プレイモード</h2><p class="section-intro">気軽なソロプレイから、自分好みの対戦設定まで。</p><div class="modes">
+ <div class="mode"><h3>🤖 通常CPU / カスタムCPU</h3><p>CPU数を選んで対戦。装備やマップ条件を変えて実力を試そう。</p></div>
+ <div class="mode"><h3>🌐 通常マルチ / カスタムマルチ</h3><p>別々のWi-Fiにいる友達ともルームコードで対戦可能。ランダムマッチの待機ルーム機能も。</p></div>
+</div></section>
+<section id="how"><h2>遊び方はかんたん。</h2><ol class="steps">
+ <li><strong>プレイヤー名と文字を設定</strong><br>使いたい1文字を5つのスロットに装備。全部ランダム設定も可能。</li>
+ <li><strong>試合を開始</strong><br>CPU戦はすぐスタート。オンラインはルームへ参加し、ホストが開始。</li>
+ <li><strong>タップ／クリックで攻撃</strong><br>狙う方向へ攻撃。移動はスティック／WASD。最後まで生き残ろう。</li>
+</ol>
+<div class="note"><strong>公開ベータについて：</strong>無料サーバーは無通信が続くと休止するため、最初のアクセスに少し時間がかかる場合があります。ルームはサーバー再起動で消えることがあります。個人情報をプレイヤー名やルーム共有文に入力しないでください。</div>
+</section>
+</div>
+<div class="bottom"><h2>準備はいいか？</h2><p style="color:#c4d8ed">次の勝者は、あなたかもしれない。</p><a class="cta primary" href="/">🎮 文字武装を始める</a></div>
+</main>
+<footer><div class="wrap"><span>© 2026 文字武装 — 個人制作ブラウザゲーム</span><span><a href="/privacy.html">プライバシー・注意事項</a>　·　<a href="https://github.com/youluuz/moji-arms">GitHub</a></span></div></footer>
+<script>
+document.getElementById('share').addEventListener('click',async()=>{
+ const data={title:'文字武装 — その一文字が、最強の武器。',text:'漢字も絵文字も武器になる無料ブラウザ対戦ゲーム！',url:location.href};
+ try{if(navigator.share){await navigator.share(data);return;}
+ if(navigator.clipboard){await navigator.clipboard.writeText(data.text+' '+data.url);document.getElementById('share').textContent='✓ リンクをコピーしました';return;}}
+ catch(err){if(err.name==='AbortError')return}
+ window.prompt('このリンクをシェアしてください',data.url);
+});
+</script>
+</body>
+</html>
