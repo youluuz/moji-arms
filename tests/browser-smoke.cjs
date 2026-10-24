@@ -151,6 +151,9 @@ const { chromium } = require('playwright');
   if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M23 13H45L43 53H30')||
      !hardeningArt.svg?.includes('x="62" y="59" width="28" height="25"'))
    throw Error('Hardening icon must show two feet and a visible ankle padlock: '+JSON.stringify(hardeningArt).slice(0,120));
+  const preview=await page.evaluate(()=>[...document.querySelectorAll('#mojiWeaponPreview .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
+  if(preview.length!==5||preview[0].mark!=='●'||preview[3].mark!=='◆'||preview[4].mark!=='◎'||!preview.every(p=>p.stats.includes('CT')))
+   throw Error('Solo prematch weapon trajectory and stats previews missing '+JSON.stringify(preview));
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
   if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',275],['invincible',280],['dance',280],['invisible',240],['namepu',160]]))throw Error('shared specs mismatch');
@@ -169,17 +172,22 @@ const { chromium } = require('playwright');
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
+   await page.waitForFunction(()=>document.querySelectorAll('#gameScreen .moji-battle-metric').length===5,{timeout:9500});
+   const soloMetrics=await page.locator('#gameScreen .moji-battle-metric').allInnerTexts();
+   if(!soloMetrics.some(x=>x.includes('威力'))||!soloMetrics.some(x=>x.includes('防御'))||!soloMetrics.some(x=>x.includes('回復')))
+    throw Error(mode+' solo battle missing damage/guard/heal on each card: '+JSON.stringify(soloMetrics));
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
    if(!await page.locator('#cpuBattleCountdown').isVisible())throw Error(mode+' CPU start countdown not visible on map');
    const beforeStart=await page.evaluate(()=>({
     seconds:window.MojiCpuBots.countdownLeft(), player:{x:player.x,y:player.y},
     enemy:{x:enemy.x,y:enemy.y}, enemyHp:document.getElementById('ehp')?.textContent,
-    hpVisible:!!document.getElementById('ehp')?.getBoundingClientRect().width,
+    rivalHPVisible:!!document.getElementById('ehp')?.getBoundingClientRect().width,
+    ownHPVisible:!!document.querySelector('#gameScreen .hud > :first-child')?.getBoundingClientRect().width,
     killScore:document.getElementById('cpuKillScore')?.textContent
    }));
-   if(beforeStart.seconds<1||beforeStart.seconds>3.2||!beforeStart.hpVisible||
+   if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
       beforeStart.killScore!=='⚔ キル 0'||Math.hypot(beforeStart.player.x-beforeStart.enemy.x,beforeStart.player.y-beforeStart.enemy.y)<250)
-    throw Error(mode+' missing HP/spawn/countdown/kill UI '+JSON.stringify(beforeStart));
+    throw Error(mode+' self-only HP/spawn/countdown/kill UI failed '+JSON.stringify(beforeStart));
    await page.waitForFunction(()=>window.MojiCpuBots.countdownLeft()<=0 && document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
 
    const botStats=await page.evaluate(()=>({
