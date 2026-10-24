@@ -40,7 +40,7 @@ function boot(){
  }
  function onFieldPointer(e){
   const p=roomState?.players?.find(p=>p.id===myId);
-  if(p?.hardenedLeft>0)return Boolean(p.ultimateAiming);
+  if(p?.hardenedLeft>0)return false; // Aimed shot remains locked; tap may cast guard/heal.
   if(!p?.ultimateAiming)return false;
   // Aiming consumes only the battlefield tap, not joystick or equipment controls.
   if(e.pointerType==='mouse'&&e.button!==0)return true;
@@ -60,7 +60,7 @@ function boot(){
    banner.hidden=!own.ultimateAiming;
    if(!banner.hidden)banner.textContent=def.name+' 照準中・残り'+Math.ceil(own.ultimateAimLeft)+'秒';
    hardenBanner.hidden=!(own.hardenedLeft>0);
-   if(!hardenBanner.hidden)hardenBanner.textContent='🔒 硬直 '+own.hardenedLeft.toFixed(1)+'秒｜移動・攻撃・必殺技不可／回復・防御OK';
+   if(!hardenBanner.hidden)hardenBanner.textContent='🔒 硬直 '+own.hardenedLeft.toFixed(1)+'秒｜回復・防御のみOK';
    for(const p of m.players){
     const serial=p.ultimateSerial||0,last=heard.get(p.id)||0;
     if(serial>last && p.lastUltimate)U.play(p.lastUltimate);
