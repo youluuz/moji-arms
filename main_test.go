@@ -811,7 +811,7 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
   if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
  }
  online,_:=gameFiles.ReadFile("public/multiplayer.html")
- for _,marker:=range []string{"auto==='match'","code:action==='join'?","online-waiting","ui-polish-v74.css","a.volume=.10","onlineCD(slot.kind,slot.n)/1000"} {
+ for _,marker:=range []string{"auto==='match'","action==='join'||action==='watch'","online-waiting","ui-polish-v74.css","a.volume=.10","onlineCD(slot.kind,slot.n)/1000"} {
   if !strings.Contains(string(online),marker){t.Errorf("online side missing %q",marker)}
  }
 }
