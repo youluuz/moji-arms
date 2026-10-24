@@ -101,3 +101,42 @@
  #lobbyScreen .moji-sortie-dock{padding:4px 8px}
  #lobbyScreen #mojiSortieDock #start{min-height:40px!important}
 }
+
+
+/* Lobby bottom actions v10.3: room creation sits directly left of CPU start. */
+#lobbyScreen #mojiSortieDock .moji-sortie-actions{
+ display:flex;align-items:center;justify-content:flex-end;
+ gap:10px;margin-left:auto;min-width:0;max-width:100%;
+}
+#lobbyScreen #mojiSortieDock .moji-dock-room-create{
+ position:static!important;display:inline-flex!important;
+ align-items:center;justify-content:center;flex:0 1 auto;
+ min-height:52px!important;min-width:176px;
+ margin:0!important;padding:9px 16px!important;
+ box-sizing:border-box!important;border:1px solid #f2c77e!important;
+ border-radius:12px!important;
+ background:linear-gradient(120deg,#364d6b,#1c344f)!important;
+ color:#ffdfa3!important;font-weight:900!important;
+ font-size:clamp(13px,2vw,16px)!important;
+ box-shadow:0 6px 18px #06121f55;cursor:pointer;
+ white-space:nowrap;
+}
+#lobbyScreen #mojiSortieDock .moji-dock-room-create:focus-visible{
+ outline:3px solid #fff0b9;outline-offset:2px;
+}
+@media(max-width:700px){
+ #lobbyScreen #mojiSortieDock .moji-sortie-text{display:none}
+ #lobbyScreen #mojiSortieDock .moji-sortie-actions{width:100%;gap:8px}
+ #lobbyScreen #mojiSortieDock .moji-sortie-actions #start,
+ #lobbyScreen #mojiSortieDock .moji-dock-room-create{
+  flex:1 1 0;min-width:0!important;width:0;
+  min-height:48px!important;padding:8px 4px!important;
+  font-size:clamp(11px,3.2vw,14px)!important;
+  white-space:normal;text-align:center;
+ }
+}
+@media(max-height:460px) and (orientation:landscape){
+ #lobbyScreen #mojiSortieDock .moji-dock-room-create{
+  min-height:40px!important;
+ }
+}
