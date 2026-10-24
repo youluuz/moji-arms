@@ -116,7 +116,7 @@ function botAction(bot,target,now){
  const n=action.n;
  action.ready=now+slotCooldownMs(action.kind,n);
  if(action.kind==='heal'){
-  bot.hp=Math.min(MAX_HP,bot.hp+n*HEAL_PER_STROKE);
+  bot.hp=Math.min(MAX_HP,bot.hp+n*3.4);
  }else if(action.kind==='defense'){
   bot.shield=n*SHIELD_PER_STROKE;bot.shieldEnd=now+2300;
  }else{
@@ -171,10 +171,15 @@ function boot(){
   const request=requestCast;
   requestCast=function(...args){if(performance.now()<roundStartAt)return;return request.apply(this,args);};
  }
- const hud=document.querySelector('#gameScreen .hud .hud-line span');
+ // Keep survivor count + personal kills together in the battle HUD's top-right
+ // corner, outside the arena canvas so its minimap is never obstructed.
+ const hud=document.querySelector('#gameScreen .hud');
+ if(hud&&!document.getElementById('cpuBattleScoreboard')){
+  hud.insertAdjacentHTML('beforeend','<div id="cpuBattleScoreboard" class="moji-battle-score" role="group" aria-label="生存人数と自分のキル数"><span id="cpuAliveCount" class="match-alive-count" role="status" aria-live="off">👥 生存 2 / 2人</span><span id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</span></div>');
+ }
  const arena=document.querySelector('#gameScreen .arena-shell');
- if(arena&&!document.getElementById('cpuKillScore')){
-  arena.insertAdjacentHTML('beforeend','<div id="cpuAliveCount" class="match-alive-count" role="status" aria-live="off">👥 生存 2 / 2人</div><div id="cpuKillScore" class="match-kill-score" aria-label="自分のキル数">⚔ キル 0</div><div id="cpuBattleCountdown" class="match-countdown" role="status" aria-live="polite" hidden>3</div>');
+ if(arena&&!document.getElementById('cpuBattleCountdown')){
+  arena.insertAdjacentHTML('beforeend','<div id="cpuBattleCountdown" class="match-countdown" role="status" aria-live="polite" hidden>3</div>');
  }
  const other=document.querySelectorAll('#gameScreen .hud .hud-line>span:first-child')[1];
  if(other)other.innerHTML='<span id="cpuCountLive">◆ CPU 残り 1 / 1体</span>';
