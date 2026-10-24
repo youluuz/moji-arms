@@ -87,12 +87,24 @@ const { chromium } = require('playwright');
   const cpuHelp=page.locator('#loadoutPanel .ultimate-guide-toggle');
   if(!await cpuGuide.isHidden())throw Error('CPU guide should default to collapsed');
   if(await cpuHelp.getAttribute('aria-expanded')!=='false')throw Error('CPU guide toggle starts expanded');
+  const cpuArrow=cpuHelp.locator('.ultimate-guide-chevron');
+  const cpuArrowBox=await cpuArrow.boundingBox();
+  if(!(await cpuArrow.innerText()).includes('▼')||!(await cpuArrow.innerText()).includes('開く')||
+     await cpuHelp.getAttribute('aria-label')!=='必殺技の使い方を開く'||!cpuArrowBox||
+     cpuArrowBox.width<60||cpuArrowBox.height<44)
+   throw Error('CPU skill guide open arrow must be a large labeled touch cue');
   await cpuHelp.click();
   if(!await cpuGuide.isVisible()||await cpuHelp.getAttribute('aria-expanded')!=='true')throw Error('CPU guide did not expand on request');
   if(!await cpuGuide.locator('.ultimate-guide-summary').innerText())throw Error('CPU ability guide has no effect summary');
   if(!await cpuGuide.locator('.ultimate-guide-usage').innerText())throw Error('CPU ability guide has no how-to-use instructions');
   if(!await cpuGuide.locator('.ultimate-guide-caution').innerText())throw Error('CPU ability guide has no limitations or weaknesses');
   if(!(await cpuHelp.innerText()).includes('閉じる'))throw Error('CPU expanded guide does not clearly say how to close');
+  if(!(await cpuArrow.innerText()).includes('▲')||!(await cpuArrow.innerText()).includes('閉じる')||
+     await cpuHelp.getAttribute('aria-label')!=='必殺技の使い方を閉じる')
+   throw Error('CPU skill guide close arrow or label missing');
+  await cpuHelp.click();
+  if(!await cpuGuide.isHidden())throw Error('CPU skill guide arrow button did not collapse');
+  await cpuHelp.click();
   const cpuClose=cpuGuide.locator('.ultimate-guide-close'),cpuBottomClose=cpuGuide.locator('.ultimate-guide-bottom-close');
   if(!await cpuClose.isVisible()||!await cpuBottomClose.isVisible())throw Error('CPU close actions are not visible');
   if(await cpuClose.evaluate(el=>el.getBoundingClientRect().height)<42)throw Error('CPU top close touch target is too small');
@@ -306,11 +318,23 @@ const { chromium } = require('playwright');
   const onlineGuide=page.locator('#joinArea .ultimate-guide');
   const onlineHelp=page.locator('#joinArea .ultimate-guide-toggle');
   if(!await onlineGuide.isHidden())throw Error('online guide must default to collapsed');
+  const onlineArrow=onlineHelp.locator('.ultimate-guide-chevron');
+  const onlineArrowBox=await onlineArrow.boundingBox();
+  if(!(await onlineArrow.innerText()).includes('▼')||!(await onlineArrow.innerText()).includes('開く')||
+     await onlineHelp.getAttribute('aria-label')!=='必殺技の使い方を開く'||!onlineArrowBox||
+     onlineArrowBox.width<60||onlineArrowBox.height<44)
+   throw Error('Online skill guide open arrow is not obvious enough');
   await page.locator('#joinArea .ultimate-option[data-ultimate=invincible]').click();
   if(!await onlineGuide.isHidden())throw Error('selecting an ultimate must not open its explanation automatically');
   await onlineHelp.click();
   if(!await onlineGuide.isVisible()||await onlineHelp.getAttribute('aria-expanded')!=='true')throw Error('online help cannot be opened');
   if(!(await onlineHelp.innerText()).includes('閉じる'))throw Error('Online expanded guide must clearly signal close action');
+  if(!(await onlineArrow.innerText()).includes('▲')||!(await onlineArrow.innerText()).includes('閉じる')||
+     await onlineHelp.getAttribute('aria-label')!=='必殺技の使い方を閉じる')
+   throw Error('Online skill guide close arrow or label missing');
+  await onlineHelp.click();
+  if(!await onlineGuide.isHidden())throw Error('Online skill guide did not collapse by arrow button');
+  await onlineHelp.click();
   const onlineClose=onlineGuide.locator('.ultimate-guide-close'),onlineBottomClose=onlineGuide.locator('.ultimate-guide-bottom-close');
   if(!await onlineClose.isVisible()||!await onlineBottomClose.isVisible())throw Error('Online guide close buttons missing');
   await onlineClose.click();
