@@ -246,6 +246,23 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
         touchUI.ratio>1.55||touchUI.attackColor!=='#dbff70')
       throw Error(mode+': non-overlapping six slots, concentric joystick or lime attack missing '+JSON.stringify(touchUI));
+     // The joystick must MOVE the server-authoritative fighter, not just
+     // remain visually outside the map with a disconnected touch listener.
+     const p0=await page.evaluate(()=>{const me=roomState.players.find(p=>p.id===myId);return {x:me.x,y:me.y}});
+     const jbox=await page.locator('#moveZone').boundingBox();
+     const cdp=await page.context().newCDPSession(page);
+     const x=jbox.x+jbox.width/2,y=jbox.y+jbox.height/2;
+     try{
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x,y}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:x+25,y}]});
+      await page.waitForTimeout(350);
+     }finally{
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      await cdp.detach();
+     }
+     const p1=await page.evaluate(()=>{const me=roomState.players.find(p=>p.id===myId);return {x:me.x,y:me.y}});
+     if(Math.hypot(p1.x-p0.x,p1.y-p0.y)<3)
+      throw Error(mode+': moved off-map PvP joystick does not control server-side fighter '+JSON.stringify({p0,p1,jbox}));
      // Check the screenshot-defining structure, not just a decorative header.
      const parity=await page.evaluate(()=>{
       const box=q=>document.querySelector(q).getBoundingClientRect();
