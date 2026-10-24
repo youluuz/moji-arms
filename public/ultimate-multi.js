@@ -39,9 +39,9 @@ function boot(){
  let held=false;
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;document.querySelector('#gameArea .game-wrap').append(banner);
  const howto=document.createElement('div');
- howto.className='moji-battle-howto';howto.setAttribute('role','note');
+ howto.className='moji-battle-howto moji-outside-map';howto.setAttribute('role','note');
  howto.innerHTML='<span>🎯 タップ／クリックした位置へ攻撃！</span><small>左スティック／WASDで移動　・　下の武装で切替</small>';
- document.querySelector('#gameArea .game-wrap').append(howto);
+ document.querySelector('#gameArea .game-wrap').insertAdjacentElement('beforebegin',howto);
  const hardenBanner=document.createElement('div');hardenBanner.className='ultimate-aiming-banner';hardenBanner.hidden=true;
  hardenBanner.style.cssText='background:#11374df2;color:#d7fcff;border-color:#a4f5ff;top:16%;';
  document.querySelector('#gameArea .game-wrap').append(hardenBanner);
