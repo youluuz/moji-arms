@@ -519,7 +519,7 @@ func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
   t.Run(mode,func(t *testing.T){
    now:=float64(time.Now().UnixNano())/1e9
    shooter:=&Player{ID:"a",C:&Client{send:make(chan []byte,40)},Alive:true,HP:600,X:400,Y:450,Keys:map[string]bool{}}
-   shielded:=&Player{ID:"b",Alive:true,HP:600,X:800,Y:450,Keys:map[string]bool{"d":true},Fire:true,Shield:600,ShieldUntil:now+10,
+   shielded:=&Player{ID:"b",Alive:true,HP:600,X:800,Y:450,Keys:map[string]bool{"d":true},Fire:false,Shield:600,ShieldUntil:now+10,
     Ultimate:"invincible",UltimateCharge:280,
     Slots:[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}}
    c:=&Client{send:make(chan []byte,40),pid:"b"}
@@ -688,7 +688,7 @@ func TestOnlineCombatScreenMatchesCPUScreenshotLayout(t *testing.T) {
 func TestUltimateHelpToggleAndTwoCustomIcons(t *testing.T) {
  js,e:=gameFiles.ReadFile("public/ultimate-core.js");if e!=nil{t.Fatal(e)}
  content:=string(js)
- for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","setGuideOpen(false,true)","ultimate-guide-close","ultimate-guide-bottom-close","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'鈍化弾'","rotate(-24 48 49)","M65 32H83L89 37V63L83 68H65","M44 10 65 13","M34 65 29 67"} {
+ for _,part:=range []string{"ultimate-guide-toggle","aria-expanded","setGuideOpen(false,true)","ultimate-guide-close","ultimate-guide-bottom-close","guideToggle.addEventListener('click'","name:'ロマン砲'","name:'硬化弾'","rotate(-24 48 49)","M65 32H83L89 37V63L83 68H65","M43 16 72 19 87 40","M49 54Q59 47 69 54"} {
   if !strings.Contains(content,part){t.Errorf("missing ultimate help control or new icon artwork: %s",part)}
  }
  css,e:=gameFiles.ReadFile("public/ultimate-ui.css");if e!=nil{t.Fatal(e)}
