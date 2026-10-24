@@ -51,3 +51,8 @@ body.online-battle #gameArea .weapon .wkind{font-weight:900!important}
  body.online-battle #gameArea .weapon .card-track{margin-top:1px!important}
 }
 @media(prefers-reduced-motion:reduce){.moji-preview-shot{animation:none!important;left:50%!important}}
+
+/* Original solo HUD's second card is the old top-right opponent HP panel. */
+#gameScreen .hud > :nth-child(2){display:none!important}
+#gameScreen .hud{grid-template-columns:minmax(0,1fr)!important}
+#gameScreen .hud > :first-child{max-width:580px!important;width:100%!important}
