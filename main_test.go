@@ -483,7 +483,7 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  if p.UltimateAiming || math.Abs(p.UltimateWindupUntil-(float64(time.Now().UnixNano())/1e9+1))>.12 {t.Fatal("roman target should start 1s windup")}
  p.UltimateWindupUntil=float64(time.Now().UnixNano())/1e9-.01
  a.tick(.01)
- if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=600 {t.Fatal("roman cannon not emitted at expected power")}
+ if len(room.Bullets)!=1 || room.Bullets[0].Special!="roman" || room.Bullets[0].Damage!=600 || math.Abs(room.Bullets[0].VX-590)>.01 {t.Fatal("roman cannon not emitted at expected power")}
  a.handle(c2,[]byte(`{"type":"ultimate"}`))
  if q.InvincibleUntil<=float64(time.Now().UnixNano())/1e9 {t.Fatal("invulnerability not activated")}
  hp:=q.HP;hit(q,999,true,float64(time.Now().UnixNano())/1e9)
@@ -510,7 +510,58 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=275;p.NamepuUntil=0
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
  a.handle(c1,[]byte(`{"type":"ultimate-aim","aim":0}`))
- if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" || room.Bullets[len(room.Bullets)-1].Damage!=60 {t.Fatal("slow ultimate must still deal 60 damage")}
+ if len(room.Bullets)==0 || room.Bullets[len(room.Bullets)-1].Special!="slow" || room.Bullets[len(room.Bullets)-1].Ch!="硬化弾" || room.Bullets[len(room.Bullets)-1].Damage!=60 {t.Fatal("slow ultimate must still deal 60 damage")}
+}
+// A hardening shot immobilizes shielded targets but cannot override full
+// invincibility, and it resumes movement and attacks after three seconds.
+func TestHardeningBulletAcrossOnlineBattleModes(t *testing.T) {
+ for _,mode:=range []string{"normal","custom"} {
+  t.Run(mode,func(t *testing.T){
+   now:=float64(time.Now().UnixNano())/1e9
+   shooter:=&Player{ID:"a",Alive:true,HP:600,X:400,Y:450,Keys:map[string]bool{}}
+   shielded:=&Player{ID:"b",Alive:true,HP:600,X:800,Y:450,Keys:map[string]bool{"d":true},Fire:true,Shield:600,ShieldUntil:now+10,
+    Ultimate:"invincible",UltimateCharge:280,
+    Slots:[]Slot{{Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"風",Kind:"pierce",N:9},{Ch:"雷",Kind:"homing",N:13}}}
+   c:=&Client{send:make(chan []byte,40),pid:"b"}
+   shielded.C=c
+   room:=&Room{Code:"HARD",Phase:"playing",Mode:mode,Theme:"shrine",Shrink:"none",
+    Started:time.Now(),Players:[]*Player{shooter,shielded},
+    Bullets:[]Bullet{{X:800,Y:450,VX:0,VY:0,TTL:4,Damage:60,Owner:"a",Ch:"硬化弾",Special:"slow"}}}
+   c.room=room
+   a:=&Arena{rooms:map[string]*Room{"HARD":room}}
+   a.tick(.05)
+   if shielded.HP!=540 || shielded.Shield!=600 ||
+      math.Abs(shielded.HardenedUntil-(float64(time.Now().UnixNano())/1e9+3))>.2 {
+    t.Fatalf("shield must not block 60 damage or 3s hardening: hp=%v shield=%v left=%v",
+      shielded.HP,shielded.Shield,shielded.HardenedUntil-now)
+   }
+   beforeX,beforeY:=shielded.X,shielded.Y
+   a.handle(c,[]byte(`{"type":"cast","selected":0,"aim":0}`))
+   a.handle(c,[]byte(`{"type":"ultimate"}`))
+   a.tick(.1)
+   if shielded.X!=beforeX||shielded.Y!=beforeY||shielded.Casts!=0||
+      shielded.CastPending||shielded.UltimateSpent {
+    t.Fatal("hardened player moved, attacked, or fired an ultimate")
+   }
+   state:=room.state()["players"].([]map[string]any)
+   var hardenedLeft float64
+   for _,p:=range state {if p["id"]=="b"{hardenedLeft=p["hardenedLeft"].(float64)}}
+   if hardenedLeft<2.7 || hardenedLeft>3.01 {t.Fatalf("harden timer not shown to client: %v",hardenedLeft)}
+   // The same shot must not damage or immobilize an invincible player.
+   shielded.HardenedUntil=0;shielded.InvincibleUntil=float64(time.Now().UnixNano())/1e9+8
+   room.Bullets=[]Bullet{{X:shielded.X,Y:shielded.Y,VX:0,VY:0,TTL:3,Damage:60,Owner:"a",Ch:"硬化弾",Special:"slow"}}
+   a.tick(.01)
+   if shielded.HP!=540 || shielded.HardenedUntil!=0 {t.Fatal("invincibility must block all hardening")}
+   shielded.InvincibleUntil=0
+   shielded.Keys["d"]=true
+   oldX:=shielded.X
+   a.tick(.1)
+   if shielded.X<=oldX {t.Fatal("movement did not recover after hardening")}
+   a.handle(c,[]byte(`{"type":"cast","selected":0,"aim":0}`))
+   a.tick(.01)
+   if shielded.Casts!=1 {t.Fatal("ordinary attacks did not recover after hardening")}
+  })
+ }
 }
 func TestDanceFreezesEveryoneRegardlessOfMapDistance(t *testing.T) {
  for _,mode:=range []string{"normal","custom"} {
