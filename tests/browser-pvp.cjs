@@ -143,6 +143,24 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         parity.metrics.length!==5||!parity.metrics[0].includes('威力')||
         !parity.cssLoaded||!parity.projectilePreview||parity.announcement!=='戦闘開始！')
       throw Error(mode+': self-only HP, active weapon stats or bullet renderer missing '+JSON.stringify(parity));
+     const danceVisual=await page.evaluate(()=>{
+      const saved=window.MojiWeaponVisual.drawMirrorBall;
+      const positions=[];
+      window.MojiWeaponVisual.drawMirrorBall=(ctx,x,y,t)=>{positions.push({x,y,t})};
+      try{
+       const players=roomState.players.map(p=>({...p,danceLeft:2,namepuLeft:0}));
+       const ctx=document.createElement('canvas').getContext('2d');
+       window.MojiUltMulti.drawWorld(ctx,{...roomState,players});
+      }finally{window.MojiWeaponVisual.drawMirrorBall=saved}
+      const shell=document.querySelector('#gameArea .game-wrap');
+      const labels=[...shell.querySelectorAll('.ultimate-aiming-banner')].map(x=>x.style.top||getComputedStyle(x).top);
+      return {count:positions.length,expected:roomState.players.filter(p=>p.alive).length,
+       mirrorPosition:positions.length&&Math.round(positions[0].y-roomState.players.find(p=>p.alive).y),
+       labels,hasShotScale:window.MojiWeaponVisual.drawProjectile.toString().includes('cx.scale(1.14,1.14)')};
+     });
+     if(danceVisual.count!==danceVisual.expected||danceVisual.mirrorPosition!==-126||
+        !danceVisual.hasShotScale||!danceVisual.labels.length)
+      throw Error(mode+': mirror-ball effects or raised onscreen labels missing '+JSON.stringify(danceVisual));
      const volume=await page.evaluate(()=>document.getElementById('onlineMusic').volume);
      if(volume!==.10)throw Error(mode+': BGM startup volume '+volume);
      if(!await page.locator('#gameArea .ultimate-cast').isVisible())throw Error(mode+': missing ultimate cast button');
