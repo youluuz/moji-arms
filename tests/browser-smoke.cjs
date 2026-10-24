@@ -116,7 +116,7 @@ const { chromium } = require('playwright');
   if(!await page.locator('#loadoutPanel .ultimate-option[data-ultimate=slow] svg').count())throw Error('new slow-shot icon missing');
   if(!await page.locator('#loginScreen').count())throw Error('missing common login');
   const types=await page.evaluate(()=>window.MojiUlt.defs.map(d=>[d.id,d.cost]));
-  if(JSON.stringify(types)!==JSON.stringify([['roman',320],['slow',280],['invincible',300],['dance',300],['invisible',260],['namepu',180]]))throw Error('shared specs mismatch');
+  if(JSON.stringify(types)!==JSON.stringify([['roman',300],['slow',260],['invincible',280],['dance',280],['invisible',240],['namepu',160]]))throw Error('shared specs mismatch');
   console.log('SOLO_LOBBY_INPUTS',JSON.stringify(await page.locator('#lobbyScreen input').evaluateAll(es=>es.map(e=>({id:e.id,placeholder:e.placeholder,type:e.type,className:e.className}))).catch(()=>[])));
   console.log('SOLO_LOBBY_BUTTONS',JSON.stringify(await page.locator('#lobbyScreen button').evaluateAll(es=>es.map(e=>({id:e.id,text:e.textContent?.trim().slice(0,24)})).filter(x=>x.id||/ランダム|開始/.test(x.text)).slice(0,35))));
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click({force:true});
@@ -131,6 +131,18 @@ const { chromium } = require('playwright');
    await page.waitForFunction(()=>document.querySelector('#gameScreen .ultimate-left')?.textContent.includes('残り'),{timeout:10000});
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
+   if(!await page.locator('#cpuBattleCountdown').isVisible())throw Error(mode+' CPU start countdown not visible on map');
+   const beforeStart=await page.evaluate(()=>({
+    seconds:window.MojiCpuBots.countdownLeft(), player:{x:player.x,y:player.y},
+    enemy:{x:enemy.x,y:enemy.y}, enemyHp:document.getElementById('ehp')?.textContent,
+    hpVisible:!!document.getElementById('ehp')?.getBoundingClientRect().width,
+    killScore:document.getElementById('cpuKillScore')?.textContent
+   }));
+   if(beforeStart.seconds<1||beforeStart.seconds>3.2||!beforeStart.hpVisible||
+      beforeStart.killScore!=='⚔ キル 0'||Math.hypot(beforeStart.player.x-beforeStart.enemy.x,beforeStart.player.y-beforeStart.enemy.y)<250)
+    throw Error(mode+' missing HP/spawn/countdown/kill UI '+JSON.stringify(beforeStart));
+   await page.waitForFunction(()=>window.MojiCpuBots.countdownLeft()<=0 && document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
+
    const botStats=await page.evaluate(()=>({
     number:window.MojiCpuBots.getBots().length,
     loadouts:window.MojiCpuBots.getBots().map(b=>b.loadout.map(s=>s.kind)),
@@ -148,6 +160,15 @@ const { chromium } = require('playwright');
     return {target:b.id,before:b.hp};
    });
    await page.waitForFunction(()=>window.MojiCpuBots.getBots()[1]?.hp<500,{timeout:12000});
+   const playerKill=await page.evaluate(()=>{
+    const b=window.MojiCpuBots.getBots()[2];
+    b.hp=40;
+    damage(b,90,performance.now(),true,{owner:'p'});
+    return {kills:window.MojiCpuBots.kills(),score:document.querySelector('#cpuKillScore')?.textContent};
+   });
+   if(playerKill.kills!==1)throw Error(mode+' CPU kill credit missing '+JSON.stringify(playerKill));
+   await page.waitForFunction(()=>document.querySelector('#cpuKillScore')?.textContent?.includes('1'),{timeout:10000});
+
    await page.waitForFunction(()=>typeof obstacles!=='undefined' && obstacles.some(o=>o.__arenaLArm),{timeout:9000});
    const cover=await page.evaluate(()=>({
      width:WORLD_W,height:WORLD_H,
@@ -207,6 +228,7 @@ const { chromium } = require('playwright');
   await page.locator('#cpuBotCount').selectOption('9');
   await page.locator('#start').click();
   await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===9,{timeout:12000});
+  if(await page.evaluate(()=>window.MojiCpuBots.kills())!==0)throw Error('CPU kill count failed to reset on new round');
   const maxParty=await page.evaluate(()=>window.MojiCpuBots.getBots().map(b=>({id:b.id,position:[b.x,b.y],kinds:b.loadout.map(s=>s.kind)})));
   if(maxParty.length!==9||new Set(maxParty.map(b=>b.id)).size!==9||
      !maxParty.every(b=>b.position.every(Number.isFinite)))
