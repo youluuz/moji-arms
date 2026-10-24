@@ -15,7 +15,7 @@ function boot(){
  let held=false;
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;document.querySelector('#gameArea .game-wrap').append(banner);
  const hardenBanner=document.createElement('div');hardenBanner.className='ultimate-aiming-banner';hardenBanner.hidden=true;
- hardenBanner.style.cssText='background:#11374df2;color:#d7fcff;border-color:#a4f5ff;top:22%;';
+ hardenBanner.style.cssText='background:#11374df2;color:#d7fcff;border-color:#a4f5ff;top:16%;';
  document.querySelector('#gameArea .game-wrap').append(hardenBanner);
  function select(id){
   if(!U.byId[id])return;
@@ -75,28 +75,29 @@ function boot(){
    c.save();c.textAlign='center';
    if(p.invincibleLeft>0){
     c.font='900 20px Georgia,serif';c.fillStyle='#fff1a8';c.shadowColor='#ffe9a5';c.shadowBlur=19;
-    for(let k=0;k<3;k++){let a=t/400+k*Math.PI*2/3;c.fillText('無敵',p.x+48*Math.cos(a),p.y+33*Math.sin(a))}
+    for(let k=0;k<3;k++){let a=t/400+k*Math.PI*2/3;c.fillText('無敵',p.x+48*Math.cos(a),p.y-11+33*Math.sin(a))}
    }
    if(p.danceLeft>0||p.namepuLeft>0){
+    window.MojiWeaponVisual?.drawMirrorBall(c,p.x,p.y-126,t);
     c.font='bold 25px sans-serif';c.fillStyle='#ffebaa';c.shadowColor='#f7a6dd';c.shadowBlur=11;
-    c.fillText(p.namepuLeft>0?'😐 ♪ ♫':'♪ ♫ ♪',p.x,p.y-59+Math.sin(t/145)*7);
+    c.fillText(p.namepuLeft>0?'😐 ♪ ♫':'♪ ♫ ♪',p.x,p.y-79+Math.sin(t/145)*7);
    }
    if(p.hardenedLeft>0){
     c.fillStyle='#73d9ff48';c.strokeStyle='#b7f6ff';c.lineWidth=3;c.shadowColor='#9feaff';c.shadowBlur=12;
     c.beginPath();c.moveTo(p.x-29,p.y-25);c.lineTo(p.x+20,p.y-30);c.lineTo(p.x+33,p.y-4);
     c.lineTo(p.x+24,p.y+30);c.lineTo(p.x-25,p.y+26);c.lineTo(p.x-33,p.y-5);c.closePath();c.fill();c.stroke();
     c.shadowBlur=0;c.fillStyle='#ecffff';c.font='bold 14px sans-serif';
-    c.fillText('🔒 硬直 '+p.hardenedLeft.toFixed(1)+'秒',p.x,p.y-67);
+    c.fillText('🔒 硬直 '+p.hardenedLeft.toFixed(1)+'秒',p.x,p.y-84);
    }
    if(p.ultimateAiming){
     c.font='900 20px Georgia,serif';c.fillStyle='#ffe3a7';c.shadowColor='#ffb360';c.shadowBlur=14;
-    c.fillText(p.ultimate==='roman'?'ロマン砲':'硬化弾',p.x,p.y-64);
+    c.fillText(p.ultimate==='roman'?'ロマン砲':'硬化弾',p.x,p.y-81);
    }
    c.restore();
   }
   for(const b of m.bullets)if(b.special==='roman'||b.special==='slow'){
-   c.save();c.textAlign='center';c.font=b.special==='roman'?'900 31px Georgia,serif':'bold 23px serif';
-   c.fillStyle=b.special==='roman'?'#ffe6a4':'#a9bbff';c.shadowColor=b.special==='roman'?'#ffb44e':'#82adff';c.shadowBlur=23;
+   c.save();c.textAlign='center';c.font=b.special==='roman'?'900 35px Georgia,serif':'bold 26px serif';
+   c.fillStyle=b.special==='roman'?'#ffe6a4':'#a9bbff';c.shadowColor=b.special==='roman'?'#ffb44e':'#82adff';c.shadowBlur=26;
    c.fillText(b.ch,b.x,b.y-14);c.restore();
   }
  }
