@@ -50,6 +50,20 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   });
   if(state.slots.join('')!=='火水木金土'||!state.notice.includes('仮装備'))
    throw Error('Guest temporary loadout was not available to edit: '+JSON.stringify(state));
+  // Minor regression: returning while the battle iframe is fullscreen
+  // must restore the shared lobby's scrolling and normal layout.
+  await host.frameLocator('#onlineFrame').locator('#begin').click();
+  await host.waitForFunction(()=>{
+   const doc=document.getElementById('onlineFrame')?.contentDocument;
+   return doc?.getElementById('gameArea')?.style.display==='flex' &&
+    document.body.style.overflow==='hidden';
+  },{timeout:20000});
+  await host.frameLocator('#onlineFrame').locator('#onlineBattleBack').click();
+  await host.waitForFunction(()=>
+   !document.getElementById('onlineScreen').classList.contains('active') &&
+   document.body.style.overflow!=='hidden' &&
+   document.documentElement.style.overflow!=='hidden'
+  ,{timeout:12000});
   if(errors.length)throw Error('Browser errors: '+errors.join('; '));
   console.log('INVITE ROOM REGRESSION PASSED: empty host -> one-click room -> blank guest via shared login -> both present in real websocket lobby.');
  }finally{await Promise.all(contexts.map(c=>c.close()));await browser.close();}
