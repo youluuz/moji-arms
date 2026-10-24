@@ -227,10 +227,13 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       const hint=document.querySelector('#gameArea .moji-battle-howto');
       const field=document.querySelector('#gameArea .arena-shell');
       const helpRect=hint?.getBoundingClientRect(),fieldRect=field?.getBoundingClientRect();
-      const outsideMap=!!helpRect&&!!fieldRect&&hint.parentElement===field.parentElement&&
-       hint.nextElementSibling===field&&helpRect.bottom<=fieldRect.top+2&&
+      const layout=field.closest('.moji-map-with-stick')||field;
+      const outsideMap=!!helpRect&&!!fieldRect&&hint.parentElement===layout.parentElement&&
+       hint.nextElementSibling===layout&&helpRect.bottom<=fieldRect.top+2&&
        getComputedStyle(hint).position!=='absolute';
-      return {outsideMap,slots:rects.length,sameRow:rects.every(r=>r&&Math.abs(r.top-rects[0].top)<9),
+      const joystickOut=document.getElementById('touchControls')?.closest('.moji-stick-dock')!==null&&
+       (zone.right<=fieldRect.left+2||zone.top>=fieldRect.bottom-2);
+      return {outsideMap,joystickOut,slots:rects.length,sameRow:rects.every(r=>r&&Math.abs(r.top-rects[0].top)<9),
        noOverlap:rects.every((r,i)=>r&&rects.slice(i+1).every(s=>s&&!intersect(r,s))),
        centered:Math.hypot(z.x-v.x,z.y-v.y)<2,zoneRound:Math.abs(zone.width-zone.height)<2,
        widthSafe:rects.every(r=>r&&r.width>28&&r.left>=-2&&r.right<=innerWidth+2),
@@ -238,7 +241,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        ratio:document.querySelector('#arena').width/view.w,
        attackColor:window.MojiWeaponVisual.types.attack.color};
      });
-     if(!touchUI.outsideMap||touchUI.slots!==6||!touchUI.sameRow||!touchUI.noOverlap||
+     if(!touchUI.outsideMap||!touchUI.joystickOut||touchUI.slots!==6||!touchUI.sameRow||!touchUI.noOverlap||
         !touchUI.centered||!touchUI.zoneRound||!touchUI.widthSafe||
         !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
         touchUI.ratio>1.55||touchUI.attackColor!=='#dbff70')
