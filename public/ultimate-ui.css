@@ -103,3 +103,14 @@ body.online-battle .game-wrap .ultimate-battle{right:7px;bottom:7px}
  .ultimate-guide-close{min-width:86px;min-height:44px!important}
  .ultimate-guide-bottom-close{min-height:48px!important}
 }
+
+/* v8.1 — Strong disclosure affordance on both CPU and online skill guides. */
+.ultimate-guide-toggle{min-height:66px!important;padding:9px 12px!important;border:2px solid #f3d58e!important;background:linear-gradient(115deg,#304669,#1c304c)!important;box-shadow:0 3px 10px #0005,inset 0 1px #ffffff31!important}
+.ultimate-guide-toggle-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px;text-align:left}
+.ultimate-guide-toggle-label{font-size:15px;font-weight:950;color:#fff4d6;line-height:1.3}
+.ultimate-guide-toggle-hint{font-size:12px;font-weight:850;color:#ffe0a0;line-height:1.25}
+.ultimate-guide-chevron{display:flex!important;flex:0 0 76px!important;min-width:76px!important;height:49px!important;flex-direction:column;gap:1px;justify-content:center;align-items:center;background:#ffe0a0!important;color:#17263b!important;border:2px solid #fff3c9!important;border-radius:11px!important;font-size:25px!important;line-height:1!important;box-shadow:0 2px 7px #0006}
+.ultimate-guide-chevron span{font-size:11px;font-weight:950;line-height:1.1}
+.ultimate-guide-toggle[aria-expanded="true"]{background:linear-gradient(115deg,#42394f,#253750)!important;border-color:#f4cc80!important}
+.ultimate-guide-toggle[aria-expanded="true"] .ultimate-guide-chevron{background:#f4cc80!important;color:#342336!important;border-color:#fff1bb!important}
+@media(max-width:700px){.ultimate-guide-toggle{min-height:67px!important;padding:8px 10px!important;gap:9px!important}.ultimate-guide-toggle-label{font-size:13px}.ultimate-guide-toggle-hint{font-size:11px}.ultimate-guide-chevron{flex-basis:65px!important;min-width:65px!important;height:48px!important;font-size:24px!important}}
