@@ -1,5 +1,5 @@
 /* 文字武装 — ロマン砲専用の豪華な描画（ゲーム判定やSEには干渉しない）。
-   金／白／朱色のチャージ、残光を伴う砲弾、着弾衝撃波。
+   金／白／朱色のチャージ、発射中に「ロマン砲」と読める砲弾、着弾衝撃波。
    K.O.・撃破などの文字演出は一切描かない。 */
 (function(){
  'use strict';
@@ -50,10 +50,20 @@
   c.quadraticCurveTo(-40,29,28,19);c.closePath();c.fill();
   c.shadowBlur=12;c.fillStyle='#ffe5a6';
   c.beginPath();c.moveTo(26,-10);c.lineTo(-90+flicker,0);c.lineTo(26,10);c.closePath();c.fill();
+  // Keep the actual word horizontal even when the projectile travels left,
+  // up, or down. The tail continues to point in the true flight direction.
+  c.save();c.translate(8,0);c.rotate(-a);
   c.shadowColor='#fff9e7';c.shadowBlur=24;
-  c.fillStyle='#fffdf3';c.beginPath();c.ellipse(8,0,30,24,0,0,TAU);c.fill();
-  c.strokeStyle='#ff9a4c';c.lineWidth=3;c.beginPath();c.ellipse(8,0,35,29,0,0,TAU);c.stroke();
-  c.shadowBlur=5;c.fillStyle='#a74e20';c.font='900 22px serif';c.fillText('砲',8,1);
+  c.fillStyle='#fffdf3';c.beginPath();c.ellipse(0,0,61,24,0,0,TAU);c.fill();
+  c.strokeStyle='#ff9a4c';c.lineWidth=3.5;
+  c.beginPath();c.ellipse(0,0,65,29,0,0,TAU);c.stroke();
+  // The full four-character name is the projectile, not a floating KO label.
+  // Outline protects readability over bright maps on small phone canvases.
+  c.shadowBlur=2;c.font='900 21px system-ui,"Noto Sans JP",sans-serif';
+  c.textAlign='center';c.textBaseline='middle';c.lineWidth=3.3;
+  c.strokeStyle='#663012';c.strokeText('ロマン砲',0,1,111);
+  c.fillStyle='#fff5b6';c.fillText('ロマン砲',0,1,111);
+  c.restore();
   // A bright wing of sparks gives the slow, lethal shell a heavy silhouette.
   for(let i=0;i<13;i++){
    const phase=i*2.39996+t/225,dist=33+(i%5)*15;
