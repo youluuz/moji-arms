@@ -487,6 +487,9 @@ const { chromium } = require('playwright');
       // Previously only #cpuMoveZone was docked; #cpuMovePad and the visible
       // thumb remained on the canvas, disconnected from the true hit target.
       padInsideZone:cpuPadEl?.parentElement===document.getElementById('cpuMoveZone'),
+      padDiagnostic:{exists:!!cpuPadEl,thumb:!!cpuThumbEl,parent:cpuPadEl?.parentElement?.id||cpuPadEl?.parentElement?.className,
+        zoneChildren:document.getElementById('cpuMoveZone')?.outerHTML.slice(0,580),
+        globals:[...document.querySelectorAll('[id*=Pad],[id*=Thumb],[id*=Move]')].map(x=>({id:x.id,parent:x.parentElement?.id})).slice(0,18)},
       padCentered:centerGap(zone,cpuPad)<2,thumbCentered:centerGap(zone,cpuThumb)<2,
       padFits:!!cpuPad&&!!zone&&cpuPad.left>=zone.left-2&&cpuPad.right<=zone.right+2&&
        cpuPad.top>=zone.top-2&&cpuPad.bottom<=zone.bottom+2,
