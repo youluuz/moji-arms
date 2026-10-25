@@ -12,7 +12,7 @@ import (
 func TestSlowerHomingProjectileAndWeakerLockOn(t *testing.T) {
  for _,mode:=range []string{"normal","custom"} {
   t.Run(mode,func(t *testing.T){
-   attacker:=&Player{ID:"a",Alive:true,HP:600,X:600,Y:420,Keys:map[string]bool{},Fire:true,Selected:4,Aim:0,
+   attacker:=&Player{ID:"a",Alive:true,HP:600,X:600,Y:420,Keys:map[string]bool{},Fire:true,Selected:4,Aim:0,LastInput:time.Now(),
     C:&Client{send:make(chan []byte,128)},
     Slots:[]Slot{
      {Ch:"火",Kind:"attack",N:4},{Ch:"水",Kind:"defense",N:4},
