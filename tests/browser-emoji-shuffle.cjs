@@ -36,7 +36,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    const seg=new Intl.Segmenter('ja',{granularity:'grapheme'});
    return {fields,unique:new Set(fields.map(x=>x.ch)).size,
     allEmoji:fields.every(x=>[...seg.segment(x.ch)].length===1 &&
-     (/\\p{Emoji_Presentation}/u.test(x.ch)||/\\p{Extended_Pictographic}/u.test(x.ch))),
+     (/\p{Emoji_Presentation}/u.test(x.ch)||/\p{Extended_Pictographic}/u.test(x.ch))),
     ultimate:document.querySelector('#loadoutPanel .ultimate-option[aria-pressed=true]')?.dataset.ultimate,
     notice:document.getElementById('randomNotice')?.textContent};
   });
