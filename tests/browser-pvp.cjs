@@ -69,6 +69,14 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        previews.items[3].shot!=='◆'||previews.items[4].shot!=='◎'||
        !previews.items.every(p=>p.stats.includes('CT')))
      throw Error(mode+': ability-guide shot/usage previews missing or still duplicated in slots '+JSON.stringify(previews));
+    const onlineAttackCT=await host.evaluate(()=>({
+     one:onlineCD('attack',1),two:onlineCD('attack',2),ten:onlineCD('attack',10),
+     preview:window.MojiWeaponVisual.cooldown('attack',1),
+     homing:onlineCD('homing',1)
+    }));
+    if(onlineAttackCT.one!==800||onlineAttackCT.two!==843||onlineAttackCT.ten!==1251||
+       onlineAttackCT.preview!=='0.8秒'||onlineAttackCT.homing!==6888)
+     throw Error(mode+': online one-stroke attack cooldown or non-attack balance differs '+JSON.stringify(onlineAttackCT));
     // The ordinary-ability guide has an explicit down arrow when closed and up arrow when open.
     const weaponHelp=host.locator('#waitArea details.online-guide');
     if(!(await weaponHelp.locator('summary').innerText()).includes('▼')||!(await weaponHelp.locator('summary').innerText()).includes('開く'))
