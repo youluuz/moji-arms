@@ -146,7 +146,7 @@ function botAction(bot,target,now){
 function guide(b,target,dt){
  const wanted=Math.atan2(target.y-b.y,target.x-b.x),old=Math.atan2(b.vy,b.vx);
  const diff=Math.atan2(Math.sin(wanted-old),Math.cos(wanted-old));
- const next=old+Math.max(-2.6*dt,Math.min(2.6*dt,diff));
+ const next=old+Math.max(-2.691*dt,Math.min(2.691*dt,diff));
  const speed=Math.hypot(b.vx,b.vy)||220;
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
@@ -309,7 +309,10 @@ function boot(){
       document.body.classList.add('in-match','cpu-spectating');
       const controls=document.createElement('div');controls.id='cpuWatchControls';
       controls.innerHTML='<button type="button" id="cpuWatchPrev">◀ 前</button><span id="cpuWatchTarget">👁 観戦中</span><button type="button" id="cpuWatchNext">次 ▶</button><button type="button" id="cpuWatchExit">ロビーへ戻る</button>';
-      arena.append(controls);
+      // Reserve a real row ABOVE the map, not an absolute overlay on it.
+      // Works in desktop and mobile layouts (including the relocated stick).
+      const mapRow=arena.closest('.moji-map-with-stick')||arena;
+      mapRow.parentElement.insertBefore(controls,mapRow);
       const shift=direction=>{
        const living=alive();if(!living.length)return;
        cpuWatchIndex=(cpuWatchIndex+direction+living.length)%living.length;

@@ -773,6 +773,37 @@ const { chromium } = require('playwright');
   if(!cpuViewing.active||!cpuViewing.watching||
      !cpuViewing.target?.includes('観戦')||!cpuViewing.spectators?.includes('1'))
    throw Error('CPU match did not switch to live spectator view '+JSON.stringify(cpuViewing));
+  // Spectator navigation must reserve its own layout row (not be an
+  // absolutely positioned layer over the match), even after rotation and
+  // on a wide PC-sized display. All four actions must remain reachable.
+  for(const [width,height] of [[390,844],[667,375],[1280,800]]){
+   await page.setViewportSize({width,height});
+   const geometry=await page.evaluate(()=>{
+    const bar=document.getElementById('cpuWatchControls');
+    const field=document.querySelector('#gameScreen .arena-shell');
+    const barBox=bar?.getBoundingClientRect(),fieldBox=field?.getBoundingClientRect();
+    const actions=[...bar.querySelectorAll('button')].map(b=>b.getBoundingClientRect());
+    const overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
+     Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
+    const wrapper=field?.closest('.moji-map-with-stick');
+    const mapBox=wrapper&&getComputedStyle(wrapper).display!=='contents'?wrapper.getBoundingClientRect():fieldBox;
+    return {position:getComputedStyle(bar).position,
+     beforeArena:bar.nextElementSibling===field?.closest('.moji-map-with-stick')||
+      bar.nextElementSibling===field,
+     fits:barBox.left>=-2&&barBox.right<=innerWidth+2,
+     above:barBox.bottom<=mapBox.top+2,
+     buttons:actions.length,buttonFits:actions.every(r=>r.width>26&&r.height>=27&&
+      r.left>=barBox.left-2&&r.right<=barBox.right+2&&r.top>=barBox.top-2&&r.bottom<=barBox.bottom+2),
+     controlsDontOverlap:actions.every((r,i)=>actions.slice(i+1).every(x=>!overlaps(r,x))),
+     mapHeight:fieldBox.height,
+     width:innerWidth,bar:{top:barBox.top,bottom:barBox.bottom},field:{top:fieldBox.top,bottom:fieldBox.bottom}};
+   });
+   if(geometry.position==='absolute'||geometry.position==='fixed'||!geometry.beforeArena||
+      !geometry.fits||!geometry.above||geometry.buttons!==3||!geometry.buttonFits||
+      !geometry.controlsDontOverlap||geometry.mapHeight<65)
+    throw Error('CPU spectator toolbar blocks game on '+width+'x'+height+': '+JSON.stringify(geometry));
+  }
+  await page.setViewportSize({width:390,height:844});
   await page.locator('#cpuWatchNext').click();
   await page.locator('#cpuWatchExit').click();
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});

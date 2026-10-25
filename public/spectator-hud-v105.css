@@ -133,3 +133,41 @@ body.online-battle.online-spectating #gameArea #controls{display:none!important}
  body.online-battle #gameArea .weapon .wkind{font-size:8px!important}
  body.online-battle #gameArea .weapon .weapon-output{font-size:8px!important}
 }
+
+/* v11.2 spectator navigation: normal-flow row between HUD and arena.
+   Never put target-switch actions on top of the gameplay canvas. */
+body.online-battle #gameArea #onlineWatchControls:not([hidden]){
+ display:flex!important;position:relative!important;inset:auto!important;
+ transform:none!important;flex:0 0 auto!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ box-sizing:border-box!important;align-items:center!important;
+ gap:5px!important;flex-wrap:wrap!important;justify-content:center!important;
+ margin:3px 0 4px!important;padding:4px 7px!important;
+ z-index:3!important;
+}
+body.online-battle #gameArea #onlineWatchControls[hidden]{display:none!important}
+body.online-battle #gameArea #onlineWatchTarget{
+ flex:1 1 110px;min-width:75px;max-width:100%;
+ overflow-wrap:anywhere;white-space:normal;line-height:1.35;
+}
+body.online-battle #gameArea #onlineWatchControls button{
+ flex:0 0 auto;min-height:35px!important;touch-action:manipulation;
+}
+@media(max-width:700px){
+ body.online-battle #gameArea #onlineWatchControls:not([hidden]){
+  gap:3px!important;padding:3px 5px!important;margin:2px 0 3px!important;
+ }
+ body.online-battle #gameArea #onlineWatchControls button{
+  min-height:32px!important;font-size:10px!important;padding:4px 6px!important;
+ }
+ body.online-battle #gameArea #onlineWatchTarget{flex:1 1 90px;min-width:65px}
+}
+@media(max-height:460px) and (orientation:landscape){
+ body.online-battle #gameArea #onlineWatchControls:not([hidden]){
+  flex-wrap:nowrap!important;margin:1px 0 2px!important;padding:2px 4px!important;
+ }
+ body.online-battle #gameArea #onlineWatchControls button{
+  min-height:28px!important;padding:3px 5px!important;font-size:10px!important;
+ }
+ body.online-battle #gameArea #onlineWatchTarget{min-width:0;flex:1 1 auto}
+}
