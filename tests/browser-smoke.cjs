@@ -154,6 +154,37 @@ const { chromium } = require('playwright');
   await page.evaluate(()=>window.MojiMobileOrientation.select('portrait',false));
   if(await orientationUI.locator('[data-mobile-orientation=portrait]').getAttribute('aria-pressed')!=='true')
    throw Error('portrait mode did not restore');
+  // Four clickable tiles remain the only visible mode controls,
+  // but the mode picker is visually isolated from the other settings.
+  const modeLayout=await page.evaluate(()=>{
+   const mode=document.getElementById('mojiModeChoiceCard');
+   const details=document.getElementById('mojiMatchDetailsCard');
+   const tiles=document.getElementById('modeTiles');
+   const options=document.querySelector('#battleSettings .mode-quickrow');
+   const orientation=document.getElementById('mobileOrientationSetting');
+   const first=mode?.getBoundingClientRect(),second=details?.getBoundingClientRect();
+   const buttons=[...tiles.querySelectorAll('[data-mode-tile]')].map(b=>{
+    const r=b.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right};
+   });
+   return {hasSeparateSurfaces:!!mode&&!!details&&mode!==details,
+    pickerIsolated:mode?.contains(tiles) && !mode.contains(options),
+    optionsGrouped:details?.contains(options) && details?.contains(orientation),
+    heading:mode?.querySelector('.moji-mode-heading-copy strong')?.textContent,
+    settingsHeading:details?.querySelector('.moji-mode-heading-copy strong')?.textContent,
+    summary:document.getElementById('mojiSelectedModeInfo')?.textContent,
+    gap:first&&second?second.top-first.bottom:null,
+    modeBorder:mode?parseFloat(getComputedStyle(mode).borderTopWidth):0,
+    settingsBorder:details?parseFloat(getComputedStyle(details).borderTopWidth):0,
+    buttons,
+    noOverflow:document.documentElement.scrollWidth<=innerWidth+2};
+  });
+  if(!modeLayout.hasSeparateSurfaces||!modeLayout.pickerIsolated||!modeLayout.optionsGrouped||
+     !modeLayout.heading?.includes('対戦モード')||!modeLayout.settingsHeading?.includes('設定')||
+     !modeLayout.summary?.includes('選択中')||modeLayout.gap<6||
+     modeLayout.modeBorder<2||modeLayout.settingsBorder<1||
+     modeLayout.buttons.length!==4||modeLayout.buttons.some(x=>x.width<70||x.height<65)||
+     !modeLayout.noOverflow)
+   throw Error('Mode selector still visually blends with options or clips on phone '+JSON.stringify(modeLayout));
   // Four clickable tiles are the only visible mode controls.
   const modes=page.locator('#modeTiles [data-mode-tile]');
   if(await modes.count()!==4)throw Error('Expected four mode icons only');
@@ -165,8 +196,28 @@ const { chromium } = require('playwright');
    if(chosen!==mode)throw Error('Mode icon did not update legacy state: '+mode+' => '+chosen);
    if(await page.locator('[data-mode-tile][aria-pressed=true]').count()!==1)
     throw Error('Mode buttons have inconsistent pressed state: '+mode);
+   const selectedInfo=await page.locator('#mojiSelectedModeInfo').innerText();
+   const labels={normal:'CPU 通常戦',custom:'CPU カスタム戦',multi:'オンライン通常戦',multiCustom:'オンラインカスタム戦'};
+   if(!selectedInfo.includes(labels[mode]))throw Error('Chosen mode summary was not updated: '+mode+' '+selectedInfo);
   }
   await page.locator('[data-mode-tile="normal"]').click();
+  // The narrower phone must still show two fully visible mode columns, even
+  // inside the separated section and with all settings retained.
+  await page.setViewportSize({width:360,height:740});
+  const narrowMode=await page.evaluate(()=>{
+   const tiles=[...document.querySelectorAll('#modeTiles [data-mode-tile]')].map(el=>el.getBoundingClientRect());
+   const card=document.getElementById('mojiModeChoiceCard').getBoundingClientRect();
+   const details=document.getElementById('mojiMatchDetailsCard').getBoundingClientRect();
+   return {buttons:tiles.map(r=>({width:r.width,left:r.left,right:r.right,height:r.height})),
+    card:{left:card.left,right:card.right},details:{left:details.left,right:details.right},
+    width:innerWidth,scroll:document.documentElement.scrollWidth};
+  });
+  if(narrowMode.buttons.length!==4||narrowMode.buttons.some(x=>x.width<65||x.left<0||x.right>narrowMode.width+2)||
+     narrowMode.card.left<0||narrowMode.card.right>narrowMode.width+2||
+     narrowMode.details.left<0||narrowMode.details.right>narrowMode.width+2||
+     narrowMode.scroll>narrowMode.width+2)
+   throw Error('Narrow phone mode picker or detail area is clipped '+JSON.stringify(narrowMode));
+  await page.setViewportSize({width:390,height:844});
 
   await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
   // Contrast regression: inputs must visibly stand apart from the old dim
