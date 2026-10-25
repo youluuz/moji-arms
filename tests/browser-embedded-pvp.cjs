@@ -79,19 +79,51 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     const boxes=els.map(e=>e?.getBoundingClientRect());
     const a=document.getElementById('moveZone').getBoundingClientRect();
     const b=document.getElementById('movePad').getBoundingClientRect();
+    const thumb=document.getElementById('moveThumb').getBoundingClientRect();
     const arena=document.getElementById('arena').getBoundingClientRect();
     const overlaps=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&
      Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
     return {width:innerWidth,height:innerHeight,num:els.length,
      separate:boxes.every((x,i)=>x&&boxes.slice(i+1).every(y=>y&&!overlaps(x,y))),
      aligned:Math.hypot(a.left+a.width/2-b.left-b.width/2,a.top+a.height/2-b.top-b.height/2)<2,
+     thumbCentered:Math.hypot(a.left+a.width/2-thumb.left-thumb.width/2,a.top+a.height/2-thumb.top-thumb.height/2)<2,
+     thumbFits:thumb.left>=a.left-1&&thumb.right<=a.right+1&&thumb.top>=a.top-1&&thumb.bottom<=a.bottom+1,
      allVisible:boxes.every(x=>x&&x.width>26&&x.left>=-2&&x.right<=innerWidth+2),
      arenaVisible:arena.width>180&&arena.height>90,
      noHorizontalOverflow:document.documentElement.scrollWidth<=innerWidth+3};
    });
-   if(layout.num!==6||!layout.separate||!layout.aligned||!layout.allVisible||
+   if(layout.num!==6||!layout.separate||!layout.aligned||!layout.thumbCentered||!layout.thumbFits||!layout.allVisible||
       !layout.arenaVisible||!layout.noHorizontalOverflow)
     throw Error('Mobile final layout regression '+JSON.stringify(layout));
+   // Genuine touch movement on the actual relocated zone inside the
+   // fullscreen iframe. The visible thumb must follow the finger and return.
+   if(width===360){
+    const rect=await inner.locator('#moveZone').boundingBox();
+    if(!rect)throw Error('Real online joystick touch zone missing');
+    const x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+    const cdp=await host.context().newCDPSession(host);
+    try{
+     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:7}]});
+     await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+23,y,id:7}]});
+     await host.waitForTimeout(105);
+     const during=await inner.evaluate(()=>{
+      const zone=document.getElementById('moveZone').getBoundingClientRect();
+      const thumb=document.getElementById('moveThumb').getBoundingClientRect();
+      return {right:keys.d,left:keys.a,up:keys.w,down:keys.s,
+       moved:thumb.left+thumb.width/2>zone.left+zone.width/2+6,
+       inside:thumb.left>=zone.left-1&&thumb.right<=zone.right+1&&thumb.top>=zone.top-1&&thumb.bottom<=zone.bottom+1};
+     });
+     if(!during.right||during.left||during.up||during.down||!during.moved||!during.inside)
+      throw Error('Online joystick touch/cursor diverge on narrow phone '+JSON.stringify(during));
+    }finally{
+     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+     await cdp.detach();
+    }
+    await host.waitForTimeout(70);
+    const released=await inner.evaluate(()=>({stuck:['w','a','s','d'].some(k=>keys[k]),
+     transform:document.getElementById('moveThumb').style.transform}));
+    if(released.stuck||released.transform)throw Error('Online joystick did not release to center '+JSON.stringify(released));
+   }
   }
   await guest.evaluate(()=>sock.close());
   await inner.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
