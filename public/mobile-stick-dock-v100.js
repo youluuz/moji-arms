@@ -21,6 +21,15 @@
    layout.insertBefore(rail,arena);
   }
   if(control.parentElement!==rail)rail.append(control);
+  // The legacy CPU joystick is TWO separate DOM nodes. Previously only the
+  // touch zone moved off the battlefield, leaving the visible pad behind on
+  // the canvas; the cursor and actual touch target appeared disconnected.
+  // Keep the original pad/thumb nodes and their listeners; move the visual
+  // pad inside the actual hit circle without recreating either element.
+  if(control.id==='cpuMoveZone'){
+   const pad=screen.querySelector('#cpuMovePad');
+   if(pad&&pad.parentElement!==control)control.append(pad);
+  }
   return true;
  }
  function upgrade(){
