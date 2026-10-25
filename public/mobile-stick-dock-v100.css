@@ -102,3 +102,38 @@ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #tapHint{displa
   width:56px!important;height:56px!important;top:7px!important;left:7px!important;
  }
 }
+
+/* v10.11 — joystick visual and hit target must be one concentric disc.
+   The original CPU canvas kept its pad after the hit circle was docked.
+   Pad now lives inside the zone; center it and keep BOTH thumbs unclipped. */
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMoveZone{
+ display:grid!important;place-items:center!important;
+ overflow:hidden!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMovePad{
+ position:relative!important;inset:auto!important;
+ top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+ margin:0!important;box-sizing:border-box!important;
+ width:68px!important;height:68px!important;
+ min-width:0!important;max-width:68px!important;
+ border-radius:50%!important;pointer-events:none!important;
+ display:grid!important;place-items:center!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMoveThumb{
+ width:32px!important;height:32px!important;max-width:32px!important;
+ box-sizing:border-box!important;flex:none!important;
+}
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveThumb{
+ width:32px!important;height:32px!important;max-width:32px!important;
+ box-sizing:border-box!important;flex:none!important;
+}
+@media(orientation:portrait) and (max-width:800px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMovePad{
+  width:54px!important;height:54px!important;
+ }
+}
+@media(orientation:landscape) and (max-height:470px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMovePad{
+  width:56px!important;height:56px!important;
+ }
+}
