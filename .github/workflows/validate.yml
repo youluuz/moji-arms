@@ -30,6 +30,7 @@ jobs:
           node --check public/launch-nav.js
           node --check public/room-entry-v106.js
           node --check public/emoji-shuffle-v107.js
+          node --check public/mode-separation-v109.js
           node -e "const a=require('./public/notices.json');if(!Array.isArray(a.notices)||!a.notices.length)process.exit(1)"
           node --check scripts/public-release-check.mjs
           node --check public/mobile-input-v70.js
