@@ -322,13 +322,18 @@ const { chromium } = require('playwright');
   const romanVisual=await page.evaluate(()=>{
    const fx=window.MojiRomanFX,canvas=document.createElement('canvas');
    canvas.width=360;canvas.height=310;
-   const ctx=canvas.getContext('2d'),counts=[],labels=[];
-   const original=ctx.fillText.bind(ctx);
+   const ctx=canvas.getContext('2d'),counts=[],labels=[],outlines=[];
+   const original=ctx.fillText.bind(ctx),originalStroke=ctx.strokeText.bind(ctx);
    ctx.fillText=function(s,...args){labels.push(String(s));return original(s,...args)};
+   ctx.strokeText=function(s,...args){outlines.push(String(s));return originalStroke(s,...args)};
    for(const paint of [
     ()=>fx.drawCharge(ctx,180,150,500,.7),
     ()=>fx.drawShot(ctx,180,150,-.3,520),
-    ()=>fx.drawImpact(ctx,180,150,160)
+    ()=>fx.drawImpact(ctx,180,150,160),
+    // Text must remain legible if a phone player shoots behind or vertically.
+    ()=>fx.drawShot(ctx,180,150,Math.PI,520),
+    ()=>fx.drawShot(ctx,180,150,Math.PI/2,520),
+    ()=>fx.drawShot(ctx,180,150,-Math.PI/2,520)
    ]){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     paint();
@@ -336,11 +341,13 @@ const { chromium } = require('playwright');
     let visible=0;for(let i=3;i<pixels.length;i+=4)if(pixels[i]>55)visible++;
     counts.push(visible);
    }
-   return {exists:!!fx,counts,labels};
+   return {exists:!!fx,counts,labels,outlines};
   });
   if(romanVisual.counts.some(n=>n<300)||
-    romanVisual.labels.some(x=>x.includes('撃破')||x==='K.O.'||x==='KO'))
-   throw Error('Cannon charge/fire/impact must be visible without KO text '+JSON.stringify(romanVisual));
+    romanVisual.labels.filter(x=>x==='ロマン砲').length!==4||
+    romanVisual.outlines.filter(x=>x==='ロマン砲').length!==4||
+    romanVisual.labels.some(x=>x==='砲'||x.includes('撃破')||x==='K.O.'||x==='KO'))
+   throw Error('Cannon must fire readable full ロマン砲 lettering, all directions, without KO text '+JSON.stringify(romanVisual));
   if(await page.evaluate(()=>window.MojiWeaponVisual.types.attack.color)!=='#dbff70')
    throw Error('Normal shot should be lime-gold, not avatar blue');
   const preview=await page.evaluate(()=>[...document.querySelectorAll('#abilityGuide .moji-preview')].map(el=>({kind:el.dataset.kind,mark:el.querySelector('.moji-preview-shot')?.textContent,stats:el.textContent})));
