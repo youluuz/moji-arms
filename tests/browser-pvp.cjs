@@ -272,7 +272,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         const overlaps=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&
          Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
         return {normalFlow:!['absolute','fixed'].includes(getComputedStyle(bar).position),
-         placedBeforeMap:bar.nextElementSibling===row,
+         placedBeforeMap:bar.parentElement===row.parentElement&&Boolean(bar.compareDocumentPosition(row)&Node.DOCUMENT_POSITION_FOLLOWING),
          diagnostics:{barParent:bar.parentElement?.className,next:bar.nextElementSibling?.className,
           fieldParent:field.parentElement?.className,rowParent:row?.parentElement?.className,
           nextNext:bar.nextElementSibling?.nextElementSibling?.className},
