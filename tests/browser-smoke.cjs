@@ -520,6 +520,22 @@ const { chromium } = require('playwright');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:startX,y:startY,id:1}]});
     await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:startX+26,y:startY,id:1}]});
     await page.waitForTimeout(290);
+    // The pointer must move the VISIBLE cursor as well as the avatar. CSS
+    // centering alone would conceal a nonfunctional draggable thumb.
+    const cursorDrag=await page.evaluate(()=>{
+     const ring=document.getElementById('cpuMoveZone').getBoundingClientRect();
+     const outer=document.getElementById('cpuThumb').getBoundingClientRect();
+     const inner=document.getElementById('cpuThumbDot').getBoundingClientRect();
+     const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
+     const target=center(ring),out=center(outer),dot=center(inner);
+     return {target,out,dot,outerStyle:document.getElementById('cpuThumb').getAttribute('style'),
+      dotStyle:document.getElementById('cpuThumbDot').getAttribute('style'),
+      vector:typeof touch!=='undefined'?touch:null,
+      moved:out.x>target.x+4||dot.x>target.x+4,
+      visible:dot.x>=ring.left&&dot.x<=ring.right&&dot.y>=ring.top&&dot.y<=ring.bottom};
+    });
+    if(!cursorDrag.moved||!cursorDrag.visible||cursorDrag.vector?.x<=0)
+     throw Error(mode+' CPU cursor fails to follow real rightward drag '+JSON.stringify(cursorDrag));
    }finally{
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await cdp.detach();
