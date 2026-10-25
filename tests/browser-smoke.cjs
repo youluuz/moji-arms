@@ -466,6 +466,11 @@ const { chromium } = require('playwright');
     const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
       Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
     const zone=document.getElementById('cpuMoveZone')?.getBoundingClientRect();
+    const cpuPadEl=document.getElementById('cpuMovePad');
+    const cpuThumbEl=document.getElementById('cpuMoveThumb');
+    const cpuPad=cpuPadEl?.getBoundingClientRect();
+    const cpuThumb=cpuThumbEl?.getBoundingClientRect();
+    const centerGap=(a,b)=>a&&b?Math.hypot((a.left+a.width/2)-(b.left+b.width/2),(a.top+a.height/2)-(b.top+b.height/2)):Infinity;
     const tip=document.querySelector('#gameScreen .moji-battle-howto');
     const battlefield=document.querySelector('#gameScreen .arena-shell');
     const tr=tip?.getBoundingClientRect(),fieldRect=battlefield?.getBoundingClientRect();
@@ -479,10 +484,17 @@ const { chromium } = require('playwright');
       distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
       inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
+      // Previously only #cpuMoveZone was docked; #cpuMovePad and the visible
+      // thumb remained on the canvas, disconnected from the true hit target.
+      padInsideZone:cpuPadEl?.parentElement===document.getElementById('cpuMoveZone'),
+      padCentered:centerGap(zone,cpuPad)<2,thumbCentered:centerGap(zone,cpuThumb)<2,
+      padFits:!!cpuPad&&!!zone&&cpuPad.left>=zone.left-2&&cpuPad.right<=zone.right+2&&
+       cpuPad.top>=zone.top-2&&cpuPad.bottom<=zone.bottom+2,
       guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
    });
    if(!mobileBattleUI.guideOutside||!mobileBattleUI.outsideStick||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
       !mobileBattleUI.inside||!mobileBattleUI.touchRing||
+      !mobileBattleUI.padInsideZone||!mobileBattleUI.padCentered||!mobileBattleUI.thumbCentered||!mobileBattleUI.padFits||
       !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
     throw Error('CPU six-slot layout or circular mobile movement invalid '+JSON.stringify(mobileBattleUI));
   if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
