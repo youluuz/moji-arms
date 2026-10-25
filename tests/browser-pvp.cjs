@@ -273,6 +273,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
          Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
         return {normalFlow:!['absolute','fixed'].includes(getComputedStyle(bar).position),
          placedBeforeMap:bar.nextElementSibling===row,
+         diagnostics:{barParent:bar.parentElement?.className,next:bar.nextElementSibling?.className,
+          fieldParent:field.parentElement?.className,rowParent:row?.parentElement?.className,
+          nextNext:bar.nextElementSibling?.nextElementSibling?.className},
          above:b.bottom<=r.top+2,visible:b.height>25,
          buttonCount:buttons.length,
          allButtonsFit:buttons.every(x=>x.width>35&&x.height>=27&&x.left>=b.left-2&&x.right<=b.right+2),
