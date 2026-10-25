@@ -1122,7 +1122,7 @@ func (a *Arena) tick(dt float64) {
 					old := math.Atan2(b.VY, b.VX)
 					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
 					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
-					angle := old + bound(delta, -2.4*dt, 2.4*dt) // slightly stronger lock-on than previous tuning; sidesteps remain viable
+					angle := old + bound(delta, -2.484*dt, 2.484*dt) // exactly +3.5% steering; keep speed, damage and cooldown
 					b.VX = 275 * math.Cos(angle)
 					b.VY = 275 * math.Sin(angle)
 				}
@@ -1392,7 +1392,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=99"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=99"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=105"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=100"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=99"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=112"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=100"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1449,7 +1449,7 @@ window.MojiStrokeReady=Promise.all([
 		"const speed=d<95?160:d<175?210:275;", 1)
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
-		"const turnRate=d<130?3.85:d<280?3.05:2.3;", 1)
+		"const turnRate=d<130?3.98475:d<280?3.15675:2.3805;", 1)
 	// The fixed dock no longer contains the old optional room-code field.
 	// Its legacy create handler must not throw when that removed node is absent.
 	// Room creation uses an empty code; join links still supply a real code.
