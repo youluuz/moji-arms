@@ -1082,7 +1082,7 @@ func (a *Arena) tick(dt float64) {
 				if kind == "pierce" {
 					speed = 480
 				} else if kind == "homing" {
-					speed = 315 // -10% homing projectile travel speed
+					speed = 275 // additional ~13% reduction to make homing shots easier to dodge
 				}
 				a := p.Aim
 				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: float64(n * 6), TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
@@ -1122,9 +1122,9 @@ func (a *Arena) tick(dt float64) {
 					old := math.Atan2(b.VY, b.VX)
 					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
 					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
-					angle := old + bound(delta, -2.9*dt, 2.9*dt) // slower lock-on: dodges can break pursuit
-					b.VX = 315 * math.Cos(angle)
-					b.VY = 315 * math.Sin(angle)
+					angle := old + bound(delta, -2.2*dt, 2.2*dt) // reduced turning authority: fast side-steps can evade
+					b.VX = 275 * math.Cos(angle)
+					b.VY = 275 * math.Sin(angle)
 				}
 			}
 			b.X += b.VX * dt
@@ -1440,16 +1440,16 @@ window.MojiStrokeReady=Promise.all([
  return true;
 }).catch(err=>{console.warn('画数辞書の取得に失敗',err);return false;});`
 	source = strings.Replace(source, "if(window.MojiRandom)window.MojiRandom.strokeMap=dict;", strokeLoader, 1)
-	// Homing shots should be somewhat easier to evade: ~10% less speed and
-	// ~20% less turning authority. Preserve obstacle avoidance, damage and CT.
+	// Homing shots should be easier to evade: another ~12% off speed and
+	// ~20% off turning authority. Preserve obstacle avoidance, damage and CT.
 	// This inline script powers the original solo 1-v-1 battle, while the
 	// multi-bot extension uses matching tuned steering constants.
 	source = strings.Replace(source,
 		"const speed=d<95?205:d<175?265:345;",
-		"const speed=d<95?185:d<175?240:310;", 1)
+		"const speed=d<95?160:d<175?210:275;", 1)
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
-		"const turnRate=d<130?4.5:d<280?3.6:2.7;", 1)
+		"const turnRate=d<130?3.6:d<280?2.85:2.15;", 1)
 	// The fixed dock no longer contains the old optional room-code field.
 	// Its legacy create handler must not throw when that removed node is absent.
 	// Room creation uses an empty code; join links still supply a real code.
