@@ -1122,7 +1122,7 @@ func (a *Arena) tick(dt float64) {
 					old := math.Atan2(b.VY, b.VX)
 					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
 					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
-					angle := old + bound(delta, -2.2*dt, 2.2*dt) // reduced turning authority: fast side-steps can evade
+					angle := old + bound(delta, -2.4*dt, 2.4*dt) // slightly stronger lock-on than previous tuning; sidesteps remain viable
 					b.VX = 275 * math.Cos(angle)
 					b.VY = 275 * math.Sin(angle)
 				}
@@ -1449,7 +1449,7 @@ window.MojiStrokeReady=Promise.all([
 		"const speed=d<95?160:d<175?210:275;", 1)
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
-		"const turnRate=d<130?3.6:d<280?2.85:2.15;", 1)
+		"const turnRate=d<130?3.85:d<280?3.05:2.3;", 1)
 	// The fixed dock no longer contains the old optional room-code field.
 	// Its legacy create handler must not throw when that removed node is absent.
 	// Room creation uses an empty code; join links still supply a real code.
