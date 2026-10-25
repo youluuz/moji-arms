@@ -1,0 +1,114 @@
+/* v10.9 — Separate the mode selector from other combat options.
+   Preserve compact scroll length and the original four large mode buttons. */
+#lobbyScreen #battleSettings{overflow:visible}
+#lobbyScreen #battleSettings .moji-mode-choice-card,
+#lobbyScreen #battleSettings .moji-match-details-card{
+ min-width:0;max-width:100%;box-sizing:border-box;
+ border-radius:15px;padding:13px 14px;margin:11px 0 0;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card{
+ border:2px solid #e0b971;
+ background:linear-gradient(140deg,#263c54 0%,#132b45 60%,#152338 100%);
+ box-shadow:0 4px 17px #050f1d5b,inset 0 1px 0 #fff1c61c;
+}
+#lobbyScreen #battleSettings .moji-match-details-card{
+ border:1px solid #6586a5;
+ background:linear-gradient(145deg,#192f48,#11243a);
+ box-shadow:inset 0 1px 0 #d0e7ff12;
+}
+#lobbyScreen #battleSettings .moji-mode-section-heading{
+ display:flex;align-items:center;gap:10px;min-width:0;margin:0 0 11px;
+}
+#lobbyScreen #battleSettings .moji-mode-step{
+ display:flex;align-items:center;justify-content:center;
+ flex:0 0 37px;width:37px;height:37px;box-sizing:border-box;
+ border-radius:10px;border:1px solid #ecd298;
+ background:#ead09c;color:#14263b;font-size:13px;font-weight:1000;
+ font-variant-numeric:tabular-nums;
+}
+#lobbyScreen #battleSettings .moji-match-details-card .moji-mode-step{
+ background:#bcd8ed;border-color:#d2efff;
+}
+#lobbyScreen #battleSettings .moji-mode-heading-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+#lobbyScreen #battleSettings .moji-mode-heading-copy strong{
+ color:#ffebbb;font-size:clamp(15px,2.1vw,18px);line-height:1.25;font-weight:950;
+}
+#lobbyScreen #battleSettings .moji-match-details-card .moji-mode-heading-copy strong{color:#e3f3ff}
+#lobbyScreen #battleSettings .moji-mode-heading-copy small{
+ color:#bfd3e7;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:9px!important;margin:0!important;width:100%;min-width:0;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile]{
+ box-sizing:border-box;position:relative;width:100%;min-width:0;
+ min-height:78px!important;padding:9px 6px!important;border-radius:12px!important;
+ border:1.5px solid #6889aa!important;
+ background:linear-gradient(155deg,#233c56,#152941)!important;
+ box-shadow:inset 0 1px 0 #ffffff17!important;
+ color:#eaf5ff!important;line-height:1.25;touch-action:manipulation;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile] b{
+ color:#f2f7ff!important;font-size:13px!important;line-height:1.25!important;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile] small{
+ color:#c5d8ea!important;font-size:10px!important;line-height:1.25!important;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile][aria-pressed="true"]{
+ border:2px solid #ffe2a3!important;
+ background:linear-gradient(145deg,#57482f,#253b52)!important;
+ box-shadow:0 0 0 2px #ffdf9252,inset 0 1px 0 #fff4d34a!important;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [aria-pressed="true"] b{color:#ffe6a6!important}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [aria-pressed="true"] small{color:#ffebb9!important}
+#lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile]:focus-visible{
+ outline:3px solid #ffffff!important;outline-offset:2px;
+}
+#lobbyScreen #battleSettings .moji-mode-selected-info{
+ display:block;margin:11px 0 0;padding:9px 11px;
+ background:#0d253c;border:1px solid #708eaa;border-radius:9px;
+ color:#ffebbe;font-weight:800;font-size:clamp(11px,1.45vw,13px);line-height:1.5;
+ overflow-wrap:anywhere;
+}
+#lobbyScreen #battleSettings .moji-mode-choice-card .mode-hint{
+ color:#b6d6ec!important;font-size:11px!important;line-height:1.45!important;
+ margin:7px 0 0!important;padding:0!important;
+}
+#lobbyScreen #battleSettings .moji-match-details-card .mode-quickrow{
+ width:100%;min-width:0;margin:0!important;
+}
+#lobbyScreen #battleSettings .moji-match-details-card .setting{
+ min-width:0;border-color:#547895;
+}
+#lobbyScreen #battleSettings .moji-match-details-card #cpuCountSetting{
+ margin-top:8px!important;padding:9px 10px;
+ background:#10273f;border:1px solid #4e7598;border-radius:10px;
+}
+#lobbyScreen #battleSettings .moji-match-details-card #mobileOrientationSetting{
+ margin:9px 0 0!important;width:100%;box-sizing:border-box;
+}
+@media(max-width:700px){
+ #lobbyScreen #battleSettings .moji-mode-choice-card,
+ #lobbyScreen #battleSettings .moji-match-details-card{
+  padding:10px!important;margin-top:10px!important;border-radius:12px;
+ }
+ #lobbyScreen #battleSettings .moji-mode-section-heading{gap:8px;margin-bottom:9px}
+ #lobbyScreen #battleSettings .moji-mode-step{flex-basis:32px;width:32px;height:32px;font-size:12px}
+ #lobbyScreen #battleSettings .moji-mode-heading-copy strong{font-size:15px}
+ #lobbyScreen #battleSettings .moji-mode-heading-copy small{font-size:10px}
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;
+ }
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile]{
+  min-height:76px!important;padding:6px 5px!important;
+ }
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile] b{font-size:12px!important}
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile] small{font-size:10px!important}
+ #lobbyScreen #battleSettings .moji-mode-selected-info{padding:7px 9px;margin-top:8px;font-size:11px}
+}
+@media(max-width:380px){
+ #lobbyScreen #battleSettings .moji-mode-heading-copy small{font-size:9.5px}
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles{gap:6px!important}
+ #lobbyScreen #battleSettings .moji-mode-choice-card #modeTiles [data-mode-tile]{min-height:78px!important}
+}
