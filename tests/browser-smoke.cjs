@@ -785,7 +785,8 @@ const { chromium } = require('playwright');
     const actions=[...bar.querySelectorAll('button')].map(b=>b.getBoundingClientRect());
     const overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
      Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
-    const mapBox=field?.closest('.moji-map-with-stick')?.getBoundingClientRect()||fieldBox;
+    const wrapper=field?.closest('.moji-map-with-stick');
+    const mapBox=wrapper&&getComputedStyle(wrapper).display!=='contents'?wrapper.getBoundingClientRect():fieldBox;
     return {position:getComputedStyle(bar).position,
      beforeArena:bar.nextElementSibling===field?.closest('.moji-map-with-stick')||
       bar.nextElementSibling===field,
