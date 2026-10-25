@@ -731,9 +731,9 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
 }
 
 func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
- // Each stroke adds a growing CT penalty; 1 stroke is exactly 0.3 seconds in all four modes.
+ // Each stroke adds a growing CT penalty; 1 stroke is exactly 0.8 seconds in all four modes.
  for _,tc:=range []struct{n int; seconds float64}{
-  {1,0.3},{2,0.3429},{5,0.4824},{10,0.7509},{12,0.8709},{20,1.4229},{30,2.2749},{40,3.3069},{58,5.6181},{84,9.9861},
+  {1,0.8},{2,0.8429},{5,0.9824},{10,1.2509},{12,1.3709},{20,1.9229},{30,2.7749},{40,3.8069},{58,6.1181},{84,10.4861},
  } {
   if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
    t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
@@ -744,12 +744,12 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
  }
  index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))") {
+ if !strings.Contains(served,"attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))") {
   t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
  }
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  for _,expected:=range []string{
-  "attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1))",
+  "attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))",
   "const duration=onlineCD(slot.kind,slot.n)/1000",
  } {
   if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
@@ -807,7 +807,7 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
  ui,e:=gameFiles.ReadFile("public/ui-polish-v74.css");if e!=nil||!strings.Contains(string(ui),"#findRandomNow")||!strings.Contains(string(ui),".weaponrow") {t.Fatal("shared UI stylesheet missing")}
  servedBase,_:=gameFiles.ReadFile("public/index.html")
  served:=mobilePatchedIndex(string(servedBase))
- for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:0.3*(1+0.14*(n-1)","defense:1.4*(9+n*.4)"} {
+ for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:0.8+0.3*(0.14*(n-1)","defense:1.4*(9+n*.4)"} {
   if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
  }
  online,_:=gameFiles.ReadFile("public/multiplayer.html")
