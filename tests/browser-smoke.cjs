@@ -210,6 +210,17 @@ const { chromium } = require('playwright');
   });
   if(JSON.stringify(cpuKana)!==JSON.stringify({'イ':2,'ー':1,'フ':1,'ネ':4,'く':1}))
    throw Error('CPU kana written stroke count mismatch '+JSON.stringify(cpuKana));
+  // Real mobile lobby: one-stroke attack is 0.8s; two strokes remain slower,
+  // and the cooldown of a different weapon type is unchanged.
+  const attackCooldown=await page.evaluate(()=>({
+   one:window.MojiWeaponVisual?.cooldown('attack',1),
+   two:window.MojiWeaponVisual?.cooldown('attack',2),
+   ten:window.MojiWeaponVisual?.cooldown('attack',10),
+   homing:window.MojiWeaponVisual?.cooldown('homing',1)
+  }));
+  if(attackCooldown.one!=='0.8秒'||attackCooldown.two!=='0.8秒'||
+    attackCooldown.ten!=='1.3秒'||attackCooldown.homing!=='6.9秒')
+   throw Error('Solo attack 0.8s and other-weapon CT regression '+JSON.stringify(attackCooldown));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
   // Keep the ORIGINAL five-slot shuffle handler, but place it immediately
