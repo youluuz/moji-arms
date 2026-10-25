@@ -466,10 +466,9 @@ const { chromium } = require('playwright');
     const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
       Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
     const zone=document.getElementById('cpuMoveZone')?.getBoundingClientRect();
-    const cpuPadEl=document.getElementById('cpuMovePad');
-    const cpuThumbEl=document.getElementById('cpuMoveThumb');
-    const cpuPad=cpuPadEl?.getBoundingClientRect();
+    const cpuThumbEl=document.getElementById('cpuThumb');
     const cpuThumb=cpuThumbEl?.getBoundingClientRect();
+    const cpuDot=document.getElementById('cpuThumbDot')?.getBoundingClientRect();
     const centerGap=(a,b)=>a&&b?Math.hypot((a.left+a.width/2)-(b.left+b.width/2),(a.top+a.height/2)-(b.top+b.height/2)):Infinity;
     const tip=document.querySelector('#gameScreen .moji-battle-howto');
     const battlefield=document.querySelector('#gameScreen .arena-shell');
@@ -486,13 +485,16 @@ const { chromium } = require('playwright');
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
       // Previously only #cpuMoveZone was docked; #cpuMovePad and the visible
       // thumb remained on the canvas, disconnected from the true hit target.
-      padInsideZone:cpuPadEl?.parentElement===document.getElementById('cpuMoveZone'),
-      padDiagnostic:{exists:!!cpuPadEl,thumb:!!cpuThumbEl,parent:cpuPadEl?.parentElement?.id||cpuPadEl?.parentElement?.className,
-        zoneChildren:document.getElementById('cpuMoveZone')?.outerHTML.slice(0,580),
-        globals:[...document.querySelectorAll('[id*=Pad],[id*=Thumb],[id*=Move]')].map(x=>({id:x.id,parent:x.parentElement?.id})).slice(0,18)},
-      padCentered:centerGap(zone,cpuPad)<2,thumbCentered:centerGap(zone,cpuThumb)<2,
-      padFits:!!cpuPad&&!!zone&&cpuPad.left>=zone.left-2&&cpuPad.right<=zone.right+2&&
-       cpuPad.top>=zone.top-2&&cpuPad.bottom<=zone.bottom+2,
+      padInsideZone:cpuThumbEl?.parentElement===document.getElementById('cpuMoveZone'),
+      padDiagnostic:{thumb:!!cpuThumbEl,inline:cpuThumbEl?.getAttribute('style')||'',
+       style:cpuThumbEl&&{position:getComputedStyle(cpuThumbEl).position,left:getComputedStyle(cpuThumbEl).left,
+        right:getComputedStyle(cpuThumbEl).right,top:getComputedStyle(cpuThumbEl).top,bottom:getComputedStyle(cpuThumbEl).bottom,
+        transform:getComputedStyle(cpuThumbEl).transform},
+       thumb:cpuThumb&&{x:cpuThumb.x,y:cpuThumb.y,width:cpuThumb.width,height:cpuThumb.height},
+       dot:cpuDot&&{x:cpuDot.x,y:cpuDot.y,width:cpuDot.width,height:cpuDot.height}},
+      padCentered:centerGap(zone,cpuThumb)<2,thumbCentered:centerGap(zone,cpuDot)<2,
+      padFits:!!cpuThumb&&!!zone&&cpuThumb.left>=zone.left-2&&cpuThumb.right<=zone.right+2&&
+       cpuThumb.top>=zone.top-2&&cpuThumb.bottom<=zone.bottom+2,
       guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
    });
    if(!mobileBattleUI.guideOutside||!mobileBattleUI.outsideStick||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
