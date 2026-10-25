@@ -136,7 +136,7 @@ function botAction(bot,target,now){
   bot.shield=n*SHIELD_PER_STROKE;bot.shieldEnd=now+2300;
  }else{
   const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*.18;
-  const speed=action.kind==='homing'?250:action.kind==='pierce'?430:345;
+  const speed=action.kind==='homing'?220:action.kind==='pierce'?430:345;
   bullets.push({x:bot.x,y:bot.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
    n,owner:'e',sourceId:bot.id,life:action.kind==='homing'?4.8:2.4,ch:action.ch,
    homing:action.kind==='homing',pierce:action.kind==='pierce'});
@@ -146,8 +146,8 @@ function botAction(bot,target,now){
 function guide(b,target,dt){
  const wanted=Math.atan2(target.y-b.y,target.x-b.x),old=Math.atan2(b.vy,b.vx);
  const diff=Math.atan2(Math.sin(wanted-old),Math.cos(wanted-old));
- const next=old+Math.max(-3.1*dt,Math.min(3.1*dt,diff));
- const speed=Math.hypot(b.vx,b.vy)||310;
+ const next=old+Math.max(-2.4*dt,Math.min(2.4*dt,diff));
+ const speed=Math.hypot(b.vx,b.vy)||220;
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
 function projectileTarget(b){
