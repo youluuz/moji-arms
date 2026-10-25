@@ -260,6 +260,50 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
          !watchState.watchUI||watchState.cards!==0||!watchState.target?.includes('観戦中')||
          !watchState.choiceHidden)
        throw Error(mode+': live invite did not enter read-only spectator mode '+JSON.stringify(watchState));
+      // The spectator toolbar must sit above the arena as a real row
+      // at phone portrait/landscape and desktop widths, never over it.
+      const auditSpectator=async (pg,label)=>{
+       const result=await pg.evaluate(()=>{
+        const bar=document.getElementById('onlineWatchControls');
+        const field=document.querySelector('#gameArea .arena-shell');
+        const row=field?.closest('.moji-map-with-stick')||field;
+        const b=bar.getBoundingClientRect(),r=row.getBoundingClientRect();
+        const buttons=[...bar.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
+        const overlaps=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&
+         Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
+        return {normalFlow:!['absolute','fixed'].includes(getComputedStyle(bar).position),
+         placedBeforeMap:bar.nextElementSibling===row,
+         above:b.bottom<=r.top+2,visible:b.height>25,
+         buttonCount:buttons.length,
+         allButtonsFit:buttons.every(x=>x.width>35&&x.height>=27&&x.left>=b.left-2&&x.right<=b.right+2),
+         nonoverlapping:buttons.every((x,i)=>buttons.slice(i+1).every(y=>!overlaps(x,y))),
+         mapHeight:field.getBoundingClientRect().height,
+         noOverflow:document.documentElement.scrollWidth<=innerWidth+3,
+         bar:{top:b.top,bottom:b.bottom},map:{top:r.top,bottom:r.bottom}};
+       });
+       if(!result.normalFlow||!result.placedBeforeMap||!result.above||!result.visible||
+          result.buttonCount!==3||!result.allButtonsFit||!result.nonoverlapping||
+          result.mapHeight<70||!result.noOverflow)
+        throw Error(mode+': spectator navigation blocks '+label+': '+JSON.stringify(result));
+      };
+      for(const [width,height] of [[390,844],[667,375]]){
+       await viewer.setViewportSize({width,height});
+       await auditSpectator(viewer,width+'x'+height);
+      }
+      // In addition to phone breakpoints, use a REAL desktop Chrome context.
+      if(mode==='normal'){
+       const pcContext=await browser.newContext({viewport:{width:1280,height:800},isMobile:false,hasTouch:false});
+       try{
+        const desktop=await pcContext.newPage();
+        desktop.on('pageerror',e=>errors.push(mode+'/desktop-watcher: '+String(e)));
+        await desktop.goto(base+'/multiplayer.html?embedded=1&room='+code,{waitUntil:'domcontentloaded'});
+        await desktop.waitForFunction(()=>joinedAsSpectator===true&&roomState?.phase==='playing',{timeout:20000});
+        await auditSpectator(desktop,'1280x800 desktop Chrome');
+        await desktop.locator('#onlineWatchNext').click();
+        await desktop.locator('#onlineWatchPrev').click();
+       }finally{await pcContext.close()}
+       await host.waitForFunction(()=>roomState?.spectators===1,{timeout:12000});
+      }
       await viewer.locator('#onlineWatchNext').click();
       await viewer.locator('#onlineWatchPrev').click();
     }finally{await viewerContext.close()}
