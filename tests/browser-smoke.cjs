@@ -567,8 +567,13 @@ const { chromium } = require('playwright');
    document.body.appendChild(iframe);
   });
   await page.waitForFunction(()=>document.getElementById('fullscreenParityCheck')?.contentDocument?.readyState==='complete',{timeout:15000});
-  const embedded=page.frames().find(f=>f.url().includes('/multiplayer.html?embedded=1'));
-  if(!embedded)throw Error('embedded multiplayer test frame did not load');
+  // This test already opened and closed the REAL online iframe earlier.
+  // Looking up a frame by URL could accidentally select that stale frame
+  // instead of the fullscreenParityCheck element we just created.
+  const parityFrameElement=await page.locator('#fullscreenParityCheck').elementHandle();
+  const embedded=await parityFrameElement?.contentFrame();
+  if(!embedded||!embedded.url().includes('/multiplayer.html?embedded=1'))
+   throw Error('fullscreen parity iframe did not load');
 
   // The room/waiting UI uses the same navy-and-gold hierarchy as the lobby,
   // including a visible room code, prominent ready controls and invitation.
