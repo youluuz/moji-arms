@@ -21,6 +21,13 @@
    layout.insertBefore(rail,arena);
   }
   if(control.parentElement!==rail)rail.append(control);
+  // Keep the original CPU cursor inside its matching touch zone.
+  // The thumb is #cpuThumb (not the unused old #cpuMovePad styling);
+  // CSS recenters it for the new, smaller off-map mobile rail.
+  if(control.id==='cpuMoveZone'){
+   const thumb=screen.querySelector('#cpuThumb');
+   if(thumb&&thumb.parentElement!==control)control.append(thumb);
+  }
   return true;
  }
  function upgrade(){

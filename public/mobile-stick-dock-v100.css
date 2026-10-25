@@ -102,3 +102,38 @@ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #tapHint{displa
   width:56px!important;height:56px!important;top:7px!important;left:7px!important;
  }
 }
+
+/* v10.11 — center the REAL CPU joystick (#cpuThumb/#cpuThumbDot).
+   The original 98px disc had absolute bottom/left offsets meant for the
+   battlefield. In the narrow dock it sat 46px ABOVE its 68px hit circle.
+   Use a separate CSS 'translate' for centering so runtime 'transform'
+   still moves the thumb/dot without losing the centered origin. */
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMoveZone{
+ display:grid!important;place-items:center!important;overflow:hidden!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumb{
+ position:absolute!important;
+ top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;
+ width:60px!important;height:60px!important;max-width:60px!important;
+ box-sizing:border-box!important;translate:-50% -50%!important;
+ display:grid!important;place-items:center!important;
+ pointer-events:none!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumbDot{
+ width:32px!important;height:32px!important;max-width:32px!important;
+ box-sizing:border-box!important;pointer-events:none!important;
+}
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveThumb{
+ width:32px!important;height:32px!important;max-width:32px!important;
+ box-sizing:border-box!important;flex:none!important;
+}
+@media(orientation:portrait) and (max-width:800px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumb{
+  width:58px!important;height:58px!important;max-width:58px!important;
+ }
+}
+@media(orientation:landscape) and (max-height:470px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumb{
+  width:60px!important;height:60px!important;max-width:60px!important;
+ }
+}

@@ -466,6 +466,10 @@ const { chromium } = require('playwright');
     const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>2&&
       Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2;
     const zone=document.getElementById('cpuMoveZone')?.getBoundingClientRect();
+    const cpuThumbEl=document.getElementById('cpuThumb');
+    const cpuThumb=cpuThumbEl?.getBoundingClientRect();
+    const cpuDot=document.getElementById('cpuThumbDot')?.getBoundingClientRect();
+    const centerGap=(a,b)=>a&&b?Math.hypot((a.left+a.width/2)-(b.left+b.width/2),(a.top+a.height/2)-(b.top+b.height/2)):Infinity;
     const tip=document.querySelector('#gameScreen .moji-battle-howto');
     const battlefield=document.querySelector('#gameScreen .arena-shell');
     const tr=tip?.getBoundingClientRect(),fieldRect=battlefield?.getBoundingClientRect();
@@ -479,10 +483,23 @@ const { chromium } = require('playwright');
       distinct:rects.every((r,i)=>rects.slice(i+1).every(other=>!intersects(r,other))),
       inside:rects.every(r=>r.width>28&&r.left>=-1&&r.right<=innerWidth+2),
       touchRing:zone&&Math.abs(zone.width-zone.height)<2,
+      // Previously only #cpuMoveZone was docked; #cpuMovePad and the visible
+      // thumb remained on the canvas, disconnected from the true hit target.
+      padInsideZone:cpuThumbEl?.parentElement===document.getElementById('cpuMoveZone'),
+      padDiagnostic:{thumb:!!cpuThumbEl,inline:cpuThumbEl?.getAttribute('style')||'',
+       style:cpuThumbEl&&{position:getComputedStyle(cpuThumbEl).position,left:getComputedStyle(cpuThumbEl).left,
+        right:getComputedStyle(cpuThumbEl).right,top:getComputedStyle(cpuThumbEl).top,bottom:getComputedStyle(cpuThumbEl).bottom,
+        transform:getComputedStyle(cpuThumbEl).transform},
+       thumb:cpuThumb&&{x:cpuThumb.x,y:cpuThumb.y,width:cpuThumb.width,height:cpuThumb.height},
+       dot:cpuDot&&{x:cpuDot.x,y:cpuDot.y,width:cpuDot.width,height:cpuDot.height}},
+      padCentered:centerGap(zone,cpuThumb)<2,thumbCentered:centerGap(zone,cpuDot)<2,
+      padFits:!!cpuThumb&&!!zone&&cpuThumb.left>=zone.left-2&&cpuThumb.right<=zone.right+2&&
+       cpuThumb.top>=zone.top-2&&cpuThumb.bottom<=zone.bottom+2,
       guide:tip?.textContent||'',touchSafe:tip&&getComputedStyle(tip).pointerEvents==='none'};
    });
    if(!mobileBattleUI.guideOutside||!mobileBattleUI.outsideStick||mobileBattleUI.cells!==6||!mobileBattleUI.sameRow||!mobileBattleUI.distinct||
       !mobileBattleUI.inside||!mobileBattleUI.touchRing||
+      !mobileBattleUI.padInsideZone||!mobileBattleUI.padCentered||!mobileBattleUI.thumbCentered||!mobileBattleUI.padFits||
       !mobileBattleUI.guide.includes('タップ／クリック')||!mobileBattleUI.touchSafe)
     throw Error('CPU six-slot layout or circular mobile movement invalid '+JSON.stringify(mobileBattleUI));
   if(beforeStart.seconds<1||beforeStart.seconds>3.2||beforeStart.rivalHPVisible||!beforeStart.ownHPVisible||
@@ -503,6 +520,22 @@ const { chromium } = require('playwright');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:startX,y:startY,id:1}]});
     await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:startX+26,y:startY,id:1}]});
     await page.waitForTimeout(290);
+    // The pointer must move the VISIBLE cursor as well as the avatar. CSS
+    // centering alone would conceal a nonfunctional draggable thumb.
+    const cursorDrag=await page.evaluate(()=>{
+     const ring=document.getElementById('cpuMoveZone').getBoundingClientRect();
+     const outer=document.getElementById('cpuThumb').getBoundingClientRect();
+     const inner=document.getElementById('cpuThumbDot').getBoundingClientRect();
+     const center=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
+     const target=center(ring),out=center(outer),dot=center(inner);
+     return {target,out,dot,outerStyle:document.getElementById('cpuThumb').getAttribute('style'),
+      dotStyle:document.getElementById('cpuThumbDot').getAttribute('style'),
+      vector:typeof touch!=='undefined'?touch:null,
+      moved:out.x>target.x+4||dot.x>target.x+4,
+      visible:dot.x>=ring.left&&dot.x<=ring.right&&dot.y>=ring.top&&dot.y<=ring.bottom};
+    });
+    if(!cursorDrag.moved||!cursorDrag.visible||cursorDrag.vector?.x<=0)
+     throw Error(mode+' CPU cursor fails to follow real rightward drag '+JSON.stringify(cursorDrag));
    }finally{
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await cdp.detach();
