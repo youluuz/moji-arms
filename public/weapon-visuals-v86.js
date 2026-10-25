@@ -14,7 +14,7 @@ function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):n*
 function metric(kind,n){return (kind==='heal'?'回復':kind==='defense'?'防御':'威力')+amount(kind,n)}
 function cooldown(kind,n){
  n=safeN(n);if(!n)return '—';
- const k={attack:0.3*(1+0.14*(n-1)+0.003*(n-1)*(n-1)),
+ const k={attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1)),
   defense:1.4*(9+n*.4),heal:1.4*(13+n*.55),pierce:1.4*(7+n*.45),homing:1.4*(4.5+n*.42)}[kind];
  return Number.isFinite(k)?k.toFixed(1)+'秒':'—';
 }
