@@ -267,7 +267,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         const bar=document.getElementById('onlineWatchControls');
         const field=document.querySelector('#gameArea .arena-shell');
         const row=field?.closest('.moji-map-with-stick')||field;
-        const b=bar.getBoundingClientRect(),r=row.getBoundingClientRect();
+        const b=bar.getBoundingClientRect(),r=row&&getComputedStyle(row).display!=='contents'?row.getBoundingClientRect():field.getBoundingClientRect();
         const buttons=[...bar.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
         const overlaps=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>2&&
          Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>2;
