@@ -72,6 +72,8 @@ jobs:
         run: node tests/browser-smoke.cjs
       - name: Test real two-player online normal and custom matches
         run: node tests/browser-pvp.cjs
+      - name: Audit native desktop CPU spectator controls at three window sizes
+        run: node tests/browser-desktop-spectator.cjs
       - name: Verify room creation and invite from empty login equipment
         run: node tests/browser-room-invite.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
