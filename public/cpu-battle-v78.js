@@ -57,7 +57,7 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  // The instant-safe-zone variant must remain within its 180-unit radius.
  const instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
  const cx=WORLD_W/2,cy=WORLD_H/2;
- const rx=(instant?136:750)*mapFactor,ry=(instant?136:430)*mapFactor;
+ const rx=(instant?136:820)*mapFactor,ry=(instant?136:480)*mapFactor;
  for(let attempt=0;attempt<115;attempt++){
   const angle=(index/total)*Math.PI*2+attempt*.12;
   const x=Math.max(40,Math.min(WORLD_W-40,cx+rx*Math.cos(angle)));
@@ -69,7 +69,7 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  }
  // Fallback remains inside bounds / the safe zone even on crowded maps.
  const angle=index/total*Math.PI*2;
- return {x:cx+Math.cos(angle)*(instant?115:630)*mapFactor,y:cy+Math.sin(angle)*(instant?115:345)*mapFactor};
+ return {x:cx+Math.cos(angle)*(instant?115:695)*mapFactor,y:cy+Math.sin(angle)*(instant?115:398)*mapFactor};
 }
 function startRound(token,now){
  cpuSpectating=false;cpuWatchIndex=0;cpuSpectateTarget=null;
