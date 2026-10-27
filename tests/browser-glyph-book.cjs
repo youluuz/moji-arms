@@ -48,6 +48,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   if(await page.locator('#mojiGlyphBookGrid .moji-glyph-book-card').count()!==2)
    throw Error('Personal glyph collection lost on reload');
   await page.locator('#appTabs [data-app-tab="achievements"]').click();
+  await page.locator('#missionPanel .secret-panel summary').click();
   await page.locator('#secretInput').fill('effect_developeronlyH17');
   await page.locator('#secretApply').click();
   const hidden=await page.evaluate(()=>{
