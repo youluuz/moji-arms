@@ -1,0 +1,60 @@
+name: Capture authentic game login for X header
+on:
+  push:
+    paths: ['.github/workflows/capture-login-header.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install screenshot browser driver
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Start authentic game locally
+        run: |
+          go build -o /tmp/mojiarms .
+          /tmp/mojiarms --no-browser --port 8083 > /tmp/mojiarms.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8083/healthz; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mojiarms.log
+          exit 1
+      - name: Capture visible login screen for 1500x500 X profile banner
+        run: |
+          mkdir -p docs
+          node <<'JS'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1500,height:760},deviceScaleFactor:2});
+            await page.goto('http://127.0.0.1:8083/',{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForTimeout(2500);
+            const details=await page.evaluate(()=>({
+              title:document.title,
+              visible:[...document.querySelectorAll('h1,h2,h3,button,input')].filter(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return r.width&&r.height&&r.top>=0&&r.top<760&&s.visibility!=='hidden'}).slice(0,45).map(e=>e.textContent?.trim()?.slice(0,60)||e.placeholder||e.id)
+            }));
+            console.log('REAL LOGIN SCREEN',JSON.stringify(details));
+            await page.screenshot({path:'docs/文字武装_ログイン画面_フル.png',fullPage:false});
+            await page.screenshot({path:'docs/文字武装_Xヘッダー_ログイン画面.png',clip:{x:0,y:0,width:1500,height:500}});
+            console.log('Saved actual 1500x500 viewport capture at 2x device scale.');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+      - name: Commit profile image
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/文字武装_ログイン画面_フル.png docs/文字武装_Xヘッダー_ログイン画面.png
+          git commit -m "Add authentic login screenshot and X profile banner" || exit 0
+          git push
