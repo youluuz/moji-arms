@@ -2,6 +2,7 @@ package main
 
 import (
  "net/http"
+ "encoding/base64"
  "net/http/httptest"
  "testing"
 )
@@ -49,7 +50,46 @@ func TestPublicBetaSecurityHeaders(t *testing.T){
   "X-Content-Type-Options":"nosniff",
   "X-Frame-Options":"SAMEORIGIN",
   "Referrer-Policy":"strict-origin-when-cross-origin",
+  "Content-Security-Policy":"object-src 'none'; base-uri 'self'; frame-ancestors 'self'",
+  "Permissions-Policy":"camera=(), microphone=(), geolocation=(), payment=()",
  }{
   if got:=w.Header().Get(k);got!=want{t.Errorf("%s %q want %q",k,got,want)}
+ }
+}
+
+func TestWebSocketHandshakeEnforcesProtocolAndKey(t *testing.T) {
+ validKey:=base64.StdEncoding.EncodeToString([]byte("0123456789abcdef"))
+ request:=func() *http.Request {
+  r:=httptest.NewRequest(http.MethodGet,"http://localhost:8083/ws",nil)
+  r.Header.Set("Upgrade","websocket")
+  r.Header.Set("Connection","keep-alive, Upgrade")
+  r.Header.Set("Sec-WebSocket-Version","13")
+  r.Header.Set("Sec-WebSocket-Key",validKey)
+  return r
+ }
+ if !websocketHandshakeValid(request()){t.Fatal("legitimate WebSocket handshake rejected")}
+ cases:=[]struct{name string;modify func(*http.Request)}{
+  {"wrong method",func(r *http.Request){r.Method="POST"}},
+  {"unsupported version",func(r *http.Request){r.Header.Set("Sec-WebSocket-Version","12")}},
+  {"missing version",func(r *http.Request){r.Header.Del("Sec-WebSocket-Version")}},
+  {"bad base64 key",func(r *http.Request){r.Header.Set("Sec-WebSocket-Key","not-base64%%")}},
+  {"short key",func(r *http.Request){r.Header.Set("Sec-WebSocket-Key",base64.StdEncoding.EncodeToString([]byte("short")))}},
+  {"empty key",func(r *http.Request){r.Header.Del("Sec-WebSocket-Key")}},
+  {"connection token substring spoof",func(r *http.Request){r.Header.Set("Connection","notupgrade")}},
+  {"wrong upgrade type",func(r *http.Request){r.Header.Set("Upgrade","h2c")}},
+ }
+ for _,tt:=range cases {
+  t.Run(tt.name,func(t *testing.T){
+   r:=request();tt.modify(r)
+   if websocketHandshakeValid(r){t.Fatal("invalid handshake accepted")}
+   w:=httptest.NewRecorder()
+   websocketHandler(w,r)
+   if w.Code!=http.StatusBadRequest {t.Fatalf("status %d; want 400",w.Code)}
+  })
+ }
+}
+func TestWebSocketCapacityLimit(t *testing.T) {
+ if maxConcurrentWebSockets<30 || maxConcurrentWebSockets>1000 {
+  t.Fatal("Socket limit should allow multiple matches but bound memory use")
  }
 }
