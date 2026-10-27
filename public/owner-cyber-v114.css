@@ -51,3 +51,20 @@
 @keyframes mojiNamepuCrown{to{transform:scale(1.10) rotate(5deg)}}
 @media(prefers-reduced-motion:reduce){#result.ultimate-namepu-victory *,#result.ultimate-namepu-victory::before,#result.ultimate-namepu-victory::after,#onlineOutcome .ultimate-gold-win *,#onlineOutcome .ultimate-gold-win::before,#onlineOutcome .ultimate-gold-win::after{animation:none!important}}
 @media(max-width:550px){#onlineOutcome .ultimate-gold-win{padding:22px 14px!important}}
+
+/* Secret equipment stays out of the regular inventory grid; it appears only after code unlock. */
+#mojiCyberLocker[hidden]{display:none!important}
+#mojiCyberLocker{margin:9px 0;padding:12px;border:1px solid #4197b7;border-radius:13px;background:linear-gradient(135deg,#071525,#102b41);display:grid;gap:8px}
+#mojiCyberLocker>strong{color:#9df5ff;font-size:14px;letter-spacing:.05em}
+#mojiCyberLocker>p{margin:0 0 5px;color:#a6d2e5;font-size:11px;line-height:1.55}
+#mojiCyberLocker button{display:grid;grid-template-columns:33px minmax(0,1fr) auto;align-items:center;gap:10px;text-align:left}
+#mojiCyberLocker button .moji-cyber-symbol{display:grid;place-items:center;width:30px;height:32px;font-size:19px;color:#65e9ff;text-shadow:0 0 9px #69f1ff}
+#mojiCyberLocker button .moji-cyber-desc{display:flex;flex-direction:column;min-width:0;gap:2px}
+#mojiCyberLocker button small{font-size:10px;color:#aad3e6}
+#mojiCyberLocker button b{font-size:12px;color:#ecfcff;overflow-wrap:anywhere}
+#mojiCyberLocker button .moji-cyber-state{font-size:10px;color:#80d3ed;white-space:nowrap}
+#mojiCyberLocker button.equipped{border-color:#9df5ff;background:linear-gradient(115deg,#0d3444,#1e6380);box-shadow:0 0 13px #42e3ff4c}
+#mojiCyberLocker button.equipped .moji-cyber-state{color:#cefff3}
+#mojiCyberLocker button{border:1px solid #78e8ff;background:linear-gradient(125deg,#071625,#174d69);color:#b7f9ff;border-radius:10px;padding:12px;font-size:12px;font-weight:900;box-shadow:0 0 18px #45d9f440}
+#mojiCyberLocker[hidden]{display:none!important}
+#mojiCyberLocker{margin-top:16px}
