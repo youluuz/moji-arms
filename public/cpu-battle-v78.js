@@ -58,21 +58,28 @@ function equip(bot,i){
  bot.ready=0;bot.guardReady=0;bot.targetId=null;bot.hardenUntil=0;
 }
 function spawnPosition(index,total,now,ignorePlayer=false){
- // Wider, collision-checked initial positions across the playable map.
- // The instant-safe-zone variant must remain within its 180-unit radius.
+ // Wider, collision-checked positions. Prior code only required 135px
+ // between CPU fighters, so a crowded match could still spawn two almost
+ // together after a wall displaced their assigned points.
  const instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
  const cx=WORLD_W/2,cy=WORLD_H/2;
  const rx=(instant?136:820)*mapFactor,ry=(instant?136:480)*mapFactor;
- for(let attempt=0;attempt<115;attempt++){
-  const angle=(index/total)*Math.PI*2+attempt*.12;
+ const minimum=instant?48:335;
+ const blockers=[...bots,...(ignorePlayer?[]:[player])];
+ let best=null,bestGap=-1;
+ for(let attempt=0;attempt<260;attempt++){
+  const angle=(index/total)*Math.PI*2+attempt*.081;
   const x=Math.max(40,Math.min(WORLD_W-40,cx+rx*Math.cos(angle)));
   const y=Math.max(40,Math.min(WORLD_H-40,cy+ry*Math.sin(angle)));
-  const blockers=[...bots,...(ignorePlayer?[]:[player])];
-  if(blockers.some(o=>Math.hypot(o.x-x,o.y-y)<(instant?48:135)))continue;
   if(obstacles.some(o=>now-startTime<o.expires&&circleRect(x,y,30,o)))continue;
-  return {x,y};
+  const gap=blockers.length?Math.min(...blockers.map(o=>Math.hypot(o.x-x,o.y-y))):Infinity;
+  if(gap>=minimum)return {x,y};
+  if(gap>bestGap){best={x,y};bestGap=gap}
  }
- // Fallback remains inside bounds / the safe zone even on crowded maps.
+ // If the terrain and a crowded instant-shrink zone leave no valid strict
+ // spawn, choose the farthest available clear point rather than a blind
+ // fallback that might land on another player.
+ if(best)return best;
  const angle=index/total*Math.PI*2;
  return {x:cx+Math.cos(angle)*(instant?115:695)*mapFactor,y:cy+Math.sin(angle)*(instant?115:398)*mapFactor};
 }
