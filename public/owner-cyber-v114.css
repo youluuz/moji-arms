@@ -1,0 +1,41 @@
+/* v11.4 over-the-top Namepu victory while preserving buttons and text */
+#mojiCyberControl[hidden]{display:none!important}
+#mojiCyberControl{margin:9px 0}
+#mojiCyberControl button{border:1px solid #78e8ff;background:linear-gradient(125deg,#071625,#174d69);color:#b7f9ff;border-radius:10px;padding:12px;font-size:12px;font-weight:900;box-shadow:0 0 18px #45d9f440}
+#result.ultimate-namepu-victory,#onlineOutcome .ultimate-gold-win{
+ position:relative!important;isolation:isolate!important;overflow:hidden!important;
+ border:3px solid #ffe49b!important;
+ background:radial-gradient(ellipse at center,#a15a20a0 0%,#1a112c 45%,#07091c 86%)!important;
+ box-shadow:0 0 95px #ffcb55aa,0 0 190px #f27aff55,inset 0 0 120px #ffe5b04a!important;
+}
+#result.ultimate-namepu-victory::before,#onlineOutcome .ultimate-gold-win::before{
+ content:"";position:absolute;inset:-55%;z-index:-1;pointer-events:none;
+ background:repeating-conic-gradient(from 0deg,#ffe4a500 0 3deg,transparent 3deg 14deg,#d38c521c 14deg 18deg,transparent 18deg 30deg);
+ animation:mojiNamepuRays 19s linear infinite;opacity:.65;
+}
+#result.ultimate-namepu-victory::after,#onlineOutcome .ultimate-gold-win::after{
+ content:"✦　★　✧　✦　★　✧　✦　★　✧　✦　★　✧　✦　★　✧";position:absolute;
+ inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+ background:radial-gradient(circle at 16% 20%,#ffe4a6 0 3px,transparent 5px),
+ radial-gradient(circle at 77% 35%,#ff7fdb 0 4px,transparent 7px),
+ radial-gradient(circle at 30% 70%,#91e5ff 0 2px,transparent 5px),
+ radial-gradient(circle at 88% 80%,#ffdc86 0 5px,transparent 9px);
+ color:#fff1bb;font-size:24px;letter-spacing:14px;line-height:4.2;
+ text-shadow:0 0 15px #fff8cf,0 0 35px #f9d16b;
+ animation:mojiNamepuSpark 2.3s ease-in-out infinite alternate;opacity:.85;
+}
+#result.ultimate-namepu-victory #resultTitle,#onlineOutcome .ultimate-gold-win #onlineOutcomeTitle{
+ color:#fff4c2!important;text-shadow:0 0 9px #fffae4,0 0 30px #f5bd50,0 0 62px #ff7cbf!important;
+ font-weight:1000!important;letter-spacing:.045em!important;
+ animation:mojiNamepuTitle 1.9s ease-in-out infinite alternate;
+}
+#result.ultimate-namepu-victory .result-inner{position:relative;z-index:1;border:3px double #ffdf87!important;box-shadow:0 0 70px #f9cd7eaa!important;background:linear-gradient(155deg,#28173ad9,#422a27bb)!important}
+#result.ultimate-namepu-victory button,#onlineOutcome .ultimate-gold-win button{position:relative;z-index:2}
+#onlineOutcome .ultimate-gold-win{padding:36px 24px!important}
+#onlineOutcome .ultimate-gold-win #onlineOutcomeBadge{font-size:clamp(72px,14vw,135px);animation:mojiNamepuCrown 2.3s ease-in-out infinite alternate;filter:drop-shadow(0 0 25px #ffd56d)}
+@keyframes mojiNamepuRays{to{transform:rotate(360deg)}}
+@keyframes mojiNamepuSpark{to{opacity:.45;transform:translateY(-8px)}}
+@keyframes mojiNamepuTitle{to{transform:scale(1.045);filter:brightness(1.28)}}
+@keyframes mojiNamepuCrown{to{transform:scale(1.10) rotate(5deg)}}
+@media(prefers-reduced-motion:reduce){#result.ultimate-namepu-victory *,#result.ultimate-namepu-victory::before,#result.ultimate-namepu-victory::after,#onlineOutcome .ultimate-gold-win *,#onlineOutcome .ultimate-gold-win::before,#onlineOutcome .ultimate-gold-win::after{animation:none!important}}
+@media(max-width:550px){#onlineOutcome .ultimate-gold-win{padding:22px 14px!important}}

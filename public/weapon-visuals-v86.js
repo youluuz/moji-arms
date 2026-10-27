@@ -10,7 +10,7 @@ const types={
 };
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeN=n=>Number.isFinite(Number(n))&&Number(n)>0?Math.max(1,Math.min(84,Number(n))):0;
-function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):n*(kind==='attack'?9:kind==='homing'?3:6))):'—'}
+function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):(kind==='attack'?Math.round(n*(9-.02*(n-1))):n*(kind==='homing'?3:6)))):'—'}
 function metric(kind,n){return (kind==='heal'?'回復':kind==='defense'?'防御':'威力')+amount(kind,n)}
 function cooldown(kind,n){
  n=safeN(n);if(!n)return '—';

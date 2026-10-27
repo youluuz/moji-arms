@@ -31,6 +31,8 @@ jobs:
           node --check public/room-entry-v106.js
           node --check public/emoji-shuffle-v107.js
           node --check public/mode-separation-v109.js
+          node --check public/glyph-book-v114.js
+          node --check public/owner-cyber-v114.js
           node --check public/room-guide-locker-v113.js
           node --check public/room-tools-v113.js
           node -e "const a=require('./public/notices.json');if(!Array.isArray(a.notices)||!a.notices.length)process.exit(1)"
@@ -78,6 +80,8 @@ jobs:
         run: node tests/browser-desktop-spectator.cjs
       - name: Verify room creation and invite from empty login equipment
         run: node tests/browser-room-invite.cjs
+      - name: Test glyph encyclopedia, copy, personal backup and hidden cyber FX
+        run: node tests/browser-glyph-book.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
       - name: Test embedded online match in mobile portrait and landscape
