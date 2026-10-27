@@ -116,6 +116,18 @@ const { chromium } = require('playwright');
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
      !(await page.locator('#mojiNoticeItems').innerText()).includes('3コイン'))
    throw Error('Lobby announcements not displayed');
+  const giftBefore=await page.evaluate(()=>Number(JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').coins)||0);
+  const giftButton=page.locator('.moji-welcome-claim');
+  if(!await giftButton.isVisible()||await giftButton.isDisabled())throw Error('Welcome gift not claimable');
+  await giftButton.click();
+  const giftAfter=await page.evaluate(()=>{
+   const a=JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}');
+   return{coins:Number(a.coins)||0,claimed:!!a.firstPlayGiftClaimed,shown:document.getElementById('coinCounter')?.textContent,
+    unread:document.getElementById('mojiUnread')?.hidden};
+  });
+  if(giftAfter.coins!==giftBefore+3||!giftAfter.claimed||giftAfter.shown!==String(giftAfter.coins)||
+     !giftAfter.unread||!await giftButton.isDisabled())
+   throw Error('Welcome gift must credit exactly three coins and clear unread state '+JSON.stringify({giftBefore,giftAfter}));
   await page.locator('#mojiNoticeClose').click();
   if(await page.locator('#mojiNoticeOverlay').isVisible())throw Error('Postbox announcements did not close');
 
