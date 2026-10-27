@@ -7,7 +7,7 @@ const defs=[
  {id:'invincible',name:'無敵',cost:280,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
  {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
  {id:'invisible',name:'透明化',cost:240,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
- {id:'namepu',name:'ナメプ',cost:160,icon:'😐',color:'#e9ff85',tip:'5.5秒間真顔で踊り続ける',target:false}
+ {id:'namepu',name:'ナメプ',cost:160,icon:'😐',color:'#e9ff85',tip:'5秒間踊る・その後は武装効果80%',target:false}
 ];
 const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
 // Accessible, mobile-readable explanations shared by all four battle modes.
@@ -44,9 +44,9 @@ const guides={
  },
  namepu:{
   role:'ネタ技・即時発動',short:'魅せ技',
-  summary:'アイコンが真顔になり、自分だけが5.5秒間ダンスする。完全にナメプするための必殺技。',
-  usage:'必殺技ボタンを1回タップ／クリックすると即発動。ほかの必殺技より少ない画数で使える。',
-  caution:'5.5秒間は移動も攻撃もできず、あらゆるダメージを普通に受ける。その試合で勝利すれば、超豪華な勝利演出とランダムな専用文言が出る。'
+  summary:'アイコンが真顔になり5秒間踊る。発動後は通常武装の攻撃力・回復量・防御量が、その試合中ずっと0.8倍になる。',
+  usage:'必殺技ボタンを押すと即発動（必要ゲージ160）。その場で5秒間ダンスし、その後は通常武装の効果が80%になる。',
+  caution:'5秒間は移動も攻撃もできず、受けるダメージも通常どおり。使用後の弱体化は試合終了まで続く。その状態で優勝すると専用勝利BGM付きの豪華なナメプ勝利画面が出る。'
  }
 };
 let widgetSerial=0;
