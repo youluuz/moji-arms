@@ -161,7 +161,7 @@ function botAction(bot,target,now){
   const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*(bot.style==='sniper'?.07:bot.style==='rusher'?.28:.18);
   const speed=action.kind==='homing'?220:action.kind==='pierce'?430:345;
   bullets.push({x:bot.x,y:bot.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
-   n,owner:'e',sourceId:bot.id,life:action.kind==='homing'?4.8:2.4,ch:action.ch,
+   n,owner:'e',sourceId:bot.id,life:action.kind==='homing'?3.8:2.4,ch:action.ch,
    homing:action.kind==='homing',pierce:action.kind==='pierce'});
  }
  window.MojiCpuBots.casts[action.kind]++;
@@ -169,7 +169,7 @@ function botAction(bot,target,now){
 function guide(b,target,dt){
  const wanted=Math.atan2(target.y-b.y,target.x-b.x),old=Math.atan2(b.vy,b.vx);
  const diff=Math.atan2(Math.sin(wanted-old),Math.cos(wanted-old));
- const next=old+Math.max(-2.9601*dt,Math.min(2.9601*dt,diff));
+ const next=old+Math.max(-3.048903*dt,Math.min(3.048903*dt,diff));
  const speed=Math.hypot(b.vx,b.vy)||220;
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
@@ -491,7 +491,7 @@ function boot(){
     // Direct-fire, piercing and ordinary projectiles are still dangerous.
     const targets=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&!(b.homing&&a===player&&window.MojiCpuUltimateState?.invisibleActive?.()));
     const hit=targets.find(a=>a.hp>0&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+9);
-    if(hit){damage(hit,(b.homing?b.n*3:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1)))),now,b.pierce,b);bullets.splice(i,1);}
+    if(hit){damage(hit,(b.homing?b.n*3+10:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1)))),now,b.pierce,b);bullets.splice(i,1);}
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
    }
    if(cpuSpectating){
