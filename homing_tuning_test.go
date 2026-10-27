@@ -35,10 +35,10 @@ func TestSlowerHomingProjectileAndWeakerLockOn(t *testing.T) {
     t.Fatalf("%s homing speed = %.3f, want 275",mode,actualSpeed)
    }
    // Fire east while the enemy is directly north. The missile should
-   // rotate only 2.7324 radians/second, not instantly snap onto the target.
+   // rotate only 2.814372 radians/second, not instantly snap onto the target.
    actualTurn:=math.Atan2(shot.VY,shot.VX)
-   if math.Abs(actualTurn-2.7324*dt)>0.0001 {
-    t.Fatalf("%s homing turn = %.5f; expected %.5f",mode,actualTurn,2.7324*dt)
+   if math.Abs(actualTurn-2.814372*dt)>0.0001 {
+    t.Fatalf("%s homing turn = %.5f; expected %.5f",mode,actualTurn,2.814372*dt)
    }
    if slotCooldown("homing",3)<=0 {t.Fatal("homing cooldown was damaged")}
    room.Bullets=nil
@@ -61,7 +61,7 @@ func TestSlowerHomingInBothCpuBattleEngines(t *testing.T) {
  served:=mobilePatchedIndex(string(base))
  for _,want:=range []string{
   "const speed=d<95?160:d<175?210:275;",
-  "const turnRate=d<130?4.383225:d<280?3.472425:2.61855;",
+  "const turnRate=d<130?4.51472175:d<280?3.57659775:2.6971065;",
  } {
   if !strings.Contains(served,want){t.Fatalf("1v1 CPU homing tuning missing from served lobby: %s",want)}
  }
@@ -69,7 +69,7 @@ func TestSlowerHomingInBothCpuBattleEngines(t *testing.T) {
  if err!=nil {t.Fatal(err)}
  for _,want:=range []string{
   "action.kind==='homing'?220",
-  "Math.max(-2.9601*dt,Math.min(2.9601*dt,diff))",
+  "Math.max(-3.048903*dt,Math.min(3.048903*dt,diff))",
  } {
   if !strings.Contains(string(bots),want){t.Fatalf("free-for-all CPU homing tuning missing: %s",want)}
  }
