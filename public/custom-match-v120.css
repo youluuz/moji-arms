@@ -1,0 +1,7 @@
+/* Custom battle rules live in the original HP preview. */
+#lobbyHP .custom-hp-label{display:inline-flex;align-items:center;flex-wrap:wrap;gap:7px;color:#f9dca1;font-weight:850}
+#mojiCustomRuleFields[hidden]{display:none!important}
+#lobbyHP input,#mojiCustomRuleFields input{box-sizing:border-box;width:80px;max-width:100%;min-width:0;padding:7px 4px;border-radius:8px;border:1px solid #6ccde9;background:#071b2b;color:#effcff;font-size:16px;font-weight:850;text-align:center}
+#mojiCustomRuleFields{margin-top:9px}
+#mojiCustomRuleFields .custom-charge-label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#b9eaff}
+.loadout-stats .stats-copy strong{color:#9defff}

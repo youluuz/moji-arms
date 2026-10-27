@@ -295,6 +295,7 @@ type Room struct {
 	EmptySince time.Time // private room kept briefly when everyone disconnects
 	Public                                                  bool
 	StartedPlayers int
+ MaxHP, UltimateStartPercent int // host-selected custom match rules
  Spectators []*Spectator
 	Players                                                 []*Player
 	Obstacles                                               []Obstacle
@@ -320,6 +321,14 @@ type Arena struct {
 
 var arena = &Arena{rooms: map[string]*Room{}}
 
+func (r *Room) maxHP() float64 {
+ if r.Mode=="custom" && r.MaxHP>=1 && r.MaxHP<=1000{return float64(r.MaxHP)}
+ return 600
+}
+func (r *Room) startChargePercent() int {
+ if r.Mode=="custom" && r.UltimateStartPercent>=0 && r.UltimateStartPercent<=100{return r.UltimateStartPercent}
+ return 0
+}
 func (r *Room) elapsed() float64 {
 	if r.Phase == "lobby" || r.Phase == "countdown" {
 		return 0
@@ -390,7 +399,7 @@ func (r *Room) state() map[string]any {
 	w,h:=r.dimensions()
  spectatorCount:=len(r.Spectators)
  for _, fighter:=range r.Players {if fighter.Spectating {spectatorCount++}}
-	return map[string]any{"spectators":spectatorCount,"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(r.combatants())}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
+	return map[string]any{"spectators":spectatorCount,"type": "state", "world":map[string]float64{"w":w,"h":h,"scale":mapScale(r.combatants())}, "phase": r.Phase, "countdownLeft":countdownLeft, "code": r.Code, "host": r.Host, "mode": r.Mode, "maxHp":r.maxHP(), "ultimateStartPercent":r.startChargePercent(), "theme": r.Theme, "shrink": r.Shrink, "zone": r.zone(), "elapsed": int(r.elapsed()), "obstacles": r.Obstacles, "players": players, "bullets": bullets, "winner": win, "status": r.Message, "public": r.Public}
 }
 func (c *Client) enqueue(b []byte) {
 	select {
@@ -642,6 +651,19 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			default:
 				shrink = "normal"
 			}
+            customHP, customCharge := 600, 0
+            if mode=="custom" {
+             if value,ok:=m["maxHp"];ok {
+              if json.Unmarshal(value,&customHP)!=nil || customHP<1 || customHP>1000 {
+               c.message(map[string]string{"type":"error","message":"HPは1〜1000の整数にしてください"});return
+              }
+             }
+             if value,ok:=m["ultimateStartPercent"];ok {
+              if json.Unmarshal(value,&customCharge)!=nil || customCharge<0 || customCharge>100 {
+               c.message(map[string]string{"type":"error","message":"必殺ゲージは0〜100%の整数にしてください"});return
+              }
+             }
+            }
 			code := randomCode(6)
 			for a.rooms[code] != nil {
 				code = randomCode(6)
@@ -650,7 +672,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			if typ == "match" {
 				message = "ランダムマッチ募集中（ホストが手動で試合開始）"
 			}
-			room = &Room{Code: code, Mode: mode, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Public: typ == "match", Message: message, Obstacles: newObstacles(theme)}
+			room = &Room{Code: code, Mode: mode, MaxHP:customHP, UltimateStartPercent:customCharge, Theme: theme, Shrink: shrink, Phase: "lobby", Started: time.Now(), Public: typ == "match", Message: message, Obstacles: newObstacles(theme)}
 			a.rooms[code] = room
 			createdRoom = true
 		} else if typ == "join" || typ=="watch" {
@@ -707,7 +729,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			name = string(rs[:16])
 		}
 		pid := randomCode(12)
-		p := &Player{ID: pid, C: c, Name: name, Ch: ch, Slots: slots, Ready: true, X: W / 2, Y: H / 2, HP: 600, Alive: true, Keys: map[string]bool{}, GuardSlot: -1, Ultimate: chooseUltimate(ultimate)}
+		p := &Player{ID: pid, C: c, Name: name, Ch: ch, Slots: slots, Ready: true, X: W / 2, Y: H / 2, HP: room.maxHP(), Alive: true, Keys: map[string]bool{}, GuardSlot: -1, Ultimate: chooseUltimate(ultimate)}
 		c.room = room
 		c.pid = pid
 		room.Players = append(room.Players, p)
@@ -804,7 +826,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			}
 			pp.X = worldW/2 + rx*math.Cos(angle)
 			pp.Y = worldH/2 + ry*math.Sin(angle)
-			pp.HP = 600
+			pp.HP = room.maxHP()
 			pp.Alive = true
 			pp.Shield = 0
 			pp.Last = [5]float64{}
@@ -820,7 +842,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.LastInput = time.Time{}
 			pp.CastPending = false
 			pp.PendingUntil = 0
-			pp.UltimateCharge=0;pp.UltimateSpent=false;pp.UltimateAiming=false;pp.UltimateAim=0
+			pp.UltimateCharge=float64(ultimateCost(pp.Ultimate))*float64(room.startChargePercent())/100;pp.UltimateSpent=false;pp.UltimateAiming=false;pp.UltimateAim=0
 			pp.UltimateAimUntil=0;pp.UltimateWindupUntil=0;pp.InvincibleUntil=0;pp.InvisibleUntil=0;pp.HardenedUntil=0;pp.NamepuUntil=0
 			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false
 		}
@@ -1116,7 +1138,7 @@ func (a *Arena) tick(dt float64) {
 				p.ShieldUntil = now + 1.8
 				p.GuardSlot = p.Selected
 			case "heal":
-				p.HP = math.Min(600, p.HP+float64(n)*3.4)
+				p.HP = math.Min(room.maxHP(), p.HP+float64(n)*3.4)
 			}
 			p.Last[castSelected] = now + slotCooldown(kind, n)
 			p.Casts++
@@ -1414,7 +1436,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=117"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=118"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=118"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=117"><script defer src="/owner-cyber-v114.js?v=119"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><link rel="stylesheet" href="/custom-match-v120.css?v=120"><script defer src="/custom-match-v120.js?v=120"></script><script defer src="/ultimate-cpu.js?v=120"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=118"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=118"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=117"><script defer src="/owner-cyber-v114.js?v=119"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1530,6 +1552,13 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:825,y:650")
 	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1475,y:650")
 	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(825,650)||near(1475,650)")
+	// The original solo game embeds a fixed 600 HP limit. Only custom games may override it.
+	// The HP bar denominators are textual UI updates, not collision changes.
+	source = strings.Replace(source,"const MAX_HP=600,","let MAX_HP=600,",1)
+	source = strings.Replace(source,"if(hp)hp.textContent=`♥ ${MAX_HP} / ${MAX_HP}`;","if(hp&&!window.MojiCustomRules?.isCustom())hp.textContent='♥ 600 / 600';",1)
+	source = strings.Replace(source,"id=\"php\">600</span> / 600","id=\"php\">600</span> / <span id=\"cpuHpMax\">600</span>",1)
+	source = strings.Replace(source,"id=\"ehp\">600</span> / 600","id=\"ehp\">600</span> / <span id=\"cpuEnemyHpMax\">600</span>",1)
+	source = strings.Replace(source,"player={x:825,y:650,hp:MAX_HP","MAX_HP=window.MojiCustomRules?.hpForMode(matchMode)||600;document.getElementById('cpuHpMax')?.replaceChildren(String(MAX_HP));document.getElementById('cpuEnemyHpMax')?.replaceChildren(String(MAX_HP));player={x:825,y:650,hp:MAX_HP",1)
 	// The multiplayer battle lives in an iframe inside the CPU lobby. CSS inside
 	// the iframe cannot expand its parent's old lobby-sized frame: expand it at the
 	// parent level while a match is playing, then restore the exact prior styles.

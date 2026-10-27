@@ -31,6 +31,7 @@ func TestGlyphBookAndSecretFXAreAvailableInRealGame(t *testing.T){
  for _,part:=range []string{
   "glyph-book-v114.js?v=114","glyph-book-v114.css?v=114",
   "owner-cyber-v114.js?v=119","owner-cyber-v114.css?v=117",
+  "custom-match-v120.js?v=120","custom-match-v120.css?v=120",
   "window.MojiGlyphBook?.record(s.ch,s.kind,s.n)",
   "window.MojiDeveloperFX.paint(g,t)",
   "Math.round(n*(7-.02*(n-1)))",

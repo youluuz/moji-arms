@@ -53,9 +53,9 @@ function boot(){
  pick.picker.addEventListener('click',e=>{const b=e.target.closest('[data-ultimate]');if(b)choose(b.dataset.ultimate)});
  choose(chosen);
  function reset(){
-  charge=0;spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
+  charge=Math.round(curr().cost*(window.MojiCustomRules?.chargeForMode(typeof matchMode==='undefined'?'normal':matchMode)||0)/100);spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
   immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();romanImpacts=[];
-  lastActive=true;banner.hidden=true;prevEnemyHP=600;
+  lastActive=true;banner.hidden=true;prevEnemyHP=typeof MAX_HP==='number'?MAX_HP:600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
  function canAct(){return !aiming && performance.now()>=windupUntil && performance.now()>=namepuUntil && performance.now()>=danceUntil }
