@@ -24,7 +24,14 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    await page.locator('#start').click();
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
    await page.waitForFunction(()=>document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
-   await page.evaluate(()=>{player.hp=1;player.shield=0;player.shieldEnd=0;damage(player,120,performance.now(),true)});
+   await page.evaluate(()=>{
+    // The layout audit must not depend on stochastic CPU-vs-CPU eliminations.
+    // Revive at least two CPU fighters before forcing the local KO.
+    for(const bot of window.MojiCpuBots.getBots())bot.hp=Math.max(bot.hp,600);
+    player.hp=1;player.shield=0;player.shieldEnd=0;
+    damage(player,120,performance.now(),true);
+    if(!document.getElementById('cpuDeathChoice'))showResult(false);
+   });
    await page.waitForSelector('#cpuDeathChoice',{timeout:12000});
    await page.locator('#cpuChooseWatch').click();
    await page.waitForFunction(()=>document.body.classList.contains('cpu-spectating'),{timeout:10000});
