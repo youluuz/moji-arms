@@ -188,7 +188,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     }
     if(mode==='normal'){
      await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
-     await guest.waitForFunction(()=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力12',{timeout:8000});
+     await guest.waitForFunction(()=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力18',{timeout:8000});
      await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ready===false,{timeout:10000});
      await host.waitForFunction(()=>document.getElementById('begin')?.disabled,{timeout:6000});
      if(await host.locator('#begin').isEnabled())throw Error('host could start while player edits');
@@ -524,7 +524,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      metric:document.querySelector('#cards .card[data-slot="0"] .weapon-output')?.textContent,
      n:activeSetup.slots[0].n
     }));
-    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+(updatedN*6)||updatedCard.n!==updatedN)
+    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+(updatedN*9)||updatedCard.n!==updatedN)
      throw Error(mode+': replay HUD did not reflect saved server equipment '+JSON.stringify(updatedCard));
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
     await host.waitForFunction(n=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge===n,updatedN,{timeout:15000});
