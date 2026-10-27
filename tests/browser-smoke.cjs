@@ -762,7 +762,11 @@ const { chromium } = require('playwright');
     running};
   });
   if(!charged.button||!charged.running)throw Error('CPU Namepu ultimate not ready for actual cast '+JSON.stringify(charged));
-  await page.locator('#weapons .ultimate-cast').click({force:true});
+  // Let the live ultimate HUD acknowledge newly earned charge before clicking.
+  // A forced click on a still-disabled button gets swallowed even though the
+  // charge state is already 160 -- the browser test must mimic a real tap.
+  await page.waitForFunction(()=>document.querySelector('#weapons .ultimate-cast')?.disabled===false,{timeout:7000});
+  await page.locator('#weapons .ultimate-cast').click();
   await page.waitForTimeout(120);
   const namepuCast=await page.evaluate(()=>window.MojiCpuNamepuVictory?.debug());
   if(!await page.evaluate(()=>window.MojiCpuNamepuVictory?.used()))throw Error('Real Namepu cast not registered '+JSON.stringify(namepuCast));
