@@ -398,7 +398,7 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
-	if !strings.Contains(served, "cpuView.w=aspect<1?730:1250") || !strings.Contains(html, "view.w=Math.min(worldW,aspect<1?730:1250)") { t.Fatal("battle cameras must use the wider view in all modes") }
+	if !strings.Contains(served, "cpuView.w=aspect<1?(document.body.classList.contains('mobile-touch-input')?640:730):(document.body.classList.contains('mobile-touch-input')?1050:1250)") || !strings.Contains(html, "view.w=Math.min(worldW,aspect<1?(lowPowerMobile?640:730):(lowPowerMobile?1050:1250))") { t.Fatal("battle cameras must use the wider view in all modes") }
 	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") || !strings.Contains(served, "/arena-expansion-v72.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
@@ -763,7 +763,7 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
 func TestWeaponPreviewStylesAndDamageSummary(t *testing.T){
  js,e:=gameFiles.ReadFile("public/weapon-visuals-v86.js");if e!=nil{t.Fatal(e)}
  css,e:=gameFiles.ReadFile("public/weapon-visuals-v86.css");if e!=nil{t.Fatal(e)}
- for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","n*6","Math.round(n*3.4)"} {
+ for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","kind==='attack'?9","Math.round(n*3.4)"} {
   if !strings.Contains(string(js),token){t.Errorf("missing projectile or weapon metric: %s",token)}
  }
  if !strings.Contains(string(css),"body.online-battle #gameArea .combat-hp.rival{display:none!important}") ||
