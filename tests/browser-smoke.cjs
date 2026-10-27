@@ -114,7 +114,7 @@ const { chromium } = require('playwright');
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:9000});
   await page.locator('#mojiNoticeButton').click();
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
-     !(await page.locator('#mojiNoticeItems').innerText()).includes('横画面'))
+     !(await page.locator('#mojiNoticeItems').innerText()).includes('3コイン'))
    throw Error('Lobby announcements not displayed');
   await page.locator('#mojiNoticeClose').click();
   if(await page.locator('#mojiNoticeOverlay').isVisible())throw Error('Postbox announcements did not close');
