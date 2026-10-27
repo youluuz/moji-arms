@@ -160,6 +160,24 @@ function boot(){
   }
   c.restore();
  }
+ // Apply the victory styling from the authoritative result transition,
+ // not exclusively in requestAnimationFrame (which phones may pause in the
+ // background or during an overlay transition).
+ function showNamepuVictory(){
+  if(!usedNamepu||typeof player==='undefined'||!player||player.hp<=0)return false;
+  const result=document.getElementById('result');
+  if(!result||!result.classList.contains('show'))return false;
+  result.classList.add('ultimate-namepu-victory');
+  result.setAttribute('aria-hidden','false');
+  const title=document.getElementById('resultTitle');
+  if(title&&!result.dataset.ultimateNamepu){
+   result.dataset.ultimateNamepu='1';
+   const displayName=window.MojiLoginWinnerName?.()||'あなた';
+   title.textContent='🏆 優勝：'+displayName+'｜'+U.victoryPhrase();
+  }
+  return true;
+ }
+ window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu,debug:()=>({charge,chosen,ready:isReady(),spent,canAct:canAct(),running:typeof running==='undefined'?null:running,n:typeof slots!=='undefined'?slots?.[selected]?.n:null})};
  let lastFxPaint=0;
  function tick(){
   const now=performance.now(),active=isReady();
@@ -184,15 +202,11 @@ function boot(){
   battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-now)/1000));
   banner.hidden=!active||!aiming;if(!banner.hidden)banner.textContent=curr().name+' 照準中・残り'+Math.ceil(Math.max(0,aimUntil-now)/1000)+'秒';
   const result=document.getElementById('result');
-  if(usedNamepu&&result.classList.contains('show')&&typeof player!=='undefined'&&player.hp>0){
-   result.classList.add('ultimate-namepu-victory');
-   const title=document.getElementById('resultTitle');
-   if(!result.dataset.ultimateNamepu){
-    result.dataset.ultimateNamepu='1';
-    const displayName=window.MojiLoginWinnerName?.()||'あなた';
-    title.textContent='🏆 優勝：'+displayName+'｜'+U.victoryPhrase();
-   }
-  }else if(!result.classList.contains('show')){result.classList.remove('ultimate-namepu-victory');delete result.dataset.ultimateNamepu}
+  if(usedNamepu&&result.classList.contains('show'))showNamepuVictory();
+  else if(!result.classList.contains('show')){
+   result.classList.remove('ultimate-namepu-victory');
+   delete result.dataset.ultimateNamepu;
+  }
   // Keep ultimate timers and the simulation live at full refresh rate, but
   // paint its separate transparent canvas at 30fps on touch phones.
   if(!document.body.classList.contains('mobile-touch-input')||!lastFxPaint||now-lastFxPaint>=33){lastFxPaint=now;graphics(now)}

@@ -188,7 +188,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     }
     if(mode==='normal'){
      await guest.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
-     await guest.waitForFunction(()=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力18',{timeout:8000});
+     await guest.waitForFunction(()=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力14',{timeout:8000});
      await guest.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ready===false,{timeout:10000});
      await host.waitForFunction(()=>document.getElementById('begin')?.disabled,{timeout:6000});
      if(await host.locator('#begin').isEnabled())throw Error('host could start while player edits');
@@ -460,7 +460,11 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     // Guest disconnects: host wins, then returns to the SAME room without reconnecting.
     await guest.evaluate(()=>sock.close());
     await host.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
-    if(!await host.locator('#onlineRematch').isVisible())throw Error(mode+': missing same-room rematch button');
+    // The WebSocket phase flag becomes visible before the result animation's
+    // DOM work has necessarily completed. Wait for the actual rendered modal
+    // instead of assuming it is synchronous at the moment roomState changes.
+    await host.locator('#onlineRematch').waitFor({state:'visible',timeout:12000});
+    if(!await host.locator('#onlineOutcome').isVisible())throw Error(mode+': missing match results');
     // Every participant sees a shared winner announcement; there is no
     // separate defeat screen even when the local player loses.
     const sharedResults=await host.evaluate(()=>{
@@ -476,14 +480,30 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       players:[...roomState.players,{id:'other-winner',name:'対戦相手',alive:true}]};
      finish(simulated);
      const loserTitle=document.getElementById('onlineOutcomeTitle').textContent;
-     return {winnerReported,loserTitle,tally,expectedTally,
+     // A real Namepu activation is persisted as namepuUsed on the server.
+     // Mock only the winner flag here to verify that the visible online
+     // RESULT (not just the character's aura) gets its own CSS treatment.
+     const namepuWin={...roomState,winner:myId,players:roomState.players.map(p=>p.id===myId?{...p,namepuUsed:true}:p)};
+     finish(namepuWin);
+     const golden=document.querySelector('#onlineOutcome .online-outcome-card');
+     const gold={shown:resultScreen.classList.contains('show'),
+      decorated:golden.classList.contains('ultimate-gold-win'),
+      background:getComputedStyle(golden).backgroundImage,
+      title:document.getElementById('onlineOutcomeTitle').textContent,
+      phrase:document.getElementById('onlineOutcomeReward').textContent};
+     finish({...namepuWin,players:namepuWin.players.map(p=>({...p,namepuUsed:false}))});
+     const reset=!golden.classList.contains('ultimate-gold-win');
+     return {gold,reset,winnerReported,loserTitle,tally,expectedTally,
       updatedTally:document.getElementById('onlineOutcomeKills')?.textContent,
       hasDefeat:resultScreen.classList.contains('defeat'),
       label:document.getElementById('onlineOutcomeEnglish').textContent};
     });
     if(!sharedResults.winnerReported||sharedResults.loserTitle!=='🏆 優勝：対戦相手'||
         sharedResults.tally!==sharedResults.expectedTally||sharedResults.updatedTally!==sharedResults.expectedTally||
-        sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT')
+        sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT'||
+        !sharedResults.gold?.shown||!sharedResults.gold?.decorated||
+        !sharedResults.gold?.background?.includes('radial-gradient')||
+        !sharedResults.gold?.phrase?.includes('／')||!sharedResults.reset)
       throw Error(mode+': champion name is not shared on winner/loser results '+JSON.stringify(sharedResults));
     await host.locator('#onlineRematch').click();
     await host.waitForFunction(()=>roomState?.phase==='lobby',{timeout:15000});
@@ -506,7 +526,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     await host.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
     if(mode==='custom')await host.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').fill('19');
     const updatedN=mode==='custom'?19:2;
-    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+Math.round(n*(9-.02*(n-1))),updatedN,{timeout:8000});
+    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+Math.round(n*(7-.02*(n-1))),updatedN,{timeout:8000});
     await host.locator('#saveRoomLoadout').click();
     await host.waitForFunction(n=>{
      const p=roomState?.players.find(p=>p.id===myId);
@@ -524,7 +544,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      metric:document.querySelector('#cards .card[data-slot="0"] .weapon-output')?.textContent,
      n:activeSetup.slots[0].n
     }));
-    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+Math.round(updatedN*(9-.02*(updatedN-1)))||updatedCard.n!==updatedN)
+    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+Math.round(updatedN*(7-.02*(updatedN-1)))||updatedCard.n!==updatedN)
      throw Error(mode+': replay HUD did not reflect saved server equipment '+JSON.stringify(updatedCard));
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
     await host.waitForFunction(n=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge===n,updatedN,{timeout:15000});

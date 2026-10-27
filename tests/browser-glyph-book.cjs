@@ -12,6 +12,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   await page.waitForFunction(()=>!!window.MojiGlyphBook&&!!window.MojiDeveloperFX,{timeout:20000});
   await page.locator('#playerName').fill('保存テスト');
   await page.locator('#enterLobby').click();
+  const tabs=await page.evaluate(()=>[...document.querySelectorAll('#appTabs [data-app-tab]')].map(b=>b.dataset.appTab));
+  if(!(tabs.indexOf('glyphbook')>=0&&tabs.indexOf('guide')>tabs.indexOf('glyphbook')))
+   throw Error('Glyph encyclopedia must precede the how-to tab '+JSON.stringify(tabs));
   await page.locator('#appTabs [data-app-tab="glyphbook"]').click();
   if(!await page.locator('#mojiGlyphBookPanel').isVisible())throw Error('Glyph encyclopedia is not a separate tab');
   const saved=await page.evaluate(()=>{
@@ -63,6 +66,45 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   });
   if(!hidden.active||hidden.visible<60||hidden.listed)
    throw Error('Black cyan eyewear or small mech wings absent/visible in the public item list '+JSON.stringify(hidden));
+  const parts=await page.evaluate(()=>{
+   const buttons=[...document.querySelectorAll('#mojiCyberControl [data-cyber-part]')];
+   const names=buttons.map(b=>b.textContent);
+   const state=key=>window.MojiDeveloperFX.enabled(key);
+   const before={icon:state('icon'),wing:state('wing'),attack:state('attack')};
+   const shot=document.createElement('canvas');shot.width=140;shot.height=140;
+   const ctx=shot.getContext('2d');ctx.translate(70,70);
+   window.MojiDeveloperFX.paintShot(ctx,'attack',1.3);
+   const rgba=ctx.getImageData(0,0,140,140).data;
+   let lit=0;for(let i=3;i<rgba.length;i+=4)if(rgba[i]>60)lit++;
+   const visor=buttons.find(b=>b.dataset.cyberPart==='icon');
+   visor?.click();
+   const separated=!state('icon')&&state('wing')&&state('attack');
+   visor?.click();
+   return {count:buttons.length,names,before,separated,lit,restored:state('icon'),
+    allOn:buttons.every(b=>b.getAttribute('aria-pressed')==='true')};
+  });
+  const lockerState=await page.evaluate(()=>{
+   const locker=document.getElementById('mojiCyberLocker');
+   const wing=locker?.querySelector('[data-cyber-part="wing"]');
+   const was=window.MojiDeveloperFX.enabled('wing');
+   wing?.click();
+   const changed=window.MojiDeveloperFX.enabled('wing')!==was &&
+    document.querySelector('#mojiCyberControl [data-cyber-part="wing"]')?.getAttribute('aria-pressed')==='false';
+   wing?.click();
+   return {inside:locker?.parentElement===document.getElementById('collectionPanel'),
+    visible:!!locker&&!locker.hidden,buttons:locker?.querySelectorAll('[data-cyber-part]').length,
+    changed,restored:window.MojiDeveloperFX.enabled('wing')===was,
+    publicGachaListed:!!document.querySelector('#collection .item[data-id*=cyber],#collection [data-cyber-part]')};
+  });
+  if(!lockerState.inside||!lockerState.visible||lockerState.buttons!==3||
+     !lockerState.changed||!lockerState.restored||lockerState.publicGachaListed)
+   throw Error('Unlocked private cosmetic gear is not individually wearable in real locker '+JSON.stringify(lockerState));
+  if(parts.count!==3||!parts.names.some(n=>n.includes('アイコンエフェクト'))||
+     !parts.names.some(n=>n.includes('カスタムパーツ'))||
+     !parts.names.some(n=>n.includes('攻撃エフェクト'))||
+     !parts.before.icon||!parts.before.wing||!parts.before.attack||
+     !parts.separated||parts.lit<45||!parts.restored||!parts.allOn)
+   throw Error('Secret visor / mechanical wings / own-shot pulse are not independently wearable '+JSON.stringify(parts));
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!!window.MojiDeveloperFX,{timeout:15000});
   if(!await page.evaluate(()=>window.MojiDeveloperFX.active()))

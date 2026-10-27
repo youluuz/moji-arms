@@ -353,6 +353,10 @@ function boot(){
    }
    const status=document.getElementById('status');
    if(status)status.textContent='試合終了｜優勝：'+winner;
+   // Once the genuine CPU match announces a win, show the special Namepu
+   // victory immediately. Relying on the next animation frame alone can
+   // miss it on a throttled mobile tab.
+   if(won)window.MojiCpuNamepuVictory?.show?.();
    return value;
   };
  }
@@ -443,7 +447,7 @@ function boot(){
     // Direct-fire, piercing and ordinary projectiles are still dangerous.
     const targets=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&!(b.homing&&a===player&&window.MojiCpuUltimateState?.invisibleActive?.()));
     const hit=targets.find(a=>a.hp>0&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+9);
-    if(hit){damage(hit,(b.homing?b.n*3:b.pierce?b.n*6:Math.round(b.n*(9-.02*(b.n-1)))),now,b.pierce,b);bullets.splice(i,1);}
+    if(hit){damage(hit,(b.homing?b.n*3:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1)))),now,b.pierce,b);bullets.splice(i,1);}
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
    }
    if(cpuSpectating){
