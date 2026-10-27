@@ -31,6 +31,8 @@ jobs:
           node --check public/room-entry-v106.js
           node --check public/emoji-shuffle-v107.js
           node --check public/mode-separation-v109.js
+          node --check public/glyph-book-v114.js
+          node --check public/owner-cyber-v114.js
           node --check public/room-guide-locker-v113.js
           node --check public/room-tools-v113.js
           node -e "const a=require('./public/notices.json');if(!Array.isArray(a.notices)||!a.notices.length)process.exit(1)"
