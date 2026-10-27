@@ -54,7 +54,7 @@
   if(!lobby||!tabs||$('mojiGlyphBookPanel'))return;
   if(typeof APP_SCREENS!=='undefined')APP_SCREENS.glyphbook='lobby';
   const btn=document.createElement('button');btn.type='button';btn.dataset.appTab='glyphbook';btn.innerHTML='<span>字</span> 文字図鑑';
-  btn.onclick=()=>{switchAppTab('glyphbook');render()};tabs.append(btn);
+  btn.onclick=()=>{switchAppTab('glyphbook');render()};tabs.insertBefore(btn,tabs.querySelector('[data-app-tab="guide"]'));
   const panel=document.createElement('section');panel.id='mojiGlyphBookPanel';panel.className='panel moji-glyph-book-panel';
   const heading=document.createElement('h2');heading.textContent='字｜文字図鑑';
   const sub=document.createElement('p');sub.textContent='対戦で実際に発動した文字を自動収集。タップで1文字ずつコピーできます。';
