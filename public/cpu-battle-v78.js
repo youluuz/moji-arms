@@ -127,6 +127,36 @@ function chooseTarget(bot,now){
  bot.retargetAt=now+900+roll(1250);
  return bot.target;
 }
+// Evacuate the shrinking ring before pursuing a target or strafing around one.
+// Using the current arena radius makes this work for normal, fast, slow and
+// instant shrink, without changing the no-shrink mode or projectile hitboxes.
+function moveIntoSafeZone(bot,now,dt){
+ bot.zoneUrgent=false;bot.zoneCaution=false;
+ if(zoneSetting==='none'||bot.hp<=0)return false;
+ const dx=WORLD_W/2-bot.x,dy=WORLD_H/2-bot.y;
+ const distance=Math.hypot(dx,dy);
+ const margin=Math.min(110*mapFactor,zoneRadius*.24);
+ const safeRadius=Math.max(36*mapFactor,zoneRadius-margin);
+ bot.zoneUrgent=distance>=zoneRadius-8*mapFactor;
+ bot.zoneCaution=distance>safeRadius;
+ if(!bot.zoneCaution)return false;
+ // Hardening prevents movement but the bot may still use healing and defense.
+ if(now<bot.hardenUntil)return true;
+ const ux=dx/Math.max(1,distance),uy=dy/Math.max(1,distance);
+ const step=bot.speed*dt*1.06,x0=bot.x,y0=bot.y;
+ moveActor(bot,ux*step,uy*step,now);
+ // A straight line to center can hit cover. Slide diagonally inward and
+ // alternate the bypass direction only after a persistent blockage.
+ if(Math.hypot(bot.x-x0,bot.y-y0)<step*.18){
+  if(now>(bot.zoneBypassUntil||0)){
+   bot.zoneBypassSide=bot.zoneBypassSide===-1?1:-1;
+   bot.zoneBypassUntil=now+1100;
+  }
+  const side=bot.zoneBypassSide||1;
+  moveActor(bot,(ux*.55-uy*side*.8)*step,(uy*.55+ux*side*.8)*step,now);
+ }
+ return true;
+}
 function botAction(bot,target,now){
  const hardened=now<bot.hardenUntil;
  // Feet and offensive equipment are locked; self-heal and shield stay available.
@@ -151,6 +181,10 @@ function botAction(bot,target,now){
   : (urgent||guard||(preferred.length?(Math.random()<.64?preferred[0]:preferred[roll(preferred.length)]):null));
  if(!action&&!hardened&&risky)action=available.find(s=>s.kind==='defense');
  if(!action)return;
+ // Keep mobility as the priority at a dangerous ring edge: don't stop to
+ // duel unless healing or protecting against an incoming projectile.
+ if(bot.zoneUrgent && action.kind!=='heal'&&action.kind!=='defense')return;
+ if(bot.zoneCaution && action.kind!=='heal'&&action.kind!=='defense'&&Math.random()<.7)return;
  const n=action.n;
  action.ready=now+slotCooldownMs(action.kind,n);
  if(action.kind==='heal'){
@@ -430,10 +464,16 @@ function boot(){
    if(touch){vx=touch.x;vy=touch.y}
    const mag=Math.hypot(vx,vy)||1;
    if(!cpuSpectating)moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
+   // Evaluate the NEW shrinking radius before CPU navigation, not after.
+   const elapsed=(now-startTime)/1000;
+   zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:
+    Math.max(180*mapFactor,(1350-1170*Math.min(1,elapsed/({slow:180,normal:120,fast:70}[zoneSetting]||120)))*mapFactor);
+   const center={x:WORLD_W/2,y:WORLD_H/2};
    for(const bot of alive()){
     const hardened=now<bot.hardenUntil;
     const target=hardened?null:chooseTarget(bot,now);
-    if(!hardened&&target){
+    const escaping=moveIntoSafeZone(bot,now,dt);
+    if(!escaping&&!hardened&&target){
      const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
      const desired={
       rusher:[110,240],skirmisher:[225,400],sniper:[330,565],
@@ -462,10 +502,6 @@ function boot(){
      bot.nextDecision=now+pace[0]+roll(pace[1]);
     }
    }
-   const elapsed=(now-startTime)/1000;
-   zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:
-    Math.max(180*mapFactor,(1350-1170*Math.min(1,elapsed/({slow:180,normal:120,fast:70}[zoneSetting]||120)))*mapFactor);
-   const center={x:WORLD_W/2,y:WORLD_H/2};
    const outside=Math.hypot(player.x-center.x,player.y-center.y)>zoneRadius;
    zoneWarningUpdate(outside,now);
    for(const actor of [...(cpuSpectating?[]:[player]),...alive()]){

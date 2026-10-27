@@ -71,12 +71,11 @@
   for(const direction of [-1,1]){
    g.save();g.scale(direction,1);
    const sway=Math.sin(t*2.6)*1.1;
+   // Three long, razor-pointed armor feathers per side, each with a distinct tip.
    const blades=[
-    [[18,-9],[39,-36+sway],[47,-25+sway],[39,-13],[26,0]],
-    [[19,-6],[49,-23+sway],[55,-8+sway],[42,-1],[26,3]],
-    [[19,0],[54,-5+sway],[53,10+sway],[39,12],[23,8]],
-    [[20,4],[48,12+sway],[45,27+sway],[33,22],[23,12]],
-    [[20,9],[39,25+sway],[37,38+sway],[27,24],[20,16]]
+    [[17,-9],[55,-54+sway],[50,-27+sway],[36,-12],[24,-1]],
+    [[17,-3],[66,-25+sway],[53,-7+sway],[39,2],[24,5]],
+    [[18,5],[60,23+sway],[43,42+sway],[31,17],[23,11]]
    ];
    blades.forEach((p,i)=>feather(g,p,i%2===0));
    // Silver articulated mounting plates, cyan reactor, etched neon diamonds.
@@ -97,25 +96,26 @@
  function goggles(g){
   if(!enabled('icon'))return;
   g.save();g.lineJoin='round';g.lineCap='round';
-  // Unified angular chrome visor with a deep cyan lens and side housings.
-  g.shadowColor='#35e4ff';g.shadowBlur=8;g.strokeStyle='#d2edff';g.lineWidth=2;
+  // Spear-point visor: sharp outer corners and a pointed split nose bridge.
+  g.shadowColor='#35e4ff';g.shadowBlur=9;g.strokeStyle='#d2edff';g.lineWidth=1.8;
   g.fillStyle='#040e1b';g.beginPath();
-  g.moveTo(-20,-16);g.lineTo(-12,-22);g.lineTo(12,-22);g.lineTo(20,-16);
-  g.lineTo(16,-6);g.lineTo(4,-5);g.lineTo(0,-8);g.lineTo(-4,-5);
-  g.lineTo(-16,-6);g.closePath();g.fill();g.stroke();
-  const lens=g.createLinearGradient(-16,-20,18,-6);
-  lens.addColorStop(0,'#0a2434');lens.addColorStop(.35,'#126f96');
-  lens.addColorStop(.75,'#63edff');lens.addColorStop(1,'#071525');
+  g.moveTo(-28,-17);g.lineTo(-12,-24);g.lineTo(0,-22);g.lineTo(12,-24);g.lineTo(28,-17);
+  g.lineTo(19,-8);g.lineTo(5,-6);g.lineTo(0,-11);g.lineTo(-5,-6);g.lineTo(-19,-8);
+  g.closePath();g.fill();g.stroke();
+  const lens=g.createLinearGradient(-24,-22,24,-6);
+  lens.addColorStop(0,'#04121e');lens.addColorStop(.4,'#12638a');
+  lens.addColorStop(.75,'#6ef4ff');lens.addColorStop(1,'#061623');
   g.fillStyle=lens;g.shadowBlur=2;g.beginPath();
-  g.moveTo(-16,-15);g.lineTo(-10,-19);g.lineTo(10,-19);g.lineTo(16,-15);
-  g.lineTo(13,-9);g.lineTo(2,-8);g.lineTo(0,-10);g.lineTo(-2,-8);
-  g.lineTo(-13,-9);g.closePath();g.fill();
-  g.shadowBlur=0;g.strokeStyle='#efffff';g.lineWidth=.75;g.beginPath();
-  g.moveTo(-13,-17);g.lineTo(-4,-17);g.moveTo(5,-16);g.lineTo(12,-14);g.stroke();
+  g.moveTo(-23,-16);g.lineTo(-11,-21);g.lineTo(-2,-20);g.lineTo(0,-14);
+  g.lineTo(2,-20);g.lineTo(11,-21);g.lineTo(23,-16);
+  g.lineTo(17,-11);g.lineTo(4,-9);g.lineTo(0,-13);g.lineTo(-4,-9);g.lineTo(-17,-11);
+  g.closePath();g.fill();
+  g.shadowBlur=0;g.strokeStyle='#efffff';g.lineWidth=.9;g.beginPath();
+  g.moveTo(-24,-17);g.lineTo(-8,-20);g.moveTo(8,-20);g.lineTo(24,-17);g.stroke();
   for(const side of [-1,1]){
-   g.save();g.scale(side,1);g.fillStyle='#283f50';g.strokeStyle='#68eaff';
-   g.lineWidth=1;g.beginPath();g.moveTo(16,-17);g.lineTo(21,-14);
-   g.lineTo(19,-8);g.lineTo(16,-7);g.closePath();g.fill();g.stroke();g.restore();
+   g.save();g.scale(side,1);g.fillStyle='#132f41';g.strokeStyle='#68eaff';
+   g.lineWidth=1;g.beginPath();g.moveTo(21,-17);g.lineTo(29,-18);
+   g.lineTo(23,-11);g.lineTo(19,-8);g.closePath();g.fill();g.stroke();g.restore();
   }
   g.restore();
  }
@@ -125,43 +125,30 @@
   wings(g,Number(t)||0);
   goggles(g);
  }
- // Optional cyan mechanical rail-pulse around the OWN projectile only.
- // Drawn in already-translated bullet coordinates, after the standard glyph.
- function paintShot(g,kind,t){
+ // Directional cyan rail exhaust stays ATTACHED BEHIND the flying glyph.
+ // It deliberately has no targeting rings, crosshairs or homing-like orbitals.
+ // Only rendering changes; projectile collision circles remain unchanged.
+ function paintShot(g,kind,t,heading=0){
   if(!enabled('attack'))return;
-  const time=Number(t)||0,pulse=Math.sin(time*8)*1.3;
-  g.save();g.lineCap='round';g.lineJoin='round';
-  // Reactor rings and a compact rotating hexagonal targeting reticle.
-  g.strokeStyle='#82f4ff';g.shadowColor='#23e9ff';g.shadowBlur=9;g.lineWidth=2.3;
-  g.beginPath();g.arc(0,0,30+pulse,-Math.PI*.84,Math.PI*.65);g.stroke();
-  g.strokeStyle='#14759c';g.lineWidth=3;
-  g.beginPath();g.arc(0,0,34-pulse,Math.PI*.72,Math.PI*1.3);g.stroke();
-  g.shadowBlur=3;g.strokeStyle='#dbffff';g.lineWidth=1.2;
-  g.save();g.rotate(time*.65);
-  for(let i=0;i<6;i++){
-   const a=i*Math.PI/3,x=Math.cos(a),y=Math.sin(a);
-   g.beginPath();g.moveTo(x*35,y*35);g.lineTo(x*40,y*40);g.stroke();
+  const pulse=.8+.2*Math.sin((Number(t)||0)*11);
+  g.save();g.rotate(Number.isFinite(heading)?heading:0);
+  g.lineJoin='round';g.lineCap='round';
+  const trail=g.createLinearGradient(-69,0,-12,0);
+  trail.addColorStop(0,'rgba(37,206,255,0)');
+  trail.addColorStop(.55,'rgba(24,173,240,.23)');
+  trail.addColorStop(1,'rgba(117,250,255,.75)');
+  g.fillStyle=trail;g.shadowColor='#2cdcff';g.shadowBlur=9;
+  g.beginPath();g.moveTo(-12,-10);g.lineTo(-69*pulse,0);g.lineTo(-12,10);g.closePath();g.fill();
+  for(const side of [-1,1]){
+   g.save();g.scale(1,side);
+   g.fillStyle='#092235';g.strokeStyle='#62eaff';g.lineWidth=1.6;
+   g.beginPath();g.moveTo(-13,5);g.lineTo(-41,12);g.lineTo(-29,3);
+   g.lineTo(-13,1);g.closePath();g.fill();g.stroke();
+   g.strokeStyle='#d2ffff';g.lineWidth=.85;
+   g.beginPath();g.moveTo(-15,5);g.lineTo(-40,11);g.stroke();g.restore();
   }
-  g.restore();
-  g.strokeStyle='#49e6ff';g.lineWidth=1.15;g.beginPath();
-  for(let i=0;i<6;i++){
-   const a=i*Math.PI/3+Math.PI/6,x=Math.cos(a)*27,y=Math.sin(a)*27;
-   if(i===0)g.moveTo(x,y);else g.lineTo(x,y);
-  }g.closePath();g.stroke();
-  for(const direction of [-1,1]){
-   g.save();g.scale(direction,1);
-   g.fillStyle='#081a2c';g.strokeStyle='#a7f6ff';g.lineWidth=1.4;
-   g.beginPath();g.moveTo(29,-10);g.lineTo(40,-6);g.lineTo(46,0);
-   g.lineTo(40,6);g.lineTo(29,10);g.lineTo(34,0);g.closePath();g.fill();g.stroke();
-   g.strokeStyle='#36c5e7';g.lineWidth=2;
-   g.beginPath();g.moveTo(39,0);g.lineTo(52,0);g.stroke();
-   g.restore();
-  }
-  g.shadowBlur=5;g.fillStyle='#efffff';
-  for(let i=0;i<5;i++){
-   const a=time*1.25+i*2.399,r=37+Math.sin(time*9+i)*3;
-   g.fillRect(Math.cos(a)*r,Math.sin(a)*r,2,2);
-  }
+  g.strokeStyle='#bcffff';g.lineWidth=2.2;g.shadowBlur=8;
+  g.beginPath();g.moveTo(-14,0);g.lineTo(-55*pulse,0);g.stroke();
   g.restore();
  }
  function setup(){

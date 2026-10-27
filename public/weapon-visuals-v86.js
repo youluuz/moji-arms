@@ -31,6 +31,8 @@ function drawProjectile(cx,b){
  const colors={attack:'#dfff72',pierce:'#ffc077',homing:'#8af5e8'};
  cx.save();cx.translate(b.x,b.y);cx.scale(1.14,1.14);cx.lineWidth=2.7;cx.lineJoin='round';
  cx.shadowColor=colors[kind];cx.shadowBlur=14;
+ // Cosmetic exhaust stays behind the projectile instead of looking like another homing reticle.
+ if(own&&window.MojiDeveloperFX?.enabled('attack'))window.MojiDeveloperFX.paintShot(cx,kind,performance.now()/1000,Math.atan2(b.vy||0,b.vx||1));
  if(kind==='attack'){
   cx.fillStyle='#4d661c';cx.strokeStyle='#edff8b';
   cx.beginPath();cx.arc(0,0,21,0,Math.PI*2);cx.fill();cx.stroke();
@@ -46,11 +48,10 @@ function drawProjectile(cx,b){
    cx.beginPath();cx.moveTo(Math.cos(a)*32,Math.sin(a)*32);cx.lineTo(Math.cos(a)*38,Math.sin(a)*38);cx.stroke();
   }
  }
- cx.shadowBlur=0;cx.fillStyle='#fff';cx.font='900 19px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
- cx.fillText(String(b.ch||'文'),0,1,32);
+ cx.shadowBlur=0;cx.fillStyle='#fff';cx.font='900 24px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+ cx.fillText(String(b.ch||'文'),0,1,38);
  cx.lineWidth=1.3;cx.strokeStyle=own?'#ffe89a':'#ff92ae';
  cx.beginPath();cx.arc(0,0,kind==='pierce'?29:kind==='homing'?35:26,-Math.PI*.83,-Math.PI*.17);cx.stroke();
- if(own&&window.MojiDeveloperFX?.enabled('attack'))window.MojiDeveloperFX.paintShot(cx,kind,performance.now()/1000);
  cx.restore();return true;
 }
 // Disco ball is visual-only: no effect on reach, stun duration, or damage.

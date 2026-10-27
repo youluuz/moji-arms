@@ -30,7 +30,7 @@ func TestGlyphBookAndSecretFXAreAvailableInRealGame(t *testing.T){
  html:=mobilePatchedIndex(string(b))
  for _,part:=range []string{
   "glyph-book-v114.js?v=114","glyph-book-v114.css?v=114",
-  "owner-cyber-v114.js?v=116","owner-cyber-v114.css?v=117",
+  "owner-cyber-v114.js?v=118","owner-cyber-v114.css?v=117",
   "window.MojiGlyphBook?.record(s.ch,s.kind,s.n)",
   "window.MojiDeveloperFX.paint(g,t)",
   "Math.round(n*(7-.02*(n-1)))",
