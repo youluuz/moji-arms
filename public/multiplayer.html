@@ -386,7 +386,7 @@ function applyServerEquipment(player){
 let draftNoticeShown=false;
 function showWait(m){
  const wasBattle=document.body.classList.contains('online-battle');
- if(wasBattle){glyphBookActionSerial=0;stopInput();if(drawHandle!==null){cancelAnimationFrame(drawHandle);drawHandle=null;}informParentBattle(false);finished=false;wonPaid=false;down=false;keys={};watchMode=joinedAsSpectator;watchTargetId='';$('onlineDeathChoice').hidden=true;$('onlineWatchControls').hidden=true;$('onlineOutcome').classList.remove('show','defeat');$('onlineOutcome .online-outcome-card')?.classList.remove('ultimate-gold-win');$('battleResult').textContent='';$('onlineVictory').pause();onlineMusicStarted=false;pendingSetup=null;roomEditing=true;}
+ if(wasBattle){glyphBookActionSerial=0;stopInput();if(drawHandle!==null){cancelAnimationFrame(drawHandle);drawHandle=null;}informParentBattle(false);finished=false;wonPaid=false;down=false;keys={};watchMode=joinedAsSpectator;watchTargetId='';$('onlineDeathChoice').hidden=true;$('onlineWatchControls').hidden=true;$('onlineOutcome').classList.remove('show','defeat');document.querySelector('#onlineOutcome .online-outcome-card')?.classList.remove('ultimate-gold-win');$('battleResult').textContent='';$('onlineVictory').pause();onlineMusicStarted=false;pendingSetup=null;roomEditing=true;}
  mountRoomEditor();
  const self=m.players.find(p=>p.id===myId);
  if(wasBattle){
@@ -512,7 +512,7 @@ function finish(m){
    localStorage.setItem('kanji_arms_duel_save_v4',JSON.stringify(a));
   }catch(e){console.warn('Could not save rewards',e)}
  }
- $('onlineOutcome .online-outcome-card').classList.remove('ultimate-gold-win');
+ document.querySelector('#onlineOutcome .online-outcome-card').classList.remove('ultimate-gold-win');
  $('onlineOutcome').classList.add('show');
  $('onlineOutcome').classList.remove('defeat');
  $('onlineOutcomeBadge').textContent='👑';
