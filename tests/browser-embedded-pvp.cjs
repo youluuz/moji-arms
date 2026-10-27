@@ -95,6 +95,24 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    if(layout.num!==6||!layout.separate||!layout.aligned||!layout.thumbCentered||!layout.thumbFits||!layout.allVisible||
       !layout.arenaVisible||!layout.noHorizontalOverflow)
     throw Error('Mobile final layout regression '+JSON.stringify(layout));
+   if(width>height){
+    const growth=await inner.evaluate(async()=>{
+     const sheet=[...document.querySelectorAll('link[rel=stylesheet]')]
+       .find(e=>e.href.includes('mobile-battle-expansion-v125.css'));
+     if(!sheet)throw Error('Missing shared arena enlargement stylesheet in embedded online battle');
+     const rect=()=>document.querySelector('#gameArea .game-wrap').getBoundingClientRect().height;
+     sheet.disabled=true;
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     const before=rect();
+     sheet.disabled=false;
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     const after=rect();
+     return {before,after,screenHeight:innerHeight};
+    });
+    console.log('ONLINE LANDSCAPE ARENA GROWTH',width,height,JSON.stringify(growth));
+    if(growth.after<growth.before+12)
+     throw Error('Online battlefield failed to claim additional vertical space '+JSON.stringify(growth));
+   }
    // Genuine touch movement on the actual relocated zone inside the
    // fullscreen iframe. The visible thumb must follow the finger and return.
    if(width===360){
