@@ -78,7 +78,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    let lit=0;for(let i=3;i<rgba.length;i+=4)if(rgba[i]>60)lit++;
    const visor=buttons.find(b=>b.dataset.cyberPart==='icon');
    visor?.click();
-   const separated={!state('icon')&&state('wing')&&state('attack');
+   const separated=!state('icon')&&state('wing')&&state('attack');
    visor?.click();
    return {count:buttons.length,names,before,separated,lit,restored:state('icon'),
     allOn:buttons.every(b=>b.getAttribute('aria-pressed')==='true')};
