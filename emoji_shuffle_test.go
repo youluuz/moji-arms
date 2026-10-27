@@ -14,7 +14,7 @@ func TestSharedLobbyEmojiShuffleAsset(t *testing.T) {
   base,err:=gameFiles.ReadFile("public/index.html")
   if err!=nil {t.Fatal(err)}
   patched:=mobilePatchedIndex(string(base))
-  for _,url:=range []string{"/emoji-shuffle-v107.js?v=107","/emoji-shuffle-v107.css?v=107"} {
+  for _,url:=range []string{"/emoji-shuffle-v107.js?v=126","/emoji-shuffle-v107.css?v=107"} {
     if !strings.Contains(patched,url) {t.Fatalf("common lobby does not include %s",url)}
   }
 }

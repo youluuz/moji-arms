@@ -38,6 +38,15 @@
   cache.set(ch,ok);
   return ok;
  }
+ // Preserve the full game character repertoire in browsers with no Japanese font
+ // at all (e.g., bare Linux Chromium). Canvas rendering still shows a readable
+ // Unicode label there; on normal Japanese-capable devices, unsupported rare
+ // glyphs are excluded from random draws.
+ function randomizable(ch){
+  ch=String(ch||'');
+  if(/\p{Script=Han}/u.test(ch)&&!supported('漢'))return true;
+  return supported(ch);
+ }
  function readable(ch){
   ch=String(ch||'文');
   if(supported(ch))return ch;
@@ -66,5 +75,5 @@
   }
   ctx.restore();
  }
- window.MojiGlyphDisplay={fonts,supported,readable,draw};
+ window.MojiGlyphDisplay={fonts,supported,randomizable,readable,draw};
 })();

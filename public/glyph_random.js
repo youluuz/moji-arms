@@ -65,9 +65,9 @@ function roll(exclude=new Set()){
   const category=Math.random()<.45?'han':categories[1+integer(categories.length-1)];
   const ch=category==='han'&&Math.random()<.75
     ?(weightedHanGlyph()||categoryRoll(category)):categoryRoll(category);
-  if(ch&&!exclude.has(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.supported(ch)))return ch;
+  if(ch&&!exclude.has(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.randomizable(ch)))return ch;
  }
- for(const ch of examples)if(safe(ch)&&!exclude.has(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.supported(ch)))return ch;
+ for(const ch of examples)if(safe(ch)&&!exclude.has(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.randomizable(ch)))return ch;
  return '火';
 }
 function sample(count=5){
@@ -82,7 +82,7 @@ let cachedPool;
 function all(){
  if(cachedPool)return cachedPool;
  cachedPool=sample(240);
- for(const ch of examples)if(!cachedPool.includes(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.supported(ch)))cachedPool.push(ch);
+ for(const ch of examples)if(!cachedPool.includes(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.randomizable(ch)))cachedPool.push(ch);
  return cachedPool;
 }
 window.MojiRandom={all,roll,sample,examples,categories,invalidateStrokePool};
