@@ -538,7 +538,7 @@ func TestSixUltimatesChargeAndServerRules(t *testing.T) {
  // Normal attacks only accrue successful strokes; tests should never allow a second ultimate.
  p.Ultimate="namepu";p.UltimateSpent=false;p.UltimateCharge=160
  a.handle(c1,[]byte(`{"type":"ultimate"}`))
- if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5.5))>.12 || !p.NamepuUsed {t.Fatal("namepu 5.5-second self-dance was not enabled")}
+ if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5))>.12 || !p.NamepuUsed {t.Fatal("namepu 5-second self-dance was not enabled")}
  hp=p.HP;hit(p,10,true,float64(time.Now().UnixNano())/1e9)
  if p.HP!=hp-10 {t.Fatal("namepu must not grant damage resistance")}
  p.Ultimate="slow";p.UltimateSpent=false;p.UltimateCharge=275;p.NamepuUntil=0
@@ -721,7 +721,7 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
     case "invisible":
      if math.Abs(p.InvisibleUntil-(float64(time.Now().UnixNano())/1e9+4))>.15 {t.Fatal("invisibility must last 4 seconds")}
     case "namepu":
-     if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5.5))>.15||!p.NamepuUsed {t.Fatal("namepu stun must last 5.5 seconds")}
+     if math.Abs(p.NamepuUntil-(float64(time.Now().UnixNano())/1e9+5))>.15||!p.NamepuUsed {t.Fatal("namepu stun must last 5 seconds")}
     }
     arena.handle(c,[]byte(`{"type":"ultimate"}`))
     if p.UltimateSerial!=1 {t.Fatal("second ultimate triggered in same match")}
