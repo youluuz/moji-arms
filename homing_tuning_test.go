@@ -30,6 +30,8 @@ func TestSlowerHomingProjectileAndWeakerLockOn(t *testing.T) {
     t.Fatalf("homing shot was not spawned in %s; bullets=%+v",mode,room.Bullets)
    }
    shot:=room.Bullets[0]
+   if shot.Damage!=19 {t.Fatalf("%s homing damage = %.1f, want 19 (3 strokes × 3 + 10)",mode,shot.Damage)}
+   if math.Abs(shot.TTL-(3.8-dt))>0.0001 {t.Fatalf("%s homing remaining lifetime = %.5f, want %.5f",mode,shot.TTL,3.8-dt)}
    actualSpeed:=math.Hypot(shot.VX,shot.VY)
    if math.Abs(actualSpeed-275)>0.0001 {
     t.Fatalf("%s homing speed = %.3f, want 275",mode,actualSpeed)
@@ -62,6 +64,8 @@ func TestSlowerHomingInBothCpuBattleEngines(t *testing.T) {
  for _,want:=range []string{
   "const speed=d<95?160:d<175?210:275;",
   "const turnRate=d<130?4.51472175:d<280?3.57659775:2.6971065;",
+  "if(b.homing){b.life=3.8;b.turnSide=0;}",
+  "damage(target,b.homing?b.n*3+10:b.pierce?b.n*6",
  } {
   if !strings.Contains(served,want){t.Fatalf("1v1 CPU homing tuning missing from served lobby: %s",want)}
  }
@@ -70,6 +74,8 @@ func TestSlowerHomingInBothCpuBattleEngines(t *testing.T) {
  for _,want:=range []string{
   "action.kind==='homing'?220",
   "Math.max(-3.048903*dt,Math.min(3.048903*dt,diff))",
+  "life:action.kind==='homing'?3.8:2.4",
+  "b.homing?b.n*3+10:b.pierce?b.n*6",
  } {
   if !strings.Contains(string(bots),want){t.Fatalf("free-for-all CPU homing tuning missing: %s",want)}
  }
