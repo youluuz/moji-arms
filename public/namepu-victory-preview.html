@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ナメプ完全勝利｜文字武装 プレビュー</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#051224;color:#f4f2e8;font-family:system-ui,"Noto Sans JP",sans-serif}
+#result{position:fixed;inset:0;display:none;overflow:auto;align-items:center;justify-content:center;text-align:center;padding:25px}
+#result.show{display:flex}#resultCanvas{position:absolute;inset:0;pointer-events:none}
+.result-inner{position:relative;z-index:2;max-width:720px;width:100%;padding:30px;background:#102a40;border-radius:24px}
+.result-eyebrow{font-size:11px;font-weight:900;letter-spacing:.32em;color:#86dffe}.result-serial{color:#fff0bd}
+.result-hero{margin-top:6px}.rank-word{color:#fff3c4;font-weight:950;letter-spacing:.19em;font-size:14px}
+h2{margin:7px 0 6px}#resultSubtitle{font-size:13px;color:#b9e9ff}
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0}.result-stats>div{padding:9px;border:1px solid #c0aa7d55;border-radius:8px;background:#081b31b8}.result-stats small{display:block;font-size:10px;color:#9cc9dd}.result-stats b{display:block;color:#fff2bd;font-size:17px}
+.result-reward{color:#ffe39a;font-weight:900;margin:9px 0}.result-loadout{font-size:11px;color:#abd7e5}.result-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:17px}
+.result-actions button,.result-actions a{border-radius:10px;border:1px solid #d9b572;background:#113b5a;color:#e8f8ff;padding:12px 21px;text-decoration:none;cursor:pointer;font-weight:900}
+.result-actions .primary{background:linear-gradient(120deg,#fde4a4,#edb35c);color:#071728}
+.demo-label{position:absolute;z-index:10;top:12px;left:14px;font-size:11px;letter-spacing:.1em;color:#fff9df;border:1px solid #4eb6dd99;border-radius:7px;background:#132a40a9;padding:6px 11px}
+@media(max-width:570px){#result{padding:10px}.result-stats{gap:4px}.result-inner{padding:12px}}
+</style>
+<link rel="stylesheet" href="/namepu-victory-v123.css?v=123"></head>
+<body>
+<div class="demo-label">GAME UI PREVIEW // 試合結果の表示サンプル</div>
+<div id="result" class="show" role="dialog" aria-label="勝利画面プレビュー" aria-modal="true">
+<div class="result-inner"><div class="result-eyebrow">MATCH FINISHED <span class="result-serial">// MOJI ARMS</span></div>
+<div class="result-hero"><div class="result-message"><div id="resultRank" class="rank-word">VICTORY</div>
+<h2 id="resultTitle">完全勝利</h2><div id="resultSubtitle">踊り切って、頂点へ。</div></div></div>
+<div class="result-stats"><div><small>試合時間</small><b>2:34</b></div><div><small>与ダメージ</small><b>1,248</b></div><div><small>残りHP</small><b>480 / 600</b></div></div>
+<div class="result-reward">🪙 +1 COIN / 勝利報酬</div><div class="result-loadout">装備：炎 攻撃 · 氷 防御 · 光 回復 · 雷 貫通 · 風 追尾</div>
+<div class="result-actions"><button id="previewFanfare" class="primary" type="button">♪ 専用勝利BGMを試聴</button><a href="/">⚔ ゲームへ戻る</a></div>
+</div></div>
+<script src="/namepu-victory-v123.js?v=123"></script>
+<script>const info={name:'勝利プレイヤー',icon:'龍',kills:4,hp:480};
+window.MojiNamepuVictory?.showSolo(info);
+document.getElementById('previewFanfare').addEventListener('click',()=>window.MojiNamepuVictory?.showSolo(info));</script>
+</body></html>
