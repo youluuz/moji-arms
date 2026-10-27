@@ -787,12 +787,17 @@ const { chromium } = require('playwright');
     title:document.getElementById('resultTitle')?.textContent,
     background:getComputedStyle(panel).backgroundImage,
     visible:getComputedStyle(panel).display!=='none',
+    position:getComputedStyle(panel).position,
+    bounds:(()=>{const r=panel.getBoundingClientRect();return {top:r.top,left:r.left,width:r.width,height:r.height};})(),
     alive:player.hp>0
    };
   });
   if(!namepuResult.shown||!namepuResult.special||!namepuResult.alive||
      !namepuResult.title?.includes('優勝：蒼月の勇者')||
-     !namepuResult.background?.includes('radial-gradient')||!namepuResult.visible)
+     !namepuResult.background?.includes('radial-gradient')||!namepuResult.visible||
+     namepuResult.position!=='fixed'||Math.abs(namepuResult.bounds.top)>2||
+     Math.abs(namepuResult.bounds.left)>2||
+     namepuResult.bounds.width<300||namepuResult.bounds.height<300)
    throw Error('Successful CPU Namepu cast did not reveal gold victory immediately '+JSON.stringify(namepuResult));
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
