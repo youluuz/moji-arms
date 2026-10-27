@@ -476,14 +476,30 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       players:[...roomState.players,{id:'other-winner',name:'対戦相手',alive:true}]};
      finish(simulated);
      const loserTitle=document.getElementById('onlineOutcomeTitle').textContent;
-     return {winnerReported,loserTitle,tally,expectedTally,
+     // A real Namepu activation is persisted as namepuUsed on the server.
+     // Mock only the winner flag here to verify that the visible online
+     // RESULT (not just the character's aura) gets its own CSS treatment.
+     const namepuWin={...roomState,winner:myId,players:roomState.players.map(p=>p.id===myId?{...p,namepuUsed:true}:p)};
+     finish(namepuWin);
+     const golden=document.querySelector('#onlineOutcome .online-outcome-card');
+     const gold={shown:resultScreen.classList.contains('show'),
+      decorated:golden.classList.contains('ultimate-gold-win'),
+      background:getComputedStyle(golden).backgroundImage,
+      title:document.getElementById('onlineOutcomeTitle').textContent,
+      phrase:document.getElementById('onlineOutcomeReward').textContent};
+     finish({...namepuWin,players:namepuWin.players.map(p=>({...p,namepuUsed:false}))});
+     const reset=!golden.classList.contains('ultimate-gold-win');
+     return {gold,reset,winnerReported,loserTitle,tally,expectedTally,
       updatedTally:document.getElementById('onlineOutcomeKills')?.textContent,
       hasDefeat:resultScreen.classList.contains('defeat'),
       label:document.getElementById('onlineOutcomeEnglish').textContent};
     });
     if(!sharedResults.winnerReported||sharedResults.loserTitle!=='🏆 優勝：対戦相手'||
         sharedResults.tally!==sharedResults.expectedTally||sharedResults.updatedTally!==sharedResults.expectedTally||
-        sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT')
+        sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT'||
+        !sharedResults.gold?.shown||!sharedResults.gold?.decorated||
+        !sharedResults.gold?.background?.includes('radial-gradient')||
+        !sharedResults.gold?.phrase?.includes('／')||!sharedResults.reset)
       throw Error(mode+': champion name is not shared on winner/loser results '+JSON.stringify(sharedResults));
     await host.locator('#onlineRematch').click();
     await host.waitForFunction(()=>roomState?.phase==='lobby',{timeout:15000});
