@@ -857,7 +857,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		case "invincible":p.InvincibleUntil=now+2.8
 		case "dance":room.DanceUntil=now+2
 		case "invisible":p.InvisibleUntil=now+4
-		case "namepu":p.NamepuUntil=now+5.5;p.NamepuUsed=true
+		case "namepu":p.NamepuUntil=now+5;p.NamepuUsed=true
 		}
 		room.broadcast()
 	case "ultimate-aim":
@@ -1129,16 +1129,20 @@ func (a *Arena) tick(dt float64) {
 				a := p.Aim
 				damage := float64(n * 6)
 				if kind=="attack" {damage=normalShotDamage(n)} else if kind=="homing" {damage=float64(n*3+10)}
+				if p.NamepuUsed {damage*=.8}
 				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: damage, TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
 				if kind == "homing" {
 					room.Bullets[len(room.Bullets)-1].TTL = 3.8
 				}
 			case "defense":
 				p.Shield = float64(n * 6)
+				if p.NamepuUsed {p.Shield*=.8}
 				p.ShieldUntil = now + 1.8
 				p.GuardSlot = p.Selected
 			case "heal":
-				p.HP = math.Min(room.maxHP(), p.HP+float64(n)*3.4)
+				healAmount:=float64(n)*3.4
+				if p.NamepuUsed {healAmount*=.8}
+				p.HP = math.Min(room.maxHP(), p.HP+healAmount)
 			}
 			p.Last[castSelected] = now + slotCooldown(kind, n)
 			p.Casts++
@@ -1436,7 +1440,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><link rel="stylesheet" href="/custom-match-v120.css?v=120"><script defer src="/custom-match-v120.js?v=120"></script><script defer src="/ultimate-cpu.js?v=120"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=118"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=118"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=117"><script defer src="/owner-cyber-v114.js?v=119"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=123"></script><link rel="stylesheet" href="/custom-match-v120.css?v=120"><script defer src="/custom-match-v120.js?v=120"></script><script defer src="/ultimate-cpu.js?v=123"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=118"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=118"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=123"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=117"><link rel="stylesheet" href="/namepu-victory-v123.css?v=123"><link rel="stylesheet" href="/welcome-notice-v123.css?v=123"><script defer src="/owner-cyber-v114.js?v=119"></script><script defer src="/namepu-victory-v123.js?v=123"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1552,6 +1556,9 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.ReplaceAll(source, "player={x:650,y:520", "player={x:825,y:650")
 	source = strings.ReplaceAll(source, "enemy={x:1160,y:520", "enemy={x:1475,y:650")
 	source = strings.ReplaceAll(source, "near(650,520)||near(1160,520)", "near(825,650)||near(1475,650)")
+	// Persistent once-per-save welcome gift, synchronized with the in-memory gacha account.
+	source = strings.Replace(source, "let account={coins:Math.max(0,Math.floor(+stored.coins||0)),wins:Math.max(0,Math.floor(+stored.wins||0)),pulls:Math.max(0,Math.floor(+stored.pulls||0)),owned:{},equipped:{aura:null,frame:null,attack:null}};", "let account={coins:Math.max(0,Math.floor(+stored.coins||0)),wins:Math.max(0,Math.floor(+stored.wins||0)),pulls:Math.max(0,Math.floor(+stored.pulls||0)),firstPlayGiftClaimed:!!stored.firstPlayGiftClaimed,owned:{},equipped:{aura:null,frame:null,attack:null}};", 1)
+	source = strings.Replace(source, "const ACH_GRADE=['','🥉','🥈','🥇'];", "const ACH_GRADE=['','🥉','🥈','🥇'];"+"\nwindow.MojiClaimWelcomeCoins=function(){if(account.firstPlayGiftClaimed)return false;account.firstPlayGiftClaimed=true;account.coins+=3;safeStore();money();updateCollection();return true};\n", 1)
 	// The original solo game embeds a fixed 600 HP limit. Only custom games may override it.
 	// The HP bar denominators are textual UI updates, not collision changes.
 	source = strings.Replace(source,"const MAX_HP=600,","let MAX_HP=600,",1)
