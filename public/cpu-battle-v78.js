@@ -353,6 +353,10 @@ function boot(){
    }
    const status=document.getElementById('status');
    if(status)status.textContent='試合終了｜優勝：'+winner;
+   // Once the genuine CPU match announces a win, show the special Namepu
+   // victory immediately. Relying on the next animation frame alone can
+   // miss it on a throttled mobile tab.
+   if(won)window.MojiCpuNamepuVictory?.show?.();
    return value;
   };
  }
