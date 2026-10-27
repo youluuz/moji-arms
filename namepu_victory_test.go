@@ -29,6 +29,15 @@ func TestNamepuUsedSurvivesVictoryAndResultAssetsLoad(t *testing.T) {
  if !strings.Contains(string(css),"#onlineOutcome .ultimate-gold-win") || !strings.Contains(string(css),"#result.ultimate-namepu-victory") {
   t.Fatal("both Namepu victories require the deluxe effect CSS")
  }
+ // The game result starts as a fixed full-screen modal. A decorative theme
+ // must never replace its fixed positioning with relative positioning.
+ if strings.Contains(string(css),"#result.ultimate-namepu-victory,#onlineOutcome .ultimate-gold-win{\n position:relative!important") {
+  t.Fatal("Namepu styling detached the CPU victory overlay from the viewport")
+ }
+ if !strings.Contains(string(css),"#onlineOutcome .ultimate-gold-win{position:relative!important") {t.Fatal("online inner card positioning regressed")}
+ if false {
+  t.Fatal("both Namepu victories require the deluxe effect CSS")
+ }
  html,err:=gameFiles.ReadFile("public/multiplayer.html")
  if err!=nil {t.Fatal(err)}
  if !strings.Contains(string(html),"owner-cyber-v114.css?v=116") {
