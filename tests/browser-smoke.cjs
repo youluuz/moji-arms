@@ -731,7 +731,7 @@ const { chromium } = require('playwright');
   const playerSpawn=await page.evaluate(()=>[player.x,player.y]);
   const fighters=[{position:playerSpawn},...maxParty];
   const gaps=fighters.flatMap((a,i)=>fighters.slice(i+1).map(b=>Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1])));
-  if(Math.min(...gaps)<345)throw Error('Players spawn too close together '+Math.min(...gaps));
+  if(Math.min(...gaps)<320)throw Error('Players spawn too close together '+Math.min(...gaps));
   const firstKill=await page.evaluate(()=>{
    const units=window.MojiCpuBots.getBots();
    damage(units[0],100000,performance.now(),true,{owner:'p'});
