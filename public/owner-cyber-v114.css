@@ -15,7 +15,7 @@
 
 #mojiCyberControl button{border:1px solid #78e8ff;background:linear-gradient(125deg,#071625,#174d69);color:#b7f9ff;border-radius:10px;padding:12px;font-size:12px;font-weight:900;box-shadow:0 0 18px #45d9f440}
 #result.ultimate-namepu-victory,#onlineOutcome .ultimate-gold-win{
- position:relative!important;isolation:isolate!important;overflow:hidden!important;
+ isolation:isolate!important;overflow:hidden!important;
  border:3px solid #ffe49b!important;
  background:radial-gradient(ellipse at center,#a15a20a0 0%,#1a112c 45%,#07091c 86%)!important;
  box-shadow:0 0 95px #ffcb55aa,0 0 190px #f27aff55,inset 0 0 120px #ffe5b04a!important;
@@ -43,7 +43,7 @@
 }
 #result.ultimate-namepu-victory .result-inner{position:relative;z-index:1;border:3px double #ffdf87!important;box-shadow:0 0 70px #f9cd7eaa!important;background:linear-gradient(155deg,#28173ad9,#422a27bb)!important}
 #result.ultimate-namepu-victory button,#onlineOutcome .ultimate-gold-win button{position:relative;z-index:2}
-#onlineOutcome .ultimate-gold-win{padding:36px 24px!important}
+#onlineOutcome .ultimate-gold-win{position:relative!important;padding:36px 24px!important}
 #onlineOutcome .ultimate-gold-win #onlineOutcomeBadge{font-size:clamp(72px,14vw,135px);animation:mojiNamepuCrown 2.3s ease-in-out infinite alternate;filter:drop-shadow(0 0 25px #ffd56d)}
 @keyframes mojiNamepuRays{to{transform:rotate(360deg)}}
 @keyframes mojiNamepuSpark{to{opacity:.45;transform:translateY(-8px)}}
