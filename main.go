@@ -578,7 +578,7 @@ func slotCooldown(kind string, n int) float64 {
 	case "pierce":
 		return (7 + float64(n)*.45) * 1.4
 	case "homing":
-		return (4.5 + float64(n)*.42) * 1.4 * 0.8
+		return (4.5 + float64(n)*.42) * 1.4 * 0.9
 	}
 	return 10
 }
@@ -1473,12 +1473,16 @@ window.MojiStrokeReady=Promise.all([
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());",
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode')?.value.trim()||'');", 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
+	// Align all CPU projectile damage with the live server: basic +50%, homing -50%.
+	source = strings.Replace(source, "damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce)", "damage(target,b.n*(b.homing?3:b.pierce?6:b.owner===\u0027p\u0027?9:9),now,b.pierce)", 1)
+	source = strings.Replace(source, "attack:[`⚔ ${n*DAMAGE_PER_STROKE} ダメージ`", "attack:[`⚔ ${n*9} ダメージ`", 1)
+	source = strings.Replace(source, "homing:[`◎ ${n*DAMAGE_PER_STROKE} ダメージ`", "homing:[`◎ ${n*3} ダメージ`", 1)
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))", 1)
 	for _, pair := range [][2]string{
 		{"defense:9+n*.4", "defense:1.4*(9+n*.4)"},
 		{"heal:13+n*.55", "heal:1.4*(13+n*.55)"},
 		{"pierce:7+n*.45", "pierce:1.4*(7+n*.45)"},
-		{"homing:4.5+n*.42", "homing:1.4*(4.5+n*.42)*0.8"},
+		{"homing:4.5+n*.42", "homing:1.4*(4.5+n*.42)*0.9"},
 	} {
 		source = strings.Replace(source, pair[0], pair[1], 1)
 	}
