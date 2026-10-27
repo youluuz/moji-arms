@@ -28,7 +28,7 @@ body.online-battle #gameArea .game-wrap{flex:1 1 auto!important;min-height:0!imp
  body.online-battle #gameArea .battle-title{font-size:14px!important}
  body.online-battle #gameArea #onlineBattleBack{font-size:11px!important;padding:6px 8px!important;min-height:36px!important}
  body.online-battle #gameArea .game-panel{padding:4px!important}
- body.online-battle #gameArea .hud{padding:0 2px 3px!important;gap:3px!important}
+ body.online-battle #gameArea .hud{padding-top:0!important;padding-bottom:3px!important;gap:3px!important}
  body.online-battle #gameArea .weaponrow{margin-top:3px!important}
 }
 @media(orientation:landscape) and (max-height:530px) and (pointer:coarse){
@@ -41,6 +41,6 @@ body.online-battle #gameArea .game-wrap{flex:1 1 auto!important;min-height:0!imp
  body.online-battle .wrap{padding:1px 3px!important}
  body.online-battle #gameArea .game-panel{padding:2px 3px!important}
  body.online-battle #gameArea .game-wrap{min-height:70px!important}
- body.online-battle #gameArea .hud{padding:0 2px 2px!important}
+ body.online-battle #gameArea .hud{padding-top:0!important;padding-bottom:2px!important}
  body.online-battle #gameArea .weaponrow .weapon{height:50px!important}
 }
