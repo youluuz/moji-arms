@@ -66,13 +66,22 @@ function boot(){
  }
  if(typeof act==='function'){
   const oldAct=act;
-  act=function(...args){if(!canAct())return;const ready=Array.isArray(slots)&&slots[selected]&&Number.isFinite(args[0])&&args[0]>=slots[selected].ready;const t=oldAct.apply(this,args);if(ready&&invisibleUntil>performance.now())invisibleUntil=0;return t};
+  act=function(...args){if(!canAct())return;const ready=Array.isArray(slots)&&slots[selected]&&Number.isFinite(args[0])&&args[0]>=slots[selected].ready;const kind=slots?.[selected]?.kind,oldHP=player.hp,oldCount=bullets.length;
+   const t=oldAct.apply(this,args);
+   if(ready&&usedNamepu&&performance.now()>=namepuUntil){
+    if(kind==='heal')player.hp=oldHP+(player.hp-oldHP)*.8;
+    else if(kind==='defense')player.shield*=.8;
+    else if(['attack','pierce','homing'].includes(kind))
+     for(const b of bullets.slice(oldCount))if(b.owner==='p')b.namepuWeakened=true;
+   }
+   if(ready&&invisibleUntil>performance.now())invisibleUntil=0;return t};
  }
  if(typeof damage==='function'){
   const oldDamage=damage;
   damage=function(actor,amount,now,...rest){
    const t=performance.now();
    if(t<danceUntil || (actor===player && t<immortalUntil))return;
+   if(rest[1]?.namepuWeakened&&actor!==player)amount*=.8;
    if(rest[1]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0]=true}
    return oldDamage.call(this,actor,amount,now,...rest);
   };
@@ -104,7 +113,7 @@ function boot(){
    case 'invincible':immortalUntil=now+2800;break;
    case 'dance':danceUntil=now+2000;break;
    case 'invisible':invisibleUntil=now+4000;break;
-   case 'namepu':namepuUntil=now+5500;usedNamepu=true;break;
+   case 'namepu':namepuUntil=now+5000;usedNamepu=true;break;
   }
  }
  battle.cast.addEventListener('click',e=>{e.preventDefault();chooseUltimate()});
@@ -175,6 +184,7 @@ function boot(){
    const displayName=window.MojiLoginWinnerName?.()||'あなた';
    title.textContent='🏆 優勝：'+displayName+'｜'+U.victoryPhrase();
   }
+  window.MojiNamepuVictory?.showSolo({name:window.MojiLoginWinnerName?.()||'あなた',icon:typeof avatarChar==='string'?avatarChar:'武',kills:window.MojiCpuBots?.kills?.()||0,hp:player.hp});
   return true;
  }
  window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu,debug:()=>({charge,chosen,ready:isReady(),spent,canAct:canAct(),running:typeof running==='undefined'?null:running,n:typeof slots!=='undefined'?slots?.[selected]?.n:null})};
