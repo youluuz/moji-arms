@@ -83,6 +83,22 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    return {count:buttons.length,names,before,separated,lit,restored:state('icon'),
     allOn:buttons.every(b=>b.getAttribute('aria-pressed')==='true')};
   });
+  const lockerState=await page.evaluate(()=>{
+   const locker=document.getElementById('mojiCyberLocker');
+   const wing=locker?.querySelector('[data-cyber-part="wing"]');
+   const was=window.MojiDeveloperFX.enabled('wing');
+   wing?.click();
+   const changed=window.MojiDeveloperFX.enabled('wing')!==was &&
+    document.querySelector('#mojiCyberControl [data-cyber-part="wing"]')?.getAttribute('aria-pressed')==='false';
+   wing?.click();
+   return {inside:locker?.parentElement===document.getElementById('collectionPanel'),
+    visible:!!locker&&!locker.hidden,buttons:locker?.querySelectorAll('[data-cyber-part]').length,
+    changed,restored:window.MojiDeveloperFX.enabled('wing')===was,
+    publicGachaListed:!!document.querySelector('#collection .item[data-id*=cyber],#collection [data-cyber-part]')};
+  });
+  if(!lockerState.inside||!lockerState.visible||lockerState.buttons!==3||
+     !lockerState.changed||!lockerState.restored||lockerState.publicGachaListed)
+   throw Error('Unlocked private cosmetic gear is not individually wearable in real locker '+JSON.stringify(lockerState));
   if(parts.count!==3||!parts.names.some(n=>n.includes('アイコンエフェクト'))||
      !parts.names.some(n=>n.includes('カスタムパーツ'))||
      !parts.names.some(n=>n.includes('攻撃エフェクト'))||
