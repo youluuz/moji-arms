@@ -52,10 +52,10 @@ func TestAttackAndHomingBalancedDamageAndCooldown(t *testing.T){
  html,err:=gameFiles.ReadFile("public/index.html");if err!=nil{t.Fatal(err)}
  rendered:=mobilePatchedIndex(string(html))
  for _,part:=range []string{
-  "damage(target,b.homing?b.n*3:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1))),now,b.pierce)",
+  "damage(target,b.homing?b.n*3+10:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1))),now,b.pierce)",
   "homing:1.4*(4.5+n*.42)*0.9",
   "attack:[`⚔ ${Math.round(n*(7-.02*(n-1)))} ダメージ`",
-  "homing:[`◎ ${n*3} ダメージ`",
+  "homing:[`◎ ${n*3+10} ダメージ`",
  } {
   if !strings.Contains(rendered,part) {t.Errorf("CPU balance missing: %s",part)}
  }
