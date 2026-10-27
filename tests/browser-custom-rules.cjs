@@ -26,7 +26,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   await page.locator('#shuffleEmojiLoadout').click();
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click();
   await page.locator('#start').click();
-  await page.waitForFunction(()=>window.MojiCpuNamepuVictory?.debug()?.running===true,{timeout:18000});
+  await page.waitForFunction(()=>window.MojiCpuBots?.countdownLeft?.()<=0 && window.MojiCpuNamepuVictory?.debug()?.charge===96,null,{timeout:20000});
   const solo=await page.evaluate(()=>({
    maxHP:MAX_HP,own:player.hp,enemy:enemy.hp,
    charge:window.MojiCpuNamepuVictory.debug().charge,
@@ -43,7 +43,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   if(await page.locator('#mojiCustomRuleFields').isVisible())
    throw Error('Normal mode exposed custom controls');
   await page.locator('#start').click();
-  await page.waitForFunction(()=>window.MojiCpuNamepuVictory?.debug()?.running===true,{timeout:18000});
+  await page.waitForFunction(()=>window.MojiCpuBots?.countdownLeft?.()<=0 && MAX_HP===600 && window.MojiCpuNamepuVictory?.debug()?.running===true,null,{timeout:20000});
   const normal=await page.evaluate(()=>({
    hp:player.hp,maxHP:MAX_HP,charge:window.MojiCpuNamepuVictory.debug().charge
   }));
