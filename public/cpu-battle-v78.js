@@ -46,6 +46,11 @@ function randomGlyph(){
  const ch=samples[roll(samples.length)],n=typeof getStrokeCount==='function'?getStrokeCount(ch):8;
  return {ch,n:Number.isInteger(n)?n:8};
 }
+// Slightly gentler CPU opponents in both normal and custom solo battles.
+// Attacks alone take 8% longer to recharge and initial shots scatter 15% more.
+// Movement, safe-zone decisions, defense, healing and all player stats are unchanged.
+const CPU_ATTACK_COOLDOWN_FACTOR=1.08;
+const CPU_AIM_SPREAD_FACTOR=1.15;
 const cpuStyles=['rusher','skirmisher','sniper','survivor','ambusher'];
 let cpuStyleOffset=0;
 function equip(bot,i){
@@ -186,13 +191,15 @@ function botAction(bot,target,now){
  if(bot.zoneUrgent && action.kind!=='heal'&&action.kind!=='defense')return;
  if(bot.zoneCaution && action.kind!=='heal'&&action.kind!=='defense'&&Math.random()<.7)return;
  const n=action.n;
- action.ready=now+slotCooldownMs(action.kind,n);
+ action.ready=now+slotCooldownMs(action.kind,n)*
+  (action.kind==='heal'||action.kind==='defense'?1:CPU_ATTACK_COOLDOWN_FACTOR);
  if(action.kind==='heal'){
   bot.hp=Math.min(MAX_HP,bot.hp+n*3.4);
  }else if(action.kind==='defense'){
   bot.shield=n*SHIELD_PER_STROKE;bot.shieldEnd=now+2300;
  }else{
-  const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*(bot.style==='sniper'?.07:bot.style==='rusher'?.28:.18);
+  const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*
+   (bot.style==='sniper'?.07:bot.style==='rusher'?.28:.18)*CPU_AIM_SPREAD_FACTOR;
   const speed=action.kind==='homing'?220:action.kind==='pierce'?430:345;
   bullets.push({x:bot.x,y:bot.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
    n,owner:'e',sourceId:bot.id,life:action.kind==='homing'?3.8:2.4,ch:action.ch,
