@@ -1,0 +1,6 @@
+.moji-notice-button.moji-notice-attention{position:relative;border:2px solid #ffda66!important;box-shadow:0 0 0 3px #ffe76635,0 0 24px #ffb63388!important;animation:mojiNoticePulse 1.5s ease-in-out infinite}
+.moji-unread:not([hidden]){display:inline-block!important;margin-left:5px;padding:5px 9px;border-radius:99px;background:#f04851!important;color:white!important;font-size:11px;font-weight:950;box-shadow:0 0 16px #f04851a9}
+.moji-welcome-claim{display:block;width:100%;margin:10px 0 4px;padding:14px;border:2px solid #ffe2a9;border-radius:10px;background:linear-gradient(110deg,#fff7bc,#ffd16c);color:#0b1a31;font-size:15px;font-weight:900;box-shadow:0 0 24px #ffd36645;cursor:pointer}
+.moji-welcome-claim:disabled{background:#304151;color:#aee4bd;cursor:default;box-shadow:none}
+@keyframes mojiNoticePulse{50%{box-shadow:0 0 0 5px #ffe76665,0 0 35px #ffb633aa!important}}
+@media(prefers-reduced-motion:reduce){.moji-notice-button.moji-notice-attention{animation:none}}
