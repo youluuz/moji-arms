@@ -763,7 +763,9 @@ const { chromium } = require('playwright');
   });
   if(!charged.button||!charged.running)throw Error('CPU Namepu ultimate not ready for actual cast '+JSON.stringify(charged));
   await page.locator('#weapons .ultimate-cast').click({force:true});
-  await page.waitForFunction(()=>window.MojiCpuNamepuVictory?.used()===true,{timeout:7000});
+  await page.waitForTimeout(120);
+  const namepuCast=await page.evaluate(()=>window.MojiCpuNamepuVictory?.debug());
+  if(!await page.evaluate(()=>window.MojiCpuNamepuVictory?.used()))throw Error('Real Namepu cast not registered '+JSON.stringify(namepuCast));
   const namepuResult=await page.evaluate(()=>{
    const remaining=window.MojiCpuBots.getBots().filter(x=>x.hp>0);
    for(const cpu of remaining)damage(cpu,100000,performance.now(),true,{owner:'p'});
