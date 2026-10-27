@@ -54,6 +54,8 @@ function boot(){
  choose(chosen);
  function reset(){
   charge=Math.round(curr().cost*(window.MojiCustomRules?.chargeForMode(typeof matchMode==='undefined'?'normal':matchMode)||0)/100);spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
+  const result=document.getElementById('result');
+  if(result){result.classList.remove('moji-namepu-deluxe','ultimate-namepu-victory');result.querySelector('.namepu-champion')?.remove();delete result.dataset.ultimateNamepu;}
   immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();romanImpacts=[];
   lastActive=true;banner.hidden=true;prevEnemyHP=typeof MAX_HP==='number'?MAX_HP:600;
  }
