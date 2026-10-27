@@ -1,0 +1,154 @@
+/* v12.5 — Give the arena the vertical space on touch phones.
+ * The joystick stays in its own dock, and all six weapon buttons remain
+ * clickable. Only redundant instructional prose is removed DURING battle.
+ * This sheet loads LAST so legacy min-heights cannot steal the freed space.
+ */
+@media (hover:none) and (pointer:coarse) and (max-width:940px) {
+ body.in-match #gameScreen .moji-battle-howto.moji-outside-map,
+ body.online-battle #gameArea .moji-battle-howto.moji-outside-map {display:none!important}
+ body.in-match #gameScreen .game-hint,
+ body.online-battle #gameArea #controls {display:none!important}
+ body.in-match #gameScreen .moji-map-with-stick,
+ body.online-battle #gameArea .moji-map-with-stick{
+  flex:1 1 0%!important;min-height:0!important;
+ }
+ body.in-match #gameScreen .arena-shell,
+ body.online-battle #gameArea .arena-shell{
+  flex:1 1 0%!important;min-height:0!important;
+  max-height:none!important;
+ }
+ body.in-match #gameScreen .game-panel,
+ body.online-battle #gameArea>.game-panel{
+  padding:1px!important;margin:0!important;gap:0!important;
+  min-height:0!important;overflow:hidden!important;
+ }
+}
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (max-width:940px) and (max-height:530px){
+ html,body{overscroll-behavior:none}
+ body.in-match main{
+  padding: max(1px,env(safe-area-inset-top))
+           max(2px,env(safe-area-inset-right))
+           max(1px,env(safe-area-inset-bottom))
+           max(2px,env(safe-area-inset-left))!important;
+ }
+ body.online-battle .wrap{
+  height:100dvh!important;
+  padding: max(1px,env(safe-area-inset-top))
+           max(2px,env(safe-area-inset-right))
+           max(1px,env(safe-area-inset-bottom))
+           max(2px,env(safe-area-inset-left))!important;
+ }
+ /* Header keeps the leave-room action visible. Hide only its subtitle. */
+ body.in-match #gameScreen .battle-head{
+  flex:0 0 24px!important;min-height:24px!important;
+  height:24px!important;margin:0!important;padding:1px 3px!important;
+  gap:2px!important;
+ }
+ body.online-battle #gameArea>.battle-head{
+  flex:0 0 29px!important;min-height:29px!important;
+  height:29px!important;margin:0!important;padding:0 4px!important;
+  gap:3px!important;
+ }
+ body.online-battle #gameArea .battle-head .subtle,
+ body.in-match #gameScreen .battle-head .subtle {display:none!important}
+ body.online-battle #gameArea #onlineBattleBack{
+  min-height:28px!important;height:28px!important;
+  padding:2px 7px!important;font-size:11px!important;
+ }
+ body.in-match #gameScreen .hud{
+  flex:0 0 35px!important;min-height:35px!important;
+  height:35px!important;padding-top:1px!important;padding-bottom:1px!important;
+  margin:0!important;
+ }
+ body.online-battle #gameArea .hud{
+  flex:0 0 34px!important;min-height:34px!important;
+  height:34px!important;margin:0!important;
+  padding-top:1px!important;padding-bottom:1px!important;
+ }
+ /* Announcements and safe-zone size share ONE short status row. */
+ body.in-match #gameScreen .battle-meta,
+ body.online-battle #gameArea .battle-meta{
+  display:flex!important;align-items:center!important;
+  justify-content:space-between!important;flex-wrap:nowrap!important;
+  gap:6px!important;flex:0 0 17px!important;
+  height:17px!important;min-height:17px!important;
+  overflow:hidden!important;margin:0!important;padding:0 4px!important;
+  font-size:9px!important;line-height:1!important;
+ }
+ body.in-match #gameScreen .battle-meta>*,
+ body.online-battle #gameArea .battle-meta>*{
+  min-width:0;max-width:60%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap!important;
+ }
+ body.online-battle #gameArea .battle-zone-info{
+  clear:none!important;float:none!important;
+  margin:0!important;font-size:9px!important;
+  white-space:nowrap!important;
+ }
+ body.in-match #gameScreen .weaponrow,
+ body.online-battle #gameArea .weaponrow{
+  flex:0 0 55px!important;height:55px!important;
+  min-height:55px!important;margin:0!important;
+  padding:2px 1px 0!important;gap:3px!important;
+  align-items:stretch!important;
+ }
+ body.in-match #gameScreen .weaponrow .weapon,
+ body.online-battle #gameArea .weaponrow .weapon{
+  min-height:49px!important;height:auto!important;
+  padding:2px 1px!important;gap:0!important;
+  overflow:hidden!important;
+ }
+ body.in-match #gameScreen .weaponrow .weapon .wchar,
+ body.in-match #gameScreen .weaponrow .weapon .char,
+ body.in-match #gameScreen .weaponrow .weapon .glyph,
+ body.online-battle #gameArea .weaponrow .weapon .wchar{
+  font-size:17px!important;line-height:1.02!important;
+ }
+ body.in-match #gameScreen .weaponrow .weapon .wkind,
+ body.online-battle #gameArea .weaponrow .weapon .wkind{
+  font-size:8px!important;line-height:1!important;
+ }
+ body.in-match #gameScreen .moji-battle-metric,
+ body.online-battle #gameArea .weapon-output{
+  font-size:8px!important;line-height:1!important;
+ }
+ body.in-match #gameScreen #weapons.moji-six-slot-row .ultimate-cast,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-cast{
+  min-height:48px!important;height:100%!important;
+ }
+ body.in-match #gameScreen #weapons.moji-six-slot-row .ultimate-icon,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-icon{
+  width:23px!important;height:23px!important;
+ }
+ body.in-match #gameScreen #weapons.moji-six-slot-row .ultimate-left,
+ body.online-battle #gameArea #cards.moji-six-slot-row .ultimate-left{
+  font-size:8px!important;line-height:1.05!important;
+ }
+ /* The relocated joystick remains a separate hit target beside the arena. */
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock{
+  margin:0!important;border-radius:7px!important;
+ }
+ body.online-battle #gameArea .game-wrap,
+ body.in-match #gameScreen .arena-shell{min-height:0!important}
+ /* During spectator mode keep the controls, but reclaim gaps. */
+ body.in-match #gameScreen #cpuWatchControls:not([hidden]),
+ body.online-battle #gameArea #onlineWatchControls:not([hidden]){
+  margin:1px 0!important;padding:2px 4px!important;
+  gap:3px!important;min-height:0!important;
+ }
+ body.in-match #gameScreen #cpuWatchControls button,
+ body.online-battle #gameArea #onlineWatchControls button{
+  min-height:28px!important;padding:3px 6px!important;
+ }
+}
+/* In portrait there is more height available; avoid shrinking buttons to
+ * landscape sizes. Only free up wasted tutorial/padding space. */
+@media (hover:none) and (pointer:coarse) and (orientation:portrait) and (max-width:800px){
+ body.in-match #gameScreen .game-panel,
+ body.online-battle #gameArea>.game-panel{padding:2px!important}
+ body.in-match #gameScreen .weaponrow,
+ body.online-battle #gameArea .weaponrow{margin-top:2px!important}
+ body.in-match #gameScreen .arena-shell,
+ body.online-battle #gameArea .arena-shell{border-radius:6px!important}
+}
