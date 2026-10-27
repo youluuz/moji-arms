@@ -68,3 +68,7 @@
 #mojiCyberLocker button{border:1px solid #78e8ff;background:linear-gradient(125deg,#071625,#174d69);color:#b7f9ff;border-radius:10px;padding:12px;font-size:12px;font-weight:900;box-shadow:0 0 18px #45d9f440}
 #mojiCyberLocker[hidden]{display:none!important}
 #mojiCyberLocker{margin-top:16px}
+
+/* Clear every equipped effect in normal and room lockers; preserve owned items. */
+#mojiUnequipAll{display:block;width:100%;margin:10px 0;padding:12px 14px;border-radius:10px;border:1.5px solid #7ba8bf!important;background:linear-gradient(120deg,#223347,#0c2234)!important;color:#e0f8ff!important;font-size:13px;font-weight:850;cursor:pointer;touch-action:manipulation}
+#mojiUnequipAll:hover,#mojiUnequipAll:focus-visible{border-color:#c8f7ff!important;box-shadow:0 0 10px #37e2ff50}
