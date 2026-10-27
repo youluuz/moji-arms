@@ -490,7 +490,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       decorated:golden.classList.contains('ultimate-gold-win'),
       background:getComputedStyle(golden).backgroundImage,
       title:document.getElementById('onlineOutcomeTitle').textContent,
-      phrase:document.getElementById('onlineOutcomeReward').textContent};
+      phrase:document.getElementById('onlineOutcomeReward').textContent,
+      champion:document.querySelector('#onlineOutcome .namepu-player-name')?.textContent,
+      kills:document.querySelector('#onlineOutcome .namepu-victory-stats')?.textContent};
      finish({...namepuWin,players:namepuWin.players.map(p=>({...p,namepuUsed:false}))});
      const reset=!golden.classList.contains('ultimate-gold-win');
      return {gold,reset,winnerReported,loserTitle,tally,expectedTally,
@@ -502,7 +504,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         sharedResults.tally!==sharedResults.expectedTally||sharedResults.updatedTally!==sharedResults.expectedTally||
         sharedResults.hasDefeat||sharedResults.label!=='MATCH RESULT'||
         !sharedResults.gold?.shown||!sharedResults.gold?.decorated||
-        !sharedResults.gold?.background?.includes('radial-gradient')||
+        !sharedResults.gold?.background?.includes('linear-gradient')||!sharedResults.gold?.champion||!sharedResults.gold?.kills?.includes('KILLS')||
         !sharedResults.gold?.phrase?.includes('／')||!sharedResults.reset)
       throw Error(mode+': champion name is not shared on winner/loser results '+JSON.stringify(sharedResults));
     await host.locator('#onlineRematch').click();
