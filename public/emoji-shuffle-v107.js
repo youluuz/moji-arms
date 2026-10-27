@@ -14,7 +14,7 @@
  ];
  const $=id=>document.getElementById(id);
  const chooseFive=previous=>{
-  const candidates=pool.filter(ch=>!previous.has(ch));
+  const candidates=pool.filter(ch=>!previous.has(ch)&&(!window.MojiGlyphDisplay||window.MojiGlyphDisplay.supported(ch)));
   for(let i=candidates.length-1;i>0;i--){
    const j=Math.floor(Math.random()*(i+1));
    [candidates[i],candidates[j]]=[candidates[j],candidates[i]];

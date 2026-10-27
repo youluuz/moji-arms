@@ -49,7 +49,8 @@ function drawProjectile(cx,b){
   }
  }
  cx.shadowBlur=0;cx.fillStyle='#fff';cx.font='900 24px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
- cx.fillText(String(b.ch||'文'),0,1,38);
+ if(window.MojiGlyphDisplay?.draw)window.MojiGlyphDisplay.draw(cx,String(b.ch||'文'),0,1,38);
+ else cx.fillText(String(b.ch||'文'),0,1,38);
  cx.lineWidth=1.3;cx.strokeStyle=own?'#ffe89a':'#ff92ae';
  cx.beginPath();cx.arc(0,0,kind==='pierce'?29:kind==='homing'?35:26,-Math.PI*.83,-Math.PI*.17);cx.stroke();
  cx.restore();return true;

@@ -297,7 +297,8 @@ function boot(){
    cx.shadowBlur=10;cx.shadowColor='#f68ca6';
    cx.fillStyle='#b34762';cx.beginPath();cx.arc(x,y,20,0,Math.PI*2);cx.fill();
    cx.shadowBlur=0;cx.strokeStyle='#fff0f0';cx.lineWidth=2.5;cx.stroke();
-   cx.font='bold 18px sans-serif';cx.fillStyle='#fff';cx.fillText(bot.loadout?.[0]?.ch||'敵',x,y+1);
+   cx.font='bold 18px sans-serif';cx.fillStyle='#fff';if(window.MojiGlyphDisplay?.draw)window.MojiGlyphDisplay.draw(cx,bot.loadout?.[0]?.ch||'敵',x,y+1,37);
+   else cx.fillText(bot.loadout?.[0]?.ch||'敵',x,y+1);
    cx.fillStyle='#1a202c';cx.fillRect(x-25,y-38,50,5);
    cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*bot.hp/MAX_HP,5);
    cx.restore();
