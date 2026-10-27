@@ -3,10 +3,7 @@
    No accounts, databases, server push, or personal analytics are required. */
 (function(){
  'use strict';
- const fallback=[
-  {id:'mobile-landscape',date:'2026-10-25',category:'遊び方',title:'📱 スマホ版は横画面推奨',body:'横画面はマップと武装の確認がしやすくおすすめです。縦向きでも遊べます。'},
-  {id:'attack-speed',date:'2026-10-25',category:'更新',title:'⚔ 通常攻撃の調整',body:'1画の通常攻撃はクールタイム0.8秒。通常弾の威力は1画あたり9、ホーミング弾は1画あたり3に調整されています。'}
- ];
+ const fallback=[{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
  let announcements=fallback;
  const $=id=>document.getElementById(id);
  function init(){
@@ -20,7 +17,7 @@
   const noticeButton=document.createElement('button');noticeButton.type='button';
   noticeButton.id='mojiNoticeButton';noticeButton.className='moji-notice-button';
   noticeButton.setAttribute('aria-label','お知らせを開く');noticeButton.setAttribute('aria-haspopup','dialog');
-  noticeButton.innerHTML='<span aria-hidden="true">📮</span><span>お知らせ</span><span id="mojiUnread" class="moji-unread" hidden>NEW</span>';
+  noticeButton.innerHTML='<span aria-hidden="true">📮</span><span>お知らせ</span><span id="mojiUnread" class="moji-unread" hidden>● NEW 1件</span>';
   header.append(link,noticeButton);
   lobby.insertBefore(header,lobby.firstChild);
   const tip=document.createElement('p');tip.className='moji-mobile-landscape-tip';
@@ -46,22 +43,39 @@
     const meta=document.createElement('small');meta.textContent=(item.date||'')+' ・ '+(item.category||'お知らせ');
     const title=document.createElement('h3');title.textContent=item.title||'お知らせ';
     const body=document.createElement('p');body.textContent=item.body||'';
-    article.append(meta,title,body);list.append(article);
+    article.append(meta,title,body);
+    if(item.rewardCoins===3){
+     const claimed=()=>{try{return !!JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').firstPlayGiftClaimed}catch(_){return false}};
+     const button=document.createElement('button');button.type='button';button.className='moji-welcome-claim';
+     const refresh=()=>{button.disabled=claimed();button.textContent=claimed()?'✅ 受取済み（3コイン）':'🪙 3コインを受け取る'};
+     refresh();button.onclick=()=>{
+      const success=window.MojiClaimWelcomeCoins?.();
+      refresh();badge();
+      if(!success&&!claimed())button.textContent='読み込み後にもう一度お試しください';
+     };article.append(button);
+    }
+    list.append(article);
    }
   }
   const currentId=()=>announcements[0]?.id||'';
   const lastRead=()=>{try{return localStorage.getItem('moji_notice_seen_id')||''}catch{return ''}};
   const markRead=()=>{try{localStorage.setItem('moji_notice_seen_id',currentId())}catch{}};
-  const badge=()=>{$('mojiUnread').hidden=lastRead()===currentId()};
+  const badge=()=>{
+   let rewardAvailable=false;
+   try{rewardAvailable=announcements.some(n=>n.rewardCoins===3&&!JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').firstPlayGiftClaimed)}catch(_){rewardAvailable=true}
+   const unread=rewardAvailable||lastRead()!==currentId();
+   $('mojiUnread').hidden=!unread;noticeButton.classList.toggle('moji-notice-attention',unread);
+   noticeButton.setAttribute('aria-label',unread?'未読のお知らせ・初プレイ報酬があります':'お知らせを開く');
+  };
   noticeButton.addEventListener('click',()=>{
    lastFocus=document.activeElement;render();overlay.hidden=false;
    noticeButton.setAttribute('aria-expanded','true');markRead();badge();$('mojiNoticeClose').focus();
   });
   badge();
   fetch('/notices.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{
-   if(!data||!Array.isArray(data.notices)||!data.notices.length)return;
+   if(!data||!Array.isArray(data.notices))return;
    announcements=data.notices.filter(x=>typeof x.title==='string'&&typeof x.body==='string').slice(0,15);
-   if(announcements.length){badge();if(!overlay.hidden)render()}
+   badge();if(!overlay.hidden)render()
   }).catch(()=>{});
   // Keep the original buttons (including their listeners and IDs) while
   // removing the redundant online matchmaking panel from the lower lobby.
