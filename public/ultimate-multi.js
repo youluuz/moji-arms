@@ -153,7 +153,7 @@ function boot(){
   if(won&&me?.namepuUsed){
    document.querySelector('#onlineOutcome .online-outcome-card').classList.add('ultimate-gold-win');
    document.getElementById('onlineOutcomeTitle').textContent='優勝：'+(me.name||'あなた')+' 👑';
-   document.getElementById('onlineOutcomeReward').textContent+=(document.getElementById('onlineOutcomeReward').textContent?' ／ ':'')+U.victoryPhrase();
+   document.getElementById('onlineOutcomeReward').textContent+=(document.getElementById('onlineOutcomeReward').textContent?' ／ ':'')+'✨ ナメプ勝利記念';
    window.MojiNamepuVictory?.showOnline({name:me.name||'あなた',icon:me.avatar||me.ch||'武',kills:me.kills||0,hp:me.hp});
   }
  }

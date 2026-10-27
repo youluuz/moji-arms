@@ -55,7 +55,7 @@ function boot(){
  function reset(){
   charge=Math.round(curr().cost*(window.MojiCustomRules?.chargeForMode(typeof matchMode==='undefined'?'normal':matchMode)||0)/100);spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
   const result=document.getElementById('result');
-  if(result){result.classList.remove('moji-namepu-deluxe','ultimate-namepu-victory');result.querySelector('.namepu-champion')?.remove();delete result.dataset.ultimateNamepu;}
+  if(result){window.MojiNamepuVictory?.stop?.();result.classList.remove('moji-namepu-deluxe','ultimate-namepu-victory');result.querySelector('.namepu-champion')?.remove();delete result.dataset.ultimateNamepu;}
   immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();romanImpacts=[];
   lastActive=true;banner.hidden=true;prevEnemyHP=typeof MAX_HP==='number'?MAX_HP:600;
  }
@@ -184,7 +184,7 @@ function boot(){
   if(title&&!result.dataset.ultimateNamepu){
    result.dataset.ultimateNamepu='1';
    const displayName=window.MojiLoginWinnerName?.()||'あなた';
-   title.textContent='🏆 優勝：'+displayName+'｜'+U.victoryPhrase();
+   title.textContent='🏆 優勝：'+displayName;
   }
   window.MojiNamepuVictory?.showSolo({name:window.MojiLoginWinnerName?.()||'あなた',icon:typeof avatarChar==='string'?avatarChar:'武',kills:window.MojiCpuBots?.kills?.()||0,hp:player.hp});
   return true;

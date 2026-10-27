@@ -1,3 +1,4 @@
+const namepuHeadlines=["真顔のまま、天下統一！","踊る覇王、降臨！","ナメプ、伝説となる！","余裕こそ最強の武器！","舞い踊る絶対王者！","勝利すら、ただの余興。","踊ってなお、完全無双！","その余裕、王者の証！","弱体化さえ凌駕する！","王座まで、踊り抜け！","真顔で頂点を奪取！","世界が舞いにひれ伏した！","踊りし者、伝説を刻む！","その舞、まさに圧勝！"];
 const { chromium } = require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined,args:['--no-sandbox']});
@@ -807,7 +808,7 @@ const { chromium } = require('playwright');
    };
   });
   if(!namepuResult.shown||!namepuResult.special||!namepuResult.alive||
-     !namepuResult.title?.includes('ナメプ完全勝利')||namepuResult.champion!=='蒼月の勇者'||!namepuResult.kills?.includes('KILLS')||
+     !namepuHeadlines.some(x=>namepuResult.title?.includes(x))||namepuResult.champion!=='蒼月の勇者'||!namepuResult.kills?.includes('KILLS')||
      !namepuResult.background?.includes('radial-gradient')||!namepuResult.visible||
      namepuResult.position!=='fixed'||Math.abs(namepuResult.bounds.top)>2||
      Math.abs(namepuResult.bounds.left)>2||
