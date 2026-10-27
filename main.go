@@ -33,6 +33,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unicode"
@@ -1294,7 +1295,11 @@ func (c *Client) writer() {
 	}
 }
 func (c *Client) reader() error {
-	for {
+ // Normal browsers send player input about 20 times per second. Close noisy
+ // connections rather than letting a single client monopolize the room lock.
+ windowStarted:=time.Now()
+ messagesInWindow:=0
+ for {
 		_ = c.conn.SetReadDeadline(time.Now().Add(120 * time.Second))
 		a, e := c.read.ReadByte()
 		if e != nil {
@@ -1337,7 +1342,10 @@ func (c *Client) reader() error {
 		}
 		switch op {
 		case 0x1:
-			arena.handle(c, payload)
+   if time.Since(windowStarted)>=time.Second {windowStarted=time.Now();messagesInWindow=0}
+   messagesInWindow++
+   if messagesInWindow>100 {return errors.New("websocket input rate exceeded")}
+   arena.handle(c, payload)
 		case 0x8:
 			return io.EOF
 		case 0x9:
@@ -1364,11 +1372,36 @@ func websocketOriginAllowed(r *http.Request) bool {
  if parsed.Scheme != "http" && parsed.Scheme != "https" { return false }
  return strings.EqualFold(parsed.Host, r.Host)
 }
+// The free server can serve many clients, but it must not allow an unbounded
+// number of hijacked goroutines and socket buffers to exhaust its memory.
+const maxConcurrentWebSockets int64 = 400
+var activeWebSockets atomic.Int64
+
+// Validate RFC 6455 before hijacking. A nonempty, malformed base64 key is
+// not a valid handshake; nor is a fuzzy "Connection: notupgrade" substring.
+func websocketHandshakeValid(r *http.Request) bool {
+ if r.Method!=http.MethodGet || !strings.EqualFold(r.Header.Get("Upgrade"),"websocket") ||
+  r.Header.Get("Sec-WebSocket-Version")!="13" {return false}
+ hasUpgrade:=false
+ for _,v:=range r.Header.Values("Connection") {
+  for _,token:=range strings.Split(v,",") {
+   if strings.EqualFold(strings.TrimSpace(token),"upgrade"){hasUpgrade=true}
+  }
+ }
+ if !hasUpgrade{return false}
+ key:=r.Header.Get("Sec-WebSocket-Key")
+ decoded,err:=base64.StdEncoding.DecodeString(key)
+ return err==nil&&len(decoded)==16
+}
 func publicResponseHeaders(next http.Handler) http.Handler {
  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("X-Content-Type-Options", "nosniff")
   w.Header().Set("X-Frame-Options", "SAMEORIGIN")
   w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+  // This site has legacy inline game scripts, so a strict script-src would
+  // break gameplay. Restrict only high-risk capabilities that are unused.
+  w.Header().Set("Content-Security-Policy", "object-src 'none'; base-uri 'self'; frame-ancestors 'self'")
+  w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
   next.ServeHTTP(w,r)
  })
 }
@@ -1377,14 +1410,18 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
   http.Error(w, "WebSocket origin not allowed", http.StatusForbidden)
   return
  }
-	if !strings.EqualFold(r.Header.Get("Upgrade"), "websocket") || !strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") || r.Header.Get("Sec-WebSocket-Key") == "" {
-		http.Error(w, "WebSocket upgrade required", 400)
-		return
-	}
-	if r.Method != "GET" {
-		http.Error(w, "method not allowed", 405)
-		return
-	}
+ if !websocketHandshakeValid(r) {
+  http.Error(w,"Invalid WebSocket handshake",http.StatusBadRequest)
+  return
+ }
+ // Reserve before Hijack to reject excessive connections safely.
+ if activeWebSockets.Add(1)>maxConcurrentWebSockets {
+  activeWebSockets.Add(-1)
+  w.Header().Set("Retry-After","5")
+  http.Error(w,"WebSocket server busy",http.StatusServiceUnavailable)
+  return
+ }
+ defer activeWebSockets.Add(-1)
 	h, ok := w.(http.Hijacker)
 	if !ok {
 		http.Error(w, "upgrade unsupported", 500)
