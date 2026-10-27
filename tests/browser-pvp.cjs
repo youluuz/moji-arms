@@ -75,7 +75,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      homing:onlineCD('homing',1)
     }));
     if(onlineAttackCT.one!==800||onlineAttackCT.two!==843||onlineAttackCT.ten!==1251||
-       onlineAttackCT.preview!=='0.8秒'||onlineAttackCT.homing!==6888)
+       onlineAttackCT.preview!=='0.8秒'||onlineAttackCT.homing!==6199)
      throw Error(mode+': online one-stroke attack cooldown or non-attack balance differs '+JSON.stringify(onlineAttackCT));
     // The ordinary-ability guide has an explicit down arrow when closed and up arrow when open.
     const weaponHelp=host.locator('#waitArea details.online-guide');
@@ -506,7 +506,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     await host.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
     if(mode==='custom')await host.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').fill('19');
     const updatedN=mode==='custom'?19:2;
-    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+(n*6),updatedN,{timeout:8000});
+    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+(n*9),updatedN,{timeout:8000});
     await host.locator('#saveRoomLoadout').click();
     await host.waitForFunction(n=>{
      const p=roomState?.players.find(p=>p.id===myId);
