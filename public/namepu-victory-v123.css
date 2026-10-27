@@ -18,3 +18,6 @@
 .namepu-tagline{margin:12px 0 0;color:#b6eaff;font-size:clamp(11px,1.7vw,14px);font-weight:700}
 @media(max-width:560px){.namepu-wings{letter-spacing:.04em}.namepu-winner-plate{gap:11px;padding:10px}.namepu-victory-stats>div{padding:7px}.namepu-champion{padding:8px 3px}}
 @media(prefers-reduced-motion:reduce){#result.moji-namepu-deluxe .result-inner:before,#onlineOutcome.moji-namepu-deluxe .online-outcome-card:before{animation:none}}
+
+/* A finished result must never block the lobby after its .show state is cleared. */
+#result.moji-namepu-deluxe:not(.show){display:none!important;pointer-events:none!important}
