@@ -90,6 +90,8 @@ jobs:
         run: node tests/browser-namepu-headline.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
+      - name: Verify more vertical arena space on phones
+        run: node tests/browser-mobile-battle-growth.cjs
       - name: Test embedded online match in mobile portrait and landscape
         run: node tests/browser-embedded-pvp.cjs
       - name: Check public-beta deployment paths and WebSocket on test server
