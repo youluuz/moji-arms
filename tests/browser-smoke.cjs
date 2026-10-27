@@ -270,7 +270,7 @@ const { chromium } = require('playwright');
    homing:window.MojiWeaponVisual?.cooldown('homing',1)
   }));
   if(attackCooldown.one!=='0.8秒'||attackCooldown.two!=='0.8秒'||
-    attackCooldown.ten!=='1.3秒'||attackCooldown.homing!=='6.9秒')
+    attackCooldown.ten!=='1.3秒'||attackCooldown.homing!=='6.2秒')
    throw Error('Solo attack 0.8s and other-weapon CT regression '+JSON.stringify(attackCooldown));
   await page.waitForSelector('#loadoutPanel .ultimate-option',{timeout:15000});
   if(await page.locator('#loadoutPanel .ultimate-option').count()!==6)throw Error('CPU/solo loadout must present six ultimates');
