@@ -1454,7 +1454,7 @@ func mobilePatchedIndex(source string) string {
 	// Draw the optional compact goggles and mech wings on the player's avatar.
 	source = strings.Replace(source,
 		"g.fillText(ch,0,1,36);\n g.restore();",
-		"g.fillText(ch,0,1,36);\n if(!enemyIcon&&window.MojiDeveloperFX?.active())window.MojiDeveloperFX.paint(g,t);\n g.restore();", 1)
+		"if(window.MojiGlyphDisplay?.draw)window.MojiGlyphDisplay.draw(g,ch,0,1,36);else g.fillText(ch,0,1,36);\n if(!enemyIcon&&window.MojiDeveloperFX?.active())window.MojiDeveloperFX.paint(g,t);\n g.restore();", 1)
 	// Match CPU normal/custom attack cooldowns to the authoritative online server.
 	// A 1-stroke normal shot recharges in 0.8s; each additional stroke
 	// adds a progressively larger CT increment while preserving high-stroke power.
