@@ -292,6 +292,7 @@ type Player struct {
 type Room struct {
 	Code, Host, Mode, Theme, Shrink, Phase, Winner, Message string
 	Started                                                 time.Time
+	EmptySince time.Time // private room kept briefly when everyone disconnects
 	Public                                                  bool
 	StartedPlayers int
  Spectators []*Spectator
@@ -577,7 +578,7 @@ func slotCooldown(kind string, n int) float64 {
 	case "pierce":
 		return (7 + float64(n)*.45) * 1.4
 	case "homing":
-		return (4.5 + float64(n)*.42) * 1.4
+		return (4.5 + float64(n)*.42) * 1.4 * 0.9
 	}
 	return 10
 }
@@ -608,6 +609,11 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			}
 		}
 		if typ == "create" || (typ == "match" && room == nil) {
+   // Expire disconnected private rooms after ten minutes, not immediately
+   // when the host navigates back to the shared lobby.
+   for key,old:=range a.rooms {
+    if len(old.Players)==0 && !old.EmptySince.IsZero() && time.Since(old.EmptySince)>10*time.Minute {delete(a.rooms,key)}
+   }
 			if len(a.rooms) >= maxRooms {
 				c.message(map[string]string{"type": "error", "message": "ルーム数の上限に達しました"})
 				return
@@ -646,7 +652,11 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			parseInput(m, "code", &code)
 			room = a.find(strings.ToUpper(strings.TrimSpace(code)))
 			if room == nil {
-    c.message(map[string]string{"type":"error","message":"ルームが見つかりません"});return
+    c.message(map[string]string{"type":"error","message":"ルームが見つかりません。ホストに新しい招待リンクを確認してください"});return
+   }
+   if len(room.Players)==0 && !room.EmptySince.IsZero() && time.Since(room.EmptySince)>10*time.Minute {
+    delete(a.rooms,room.Code)
+    c.message(map[string]string{"type":"error","message":"このルームの再入室期限が切れました"});return
    }
    // Invite links can be opened mid-match. The new connection receives
    // read-only snapshots, never enters the active player roster.
@@ -695,6 +705,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		c.room = room
 		c.pid = pid
 		room.Players = append(room.Players, p)
+  room.EmptySince=time.Time{}
 		if room.Host == "" {
 			room.Host = pid
 		}
@@ -885,7 +896,7 @@ func (a *Arena) disconnected(c *Client) {
   watchers:=make([]*Spectator,0,len(room.Spectators))
   for _,w:=range room.Spectators {if w.ID!=c.pid {watchers=append(watchers,w)}}
   room.Spectators=watchers
-  if len(room.Players)==0 {delete(a.rooms,room.Code)} else {room.broadcast()}
+  if len(room.Players)==0 {room.EmptySince=time.Now()} else {room.broadcast()}
   c.room=nil;c.pid=""
   return
  }
@@ -903,9 +914,12 @@ func (a *Arena) disconnected(c *Client) {
 		}
 	}
 	if len(room.Players) == 0 {
-  // The last fighter left; do not retain an orphaned spectator-only room.
-  for _,w:=range room.Spectators {w.C.room=nil;w.C.pid="";w.C.message(map[string]string{"type":"error","message":"ホストが退出したためルームが終了しました"})}
-		delete(a.rooms, room.Code)
+  // Release orphaned spectators, but retain the private lobby briefly
+  // so the host can come back with the same six-character code.
+  for _,w:=range room.Spectators {w.C.room=nil;w.C.pid="";w.C.message(map[string]string{"type":"error","message":"参加者が退出しました。再入室可能な待機室を残しています"})}
+  room.Spectators=nil;room.Host="";room.Phase="lobby";room.EmptySince=time.Now()
+  room.Winner="";room.Bullets=nil;room.StartedPlayers=0
+  if room.Public {delete(a.rooms,room.Code)}
 	} else {
 		if room.Phase == "playing" {
 			alive := 0
@@ -1085,7 +1099,9 @@ func (a *Arena) tick(dt float64) {
 					speed = 275 // additional ~13% reduction to make homing shots easier to dodge
 				}
 				a := p.Aim
-				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: float64(n * 6), TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
+				damage := float64(n * 6)
+				if kind=="attack" {damage=float64(n*9)} else if kind=="homing" {damage=float64(n*3)}
+				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: damage, TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
 				if kind == "homing" {
 					room.Bullets[len(room.Bullets)-1].TTL = 4.8
 				}
@@ -1122,7 +1138,7 @@ func (a *Arena) tick(dt float64) {
 					old := math.Atan2(b.VY, b.VX)
 					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
 					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
-					angle := old + bound(delta, -2.484*dt, 2.484*dt) // exactly +3.5% steering; keep speed, damage and cooldown
+					angle := old + bound(delta, -2.7324*dt, 2.7324*dt) // +10% steering; damage and cooldown are independently balanced
 					b.VX = 275 * math.Cos(angle)
 					b.VY = 275 * math.Sin(angle)
 				}
@@ -1392,7 +1408,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=99"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=112"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=100"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=99"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=113"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=113"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1449,7 +1465,7 @@ window.MojiStrokeReady=Promise.all([
 		"const speed=d<95?160:d<175?210:275;", 1)
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
-		"const turnRate=d<130?3.98475:d<280?3.15675:2.3805;", 1)
+		"const turnRate=d<130?4.383225:d<280?3.472425:2.61855;", 1)
 	// The fixed dock no longer contains the old optional room-code field.
 	// Its legacy create handler must not throw when that removed node is absent.
 	// Room creation uses an empty code; join links still supply a real code.
@@ -1457,18 +1473,22 @@ window.MojiStrokeReady=Promise.all([
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());",
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode')?.value.trim()||'');", 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
+	// Align all CPU projectile damage with the live server: basic +50%, homing -50%.
+	source = strings.Replace(source, "damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce)", "damage(target,b.n*(b.homing?3:b.pierce?6:b.owner===\u0027p\u0027?9:9),now,b.pierce)", 1)
+	source = strings.Replace(source, "attack:[`⚔ ${n*DAMAGE_PER_STROKE} ダメージ`", "attack:[`⚔ ${n*9} ダメージ`", 1)
+	source = strings.Replace(source, "homing:[`◎ ${n*DAMAGE_PER_STROKE} ダメージ`", "homing:[`◎ ${n*3} ダメージ`", 1)
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))", 1)
 	for _, pair := range [][2]string{
 		{"defense:9+n*.4", "defense:1.4*(9+n*.4)"},
 		{"heal:13+n*.55", "heal:1.4*(13+n*.55)"},
 		{"pierce:7+n*.45", "pierce:1.4*(7+n*.45)"},
-		{"homing:4.5+n*.42", "homing:1.4*(4.5+n*.42)"},
+		{"homing:4.5+n*.42", "homing:1.4*(4.5+n*.42)*0.9"},
 	} {
 		source = strings.Replace(source, pair[0], pair[1], 1)
 	}
 	// Keep the large legacy CPU game in sync with the shared arena dimensions.
 	// Numeric word boundaries avoid touching dates, CSS units and encoded assets.
-	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?730:1250", 1)
+	source = strings.Replace(source, "cpuView.w=aspect<1?670:1130", "cpuView.w=aspect<1?(document.body.classList.contains(\u0027mobile-touch-input\u0027)?640:730):(document.body.classList.contains(\u0027mobile-touch-input\u0027)?1050:1250)", 1)
 	source = regexp.MustCompile(`\b1800\b`).ReplaceAllString(source, "2300")
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Permit solo CPU round dimensions to change with selected CPU count.

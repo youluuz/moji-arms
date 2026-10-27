@@ -1,0 +1,21 @@
+/* v11.3 shared lobby tabs, room locker dialog and one-tap rejoin */
+#lobbyScreen #mojiGuidePanel{display:none}
+#lobbyScreen[data-view="guide"]>#mojiGuidePanel{display:block!important}
+#lobbyScreen[data-view="guide"]>:not(#mojiGuidePanel){display:none!important}
+#lobbyScreen .moji-guide-panel{max-width:940px;margin:10px auto 26px;padding:clamp(15px,3vw,30px)}
+#lobbyScreen .moji-guide-panel h2{color:#ffe0a1;margin:0 0 9px}
+#lobbyScreen .moji-guide-panel>p{color:#c4d6ed;margin:4px 0 16px}
+.moji-guide-entry{padding:13px 15px;margin:9px 0;border:1px solid #4c7094;border-radius:12px;background:#132a42}
+.moji-guide-entry h3{font-size:15px;color:#ffe6b5;margin:0 0 6px}
+.moji-guide-entry p{font-size:13px;color:#d4e5f5;line-height:1.75;margin:0}
+.moji-guide-panel>button{margin-top:12px;min-height:44px}
+.moji-rejoin-room{min-height:42px!important;padding:8px 11px!important;border:1px solid #9ac9de!important;background:linear-gradient(120deg,#1f526b,#203b59)!important;color:#f0fbff!important;font-size:12px!important;font-weight:900}
+.moji-rejoin-room[hidden],#mojiRoomLockerOverlay[hidden]{display:none!important}
+#mojiRoomLockerOverlay{position:fixed;inset:0;z-index:2147483200;display:grid;place-items:center;background:#040d1be8;padding:12px;box-sizing:border-box}
+.moji-room-locker-inner{width:min(1050px,100%);max-height:calc(100dvh - 24px);min-height:0;overflow:auto;background:#112039;border:1px solid #e4c78b;border-radius:16px;padding:12px;box-sizing:border-box}
+.moji-room-locker-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px 14px;color:#ffebba}
+.moji-room-locker-head strong{font-size:clamp(13px,2.2vw,18px)}
+#mojiRoomLockerClose{min-height:42px;padding:8px 12px;border-radius:9px;background:#e2bf76;color:#152238;border:1px solid #fbe3a4;font-weight:900}
+.moji-room-locker-inner #collectionPanel{display:block!important;margin:0!important;max-width:100%;box-sizing:border-box}
+body.moji-room-locker-open{overflow:hidden!important}
+@media(max-width:600px){.moji-room-locker-inner{padding:6px}#mojiRoomLockerOverlay{padding:5px}.moji-room-locker-head{padding:7px}.moji-rejoin-room{font-size:10px!important}}

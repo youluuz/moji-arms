@@ -122,7 +122,7 @@ func TestStrokesAndCooldown(t *testing.T) {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
 	}
-	if math.Abs(slotCooldown("homing", 1)-6.888) > .001 {
+	if math.Abs(slotCooldown("homing", 1)-6.1992) > .001 {
 		t.Fatal("homing cooldown regression")
 	}
 	if math.Abs(slotCooldown("pierce", 1)-10.43) > .001 {
@@ -398,7 +398,7 @@ func TestMobileV70InputIsolationAssets(t *testing.T) {
 	base, err := gameFiles.ReadFile("public/index.html")
 	if err != nil { t.Fatal(err) }
 	served := mobilePatchedIndex(string(base))
-	if !strings.Contains(served, "cpuView.w=aspect<1?730:1250") || !strings.Contains(html, "view.w=Math.min(worldW,aspect<1?730:1250)") { t.Fatal("battle cameras must use the wider view in all modes") }
+	if !strings.Contains(served, "cpuView.w=aspect<1?") || !strings.Contains(served, "?640:730") || !strings.Contains(html, "lowPowerMobile?640:730") || !strings.Contains(html, "lowPowerMobile?1050:1250") { t.Fatal("battle cameras must use the wider view in all modes") }
 	if !strings.Contains(served, "/mobile-input-v70.css") || !strings.Contains(served, "/mobile-input-v70.js") || !strings.Contains(served, "/arena-expansion-v72.js") {
 		t.Fatal("common login/CPU route does not load the mobile touch fixes")
 	}
@@ -757,13 +757,13 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
  for _,kind:=range []string{"defense","heal","pierce","homing"} {
   if slotCooldown(kind,15)<=0 {t.Fatal("other cooldown unexpectedly invalid: "+kind)}
   base:=map[string]float64{"defense":15,"heal":21.25,"pierce":13.75,"homing":10.8}[kind]
-  if math.Abs(slotCooldown(kind,15)-base*1.4)>.000001 {t.Fatalf("%s cooldown should be multiplied by 1.4",kind)}
+  if math.Abs(slotCooldown(kind,15)-base*1.4*map[bool]float64{true:.9,false:1}[kind=="homing"])>.000001 {t.Fatalf("%s cooldown differs from balanced formula",kind)}
  }
 }
 func TestWeaponPreviewStylesAndDamageSummary(t *testing.T){
  js,e:=gameFiles.ReadFile("public/weapon-visuals-v86.js");if e!=nil{t.Fatal(e)}
  css,e:=gameFiles.ReadFile("public/weapon-visuals-v86.css");if e!=nil{t.Fatal(e)}
- for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","n*6","Math.round(n*3.4)"} {
+ for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","kind==='attack'?9","Math.round(n*3.4)"} {
   if !strings.Contains(string(js),token){t.Errorf("missing projectile or weapon metric: %s",token)}
  }
  if !strings.Contains(string(css),"body.online-battle #gameArea .combat-hp.rival{display:none!important}") ||

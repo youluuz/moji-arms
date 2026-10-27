@@ -10,12 +10,12 @@ const types={
 };
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeN=n=>Number.isFinite(Number(n))&&Number(n)>0?Math.max(1,Math.min(84,Number(n))):0;
-function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):n*6)):'—'}
+function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):n*(kind==='attack'?9:kind==='homing'?3:6))):'—'}
 function metric(kind,n){return (kind==='heal'?'回復':kind==='defense'?'防御':'威力')+amount(kind,n)}
 function cooldown(kind,n){
  n=safeN(n);if(!n)return '—';
  const k={attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1)),
-  defense:1.4*(9+n*.4),heal:1.4*(13+n*.55),pierce:1.4*(7+n*.45),homing:1.4*(4.5+n*.42)}[kind];
+  defense:1.4*(9+n*.4),heal:1.4*(13+n*.55),pierce:1.4*(7+n*.45),homing:1.4*(4.5+n*.42)*0.9}[kind];
  return Number.isFinite(k)?k.toFixed(1)+'秒':'—';
 }
 function preview(kind,n,ch){

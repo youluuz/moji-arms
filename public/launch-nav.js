@@ -5,7 +5,7 @@
  'use strict';
  const fallback=[
   {id:'mobile-landscape',date:'2026-10-25',category:'遊び方',title:'📱 スマホ版は横画面推奨',body:'横画面はマップと武装の確認がしやすくおすすめです。縦向きでも遊べます。'},
-  {id:'attack-speed',date:'2026-10-25',category:'更新',title:'⚔ 通常攻撃の調整',body:'1画の通常攻撃はクールタイム0.3秒。画数が増えるほど再使用までの時間が長くなります。'}
+  {id:'attack-speed',date:'2026-10-25',category:'更新',title:'⚔ 通常攻撃の調整',body:'1画の通常攻撃はクールタイム0.8秒。通常弾の威力は1画あたり9、ホーミング弾は1画あたり3に調整されています。'}
  ];
  let announcements=fallback;
  const $=id=>document.getElementById(id);

@@ -146,7 +146,7 @@ function botAction(bot,target,now){
 function guide(b,target,dt){
  const wanted=Math.atan2(target.y-b.y,target.x-b.x),old=Math.atan2(b.vy,b.vx);
  const diff=Math.atan2(Math.sin(wanted-old),Math.cos(wanted-old));
- const next=old+Math.max(-2.691*dt,Math.min(2.691*dt,diff));
+ const next=old+Math.max(-2.9601*dt,Math.min(2.9601*dt,diff));
  const speed=Math.hypot(b.vx,b.vy)||220;
  b.vx=Math.cos(next)*speed;b.vy=Math.sin(next)*speed;
 }
@@ -443,7 +443,7 @@ function boot(){
     // Direct-fire, piercing and ordinary projectiles are still dangerous.
     const targets=b.owner==='p'?alive():[player,...alive()].filter(a=>a.id!==b.sourceId&&!(b.homing&&a===player&&window.MojiCpuUltimateState?.invisibleActive?.()));
     const hit=targets.find(a=>a.hp>0&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+9);
-    if(hit){damage(hit,b.n*DAMAGE_PER_STROKE,now,b.pierce,b);bullets.splice(i,1);}
+    if(hit){damage(hit,b.n*(b.homing?3:b.pierce?6:9),now,b.pierce,b);bullets.splice(i,1);}
     else if(b.life<=0||b.x<0||b.x>WORLD_W||b.y<0||b.y>WORLD_H)bullets.splice(i,1);
    }
    if(cpuSpectating){
