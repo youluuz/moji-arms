@@ -785,6 +785,8 @@ const { chromium } = require('playwright');
     shown:panel.classList.contains('show'),
     special:panel.classList.contains('ultimate-namepu-victory'),
     title:document.getElementById('resultTitle')?.textContent,
+    champion:panel.querySelector('.namepu-player-name')?.textContent,
+    kills:panel.querySelector('.namepu-victory-stats')?.textContent,
     background:getComputedStyle(panel).backgroundImage,
     visible:getComputedStyle(panel).display!=='none',
     position:getComputedStyle(panel).position,
@@ -793,7 +795,7 @@ const { chromium } = require('playwright');
    };
   });
   if(!namepuResult.shown||!namepuResult.special||!namepuResult.alive||
-     !namepuResult.title?.includes('優勝：蒼月の勇者')||
+     !namepuResult.title?.includes('ナメプ完全勝利')||namepuResult.champion!=='蒼月の勇者'||!namepuResult.kills?.includes('KILLS')||
      !namepuResult.background?.includes('radial-gradient')||!namepuResult.visible||
      namepuResult.position!=='fixed'||Math.abs(namepuResult.bounds.top)>2||
      Math.abs(namepuResult.bounds.left)>2||
