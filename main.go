@@ -1106,10 +1106,10 @@ func (a *Arena) tick(dt float64) {
 				}
 				a := p.Aim
 				damage := float64(n * 6)
-				if kind=="attack" {damage=normalShotDamage(n)} else if kind=="homing" {damage=float64(n*3)}
+				if kind=="attack" {damage=normalShotDamage(n)} else if kind=="homing" {damage=float64(n*3+10)}
 				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: damage, TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
 				if kind == "homing" {
-					room.Bullets[len(room.Bullets)-1].TTL = 4.8
+					room.Bullets[len(room.Bullets)-1].TTL = 3.8
 				}
 			case "defense":
 				p.Shield = float64(n * 6)
@@ -1144,7 +1144,7 @@ func (a *Arena) tick(dt float64) {
 					old := math.Atan2(b.VY, b.VX)
 					wanted := math.Atan2(target.Y-b.Y, target.X-b.X)
 					delta := math.Atan2(math.Sin(wanted-old), math.Cos(wanted-old))
-					angle := old + bound(delta, -2.7324*dt, 2.7324*dt) // +10% steering; damage and cooldown are independently balanced
+					angle := old + bound(delta, -2.814372*dt, 2.814372*dt) // +3% steering; speed unchangedn are independently balanced
 					b.VX = 275 * math.Cos(angle)
 					b.VY = 275 * math.Sin(angle)
 				}
@@ -1414,7 +1414,7 @@ func getPort(listener net.Listener) int {
 // on the server so the same improvements reach / and /index.html without rewriting
 // the original multi-megabyte single-file game or losing existing assets.
 func mobilePatchedIndex(source string) string {
-	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=115"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=116"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=116"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=116"><script defer src="/owner-cyber-v114.js?v=116"></script>`
+	const additions = `<link rel="icon" type="image/png" sizes="64x64" href="/mojibusou-icon.png?v=1"><link rel="shortcut icon" type="image/png" href="/mojibusou-icon.png?v=1"><link rel="apple-touch-icon" href="/mojibusou-icon.png?v=1"><meta name="theme-color" content="#08152c"><link rel="stylesheet" href="/mobile-input-v70.css?v=95"><link rel="stylesheet" href="/mobile-stick-dock-v100.css?v=111"><link rel="stylesheet" href="/lobby-refresh-v100.css?v=100"><link rel="stylesheet" href="/ultimate-ui.css?v=98"><script defer src="/mobile-input-v70.js?v=89"></script><script defer src="/mobile-stick-dock-v100.js?v=111"></script><script defer src="/ultimate-core.js?v=87"></script><script defer src="/ultimate-cpu.js?v=117"></script><script defer src="/arena-expansion-v72.js?v=80"></script><script defer src="/cpu-battle-v78.js?v=117"></script><script defer src="/mobile-orientation-v80.js?v=83"></script><link rel="stylesheet" href="/mobile-orientation-v80.css?v=80"><link rel="stylesheet" href="/ui-polish-v74.css?v=77"><link rel="stylesheet" href="/cpu-battle-v78.css?v=92"><link rel="stylesheet" href="/cpu-spectator-v105.css?v=112"><link rel="stylesheet" href="/weapon-visuals-v86.css?v=95"><link rel="stylesheet" href="/loadout-contrast-v101.css?v=101"><link rel="stylesheet" href="/lobby-compact-v102.css?v=102"><script defer src="/weapon-visuals-v86.js?v=117"></script><script defer src="/roman-effects-v97.js?v=108"></script><script defer src="/launch-nav.js?v=100"></script><script defer src="/room-entry-v106.js?v=106"></script><link rel="stylesheet" href="/emoji-shuffle-v107.css?v=107"><script defer src="/emoji-shuffle-v107.js?v=107"></script><link rel="stylesheet" href="/mode-separation-v109.css?v=109"><script defer src="/mode-separation-v109.js?v=109"></script><link rel="stylesheet" href="/room-guide-locker-v113.css?v=113"><script defer src="/room-guide-locker-v113.js?v=113"></script><link rel="stylesheet" href="/glyph-book-v114.css?v=114"><script defer src="/glyph-book-v114.js?v=114"></script><link rel="stylesheet" href="/owner-cyber-v114.css?v=117"><script defer src="/owner-cyber-v114.js?v=116"></script>`
 	// Four large mode tiles are the ONLY visible mode selector.
 	// Retain the original <select> for legacy event handlers and logic; hide its
 	// containing field so the mode isn't offered twice. The map dropdown stays visible.
@@ -1470,8 +1470,8 @@ window.MojiStrokeReady=Promise.all([
  return true;
 }).catch(err=>{console.warn('画数辞書の取得に失敗',err);return false;});`
 	source = strings.Replace(source, "if(window.MojiRandom)window.MojiRandom.strokeMap=dict;", strokeLoader, 1)
-	// Homing shots should be easier to evade: another ~12% off speed and
-	// ~20% off turning authority. Preserve obstacle avoidance, damage and CT.
+	// Homing shots keep their slower travel speed, but gain 3% steering,
+	// 10 flat damage and a shorter 3.8-second flight lifetime in all modes.
 	// This inline script powers the original solo 1-v-1 battle, while the
 	// multi-bot extension uses matching tuned steering constants.
 	source = strings.Replace(source,
@@ -1479,18 +1479,20 @@ window.MojiStrokeReady=Promise.all([
 		"const speed=d<95?160:d<175?210:275;", 1)
 	source = strings.Replace(source,
 		"const turnRate=d<130?5.6:d<280?4.5:3.35;",
-		"const turnRate=d<130?4.383225:d<280?3.472425:2.61855;", 1)
+		"const turnRate=d<130?4.51472175:d<280?3.57659775:2.6971065;", 1)
 	// The fixed dock no longer contains the old optional room-code field.
 	// Its legacy create handler must not throw when that removed node is absent.
 	// Room creation uses an empty code; join links still supply a real code.
 	source = strings.Replace(source,
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());",
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode')?.value.trim()||'');", 1)
+	// The legacy 1v1 CPU shooter uses this shared lifetime for homing only.
+	source = strings.Replace(source, "if(b.homing){b.life=4.8;b.turnSide=0;}", "if(b.homing){b.life=3.8;b.turnSide=0;}", 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
 	// Align all CPU projectile damage with the live server: basic +50%, homing -50%.
-	source = strings.Replace(source, "damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce)", "damage(target,b.homing?b.n*3:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1))),now,b.pierce)", 1)
+	source = strings.Replace(source, "damage(target,b.n*DAMAGE_PER_STROKE,now,b.pierce)", "damage(target,b.homing?b.n*3+10:b.pierce?b.n*6:Math.round(b.n*(7-.02*(b.n-1))),now,b.pierce)", 1)
 	source = strings.Replace(source, "attack:[`⚔ ${n*DAMAGE_PER_STROKE} ダメージ`", "attack:[`⚔ ${Math.round(n*(7-.02*(n-1)))} ダメージ`", 1)
-	source = strings.Replace(source, "homing:[`◎ ${n*DAMAGE_PER_STROKE} ダメージ`", "homing:[`◎ ${n*3} ダメージ`", 1)
+	source = strings.Replace(source, "homing:[`◎ ${n*DAMAGE_PER_STROKE} ダメージ`", "homing:[`◎ ${n*3+10} ダメージ`", 1)
 	source = strings.Replace(source, "attack:Math.max(.65,.65+n*.125)", "attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))", 1)
 	for _, pair := range [][2]string{
 		{"defense:9+n*.4", "defense:1.4*(9+n*.4)"},
