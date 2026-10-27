@@ -25,7 +25,10 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     const sheet=[...document.querySelectorAll('link[rel=stylesheet]')].find(x=>x.href.includes('mobile-battle-expansion-v125.css'));
     if(!sheet)throw Error('Mobile expansion stylesheet not loaded');
     sheet.disabled=!enabled;
-    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    // The CPU camera's resize handler runs asynchronously after style changes.
+    // Wait for the canvas to catch up, not just for CSS box reflow.
+    window.dispatchEvent(new Event('resize'));
+    await new Promise(resolve=>setTimeout(resolve,220));
     const rect=q=>{const e=document.querySelector(q);if(!e)return null;const b=e.getBoundingClientRect();return{x:b.x,y:b.y,left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height}};
     const map=rect('#gameScreen .arena-shell'),canvas=rect('#field'),stick=rect('#gameScreen .moji-stick-dock');
     const row=rect('#gameScreen #weapons'),abilities=[...document.querySelectorAll('#gameScreen #weapons .weapon')];
