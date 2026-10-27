@@ -52,6 +52,14 @@
   g.strokeStyle='#158baa';g.lineWidth=1.5;g.beginPath();
   g.moveTo(points[0][0]+2,points[0][1]);g.lineTo(points[2][0]-2,points[2][1]);
   g.stroke();
+  // Fine silver armor ribs and cyan optics strengthen the mechanical profile.
+  g.strokeStyle='#e6f6ff';g.lineWidth=.85;g.beginPath();
+  g.moveTo(points[0][0]+2,points[0][1]-1);
+  g.lineTo(points[1][0]-2,points[1][1]+4);
+  g.lineTo(points[2][0]-2,points[2][1]+2);g.stroke();
+  g.shadowBlur=4;g.shadowColor='#44dfff';g.strokeStyle='#41ddff';
+  g.beginPath();g.moveTo(points[2][0]-2,points[2][1]+2);
+  g.lineTo(points[3][0]+2,points[3][1]-2);g.stroke();
   g.restore();
  }
  // The user's reference has layered angular black wings with bright cyan
@@ -88,19 +96,27 @@
  }
  function goggles(g){
   if(!enabled('icon'))return;
-  g.save();g.lineJoin='round';
-  g.shadowColor='#41dfff';g.shadowBlur=5;
-  g.fillStyle='#07121c';g.strokeStyle='#8ff5ff';g.lineWidth=1.65;
-  g.beginPath();g.moveTo(-17,-14);g.lineTo(-11,-19);g.lineTo(11,-19);g.lineTo(17,-14);
-  g.lineTo(15,-7);g.lineTo(4,-6);g.lineTo(0,-9);g.lineTo(-4,-6);g.lineTo(-15,-7);g.closePath();
-  g.fill();g.stroke();
-  g.shadowBlur=0;g.fillStyle='#38cdea';
-  for(const d of [-1,1]){
-   g.save();g.scale(d,1);g.beginPath();g.moveTo(3,-15);g.lineTo(13,-15);
-   g.lineTo(12,-10);g.lineTo(5,-11);g.closePath();g.fill();g.restore();
+  g.save();g.lineJoin='round';g.lineCap='round';
+  // Unified angular chrome visor with a deep cyan lens and side housings.
+  g.shadowColor='#35e4ff';g.shadowBlur=8;g.strokeStyle='#d2edff';g.lineWidth=2;
+  g.fillStyle='#040e1b';g.beginPath();
+  g.moveTo(-20,-16);g.lineTo(-12,-22);g.lineTo(12,-22);g.lineTo(20,-16);
+  g.lineTo(16,-6);g.lineTo(4,-5);g.lineTo(0,-8);g.lineTo(-4,-5);
+  g.lineTo(-16,-6);g.closePath();g.fill();g.stroke();
+  const lens=g.createLinearGradient(-16,-20,18,-6);
+  lens.addColorStop(0,'#0a2434');lens.addColorStop(.35,'#126f96');
+  lens.addColorStop(.75,'#63edff');lens.addColorStop(1,'#071525');
+  g.fillStyle=lens;g.shadowBlur=2;g.beginPath();
+  g.moveTo(-16,-15);g.lineTo(-10,-19);g.lineTo(10,-19);g.lineTo(16,-15);
+  g.lineTo(13,-9);g.lineTo(2,-8);g.lineTo(0,-10);g.lineTo(-2,-8);
+  g.lineTo(-13,-9);g.closePath();g.fill();
+  g.shadowBlur=0;g.strokeStyle='#efffff';g.lineWidth=.75;g.beginPath();
+  g.moveTo(-13,-17);g.lineTo(-4,-17);g.moveTo(5,-16);g.lineTo(12,-14);g.stroke();
+  for(const side of [-1,1]){
+   g.save();g.scale(side,1);g.fillStyle='#283f50';g.strokeStyle='#68eaff';
+   g.lineWidth=1;g.beginPath();g.moveTo(16,-17);g.lineTo(21,-14);
+   g.lineTo(19,-8);g.lineTo(16,-7);g.closePath();g.fill();g.stroke();g.restore();
   }
-  g.strokeStyle='#e5fcff';g.lineWidth=.7;g.beginPath();
-  g.moveTo(-11,-15);g.lineTo(-3,-13);g.moveTo(3,-13);g.lineTo(11,-15);g.stroke();
   g.restore();
  }
  // Called in centered avatar coordinates: icon/wing are separate effect slots.
@@ -113,25 +129,39 @@
  // Drawn in already-translated bullet coordinates, after the standard glyph.
  function paintShot(g,kind,t){
   if(!enabled('attack'))return;
-  const pulse=Math.sin((Number(t)||0)*6)*1.1;
+  const time=Number(t)||0,pulse=Math.sin(time*8)*1.3;
   g.save();g.lineCap='round';g.lineJoin='round';
-  g.strokeStyle='#6cefff';g.shadowColor='#39dfff';g.shadowBlur=8;g.lineWidth=2.1;
-  g.beginPath();g.arc(0,0,30+pulse,-Math.PI*.73,Math.PI*.60);g.stroke();
-  g.strokeStyle='#0a6e93';g.lineWidth=3;g.beginPath();g.arc(0,0,34,Math.PI*.72,Math.PI*1.25);g.stroke();
-  g.strokeStyle='#c9faff';g.lineWidth=1.5;
-  for(let i=0;i<4;i++){
-   const a=(i*Math.PI/2)+Math.PI/4;
-   const x=Math.cos(a),y=Math.sin(a);
-   g.beginPath();g.moveTo(x*33,y*33);g.lineTo(x*39,y*39);g.stroke();
+  // Reactor rings and a compact rotating hexagonal targeting reticle.
+  g.strokeStyle='#82f4ff';g.shadowColor='#23e9ff';g.shadowBlur=9;g.lineWidth=2.3;
+  g.beginPath();g.arc(0,0,30+pulse,-Math.PI*.84,Math.PI*.65);g.stroke();
+  g.strokeStyle='#14759c';g.lineWidth=3;
+  g.beginPath();g.arc(0,0,34-pulse,Math.PI*.72,Math.PI*1.3);g.stroke();
+  g.shadowBlur=3;g.strokeStyle='#dbffff';g.lineWidth=1.2;
+  g.save();g.rotate(time*.65);
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3,x=Math.cos(a),y=Math.sin(a);
+   g.beginPath();g.moveTo(x*35,y*35);g.lineTo(x*40,y*40);g.stroke();
   }
+  g.restore();
+  g.strokeStyle='#49e6ff';g.lineWidth=1.15;g.beginPath();
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3+Math.PI/6,x=Math.cos(a)*27,y=Math.sin(a)*27;
+   if(i===0)g.moveTo(x,y);else g.lineTo(x,y);
+  }g.closePath();g.stroke();
   for(const direction of [-1,1]){
    g.save();g.scale(direction,1);
-   g.strokeStyle='#20badc';g.lineWidth=1.2;
-   g.beginPath();g.moveTo(36,-3);g.lineTo(44,-3);g.lineTo(50,-9);
-   g.moveTo(36,3);g.lineTo(44,3);g.lineTo(49,8);g.stroke();
+   g.fillStyle='#081a2c';g.strokeStyle='#a7f6ff';g.lineWidth=1.4;
+   g.beginPath();g.moveTo(29,-10);g.lineTo(40,-6);g.lineTo(46,0);
+   g.lineTo(40,6);g.lineTo(29,10);g.lineTo(34,0);g.closePath();g.fill();g.stroke();
+   g.strokeStyle='#36c5e7';g.lineWidth=2;
+   g.beginPath();g.moveTo(39,0);g.lineTo(52,0);g.stroke();
    g.restore();
   }
-  g.shadowBlur=0;
+  g.shadowBlur=5;g.fillStyle='#efffff';
+  for(let i=0;i<5;i++){
+   const a=time*1.25+i*2.399,r=37+Math.sin(time*9+i)*3;
+   g.fillRect(Math.cos(a)*r,Math.sin(a)*r,2,2);
+  }
   g.restore();
  }
  function setup(){
@@ -169,6 +199,29 @@
   // Unlocked owners can also equip all three pieces from the real locker.
   // This is NOT an item in the public cosmetic inventory/gacha listing.
   const collection=document.getElementById('collectionPanel');
+  // One safe action clears every visual equipment slot, without changing
+  // owned inventory, wins, achievements, coins, or developer code unlock.
+  // Works in the shared locker and in the room's mounted copy of that locker.
+  if(collection&&!document.getElementById('mojiUnequipAll')){
+   const clear=document.createElement('button');
+   clear.id='mojiUnequipAll';clear.type='button';
+   clear.textContent='✕ 装備をすべて外す';
+   clear.setAttribute('aria-label','通常装飾と隠し装備の3枠をすべて解除');
+   clear.addEventListener('click',()=>{
+    if(typeof account!=='undefined'&&account?.equipped){
+     for(const category of ['aura','frame','attack'])account.equipped[category]=null;
+     if(typeof safeStore==='function')safeStore();
+    }
+    for(const type of ['icon','wing','attack'])stored[type]=false;
+    save();refresh();
+    if(typeof updateCollection==='function')updateCollection();
+    if(typeof updatePreview==='function')updatePreview();
+    clear.textContent='✓ すべての装備を解除しました';
+    window.setTimeout(()=>{if(clear.isConnected)clear.textContent='✕ 装備をすべて外す'},1700);
+   });
+   const next=document.getElementById('collectionDrawer');
+   if(next)collection.insertBefore(clear,next);else collection.append(clear);
+  }
   if(collection&&!document.getElementById('mojiCyberLocker')){
    const locker=area.cloneNode(true);
    locker.id='mojiCyberLocker';locker.hidden=true;

@@ -109,6 +109,28 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   await page.waitForFunction(()=>!!window.MojiDeveloperFX,{timeout:15000});
   if(!await page.evaluate(()=>window.MojiDeveloperFX.active()))
    throw Error('Developer-only cosmetic did not survive browser refresh');
+  await page.locator('#enterLobby').click();
+  await page.locator('#appTabs [data-app-tab="collection"]').click();
+  const unequip=await page.evaluate(()=>{
+   if(typeof account==='undefined')return {missingAccount:true};
+   // Simulate an equipped public cosmetic without changing ownership.
+   account.equipped.aura='aura_gold';
+   account.equipped.frame='frame_wings';
+   account.equipped.attack='attack_bolt';
+   const previous={wins:account.wins,coins:account.coins,owned:JSON.stringify(account.owned)};
+   document.getElementById('mojiUnequipAll')?.click();
+   return {button:!!document.getElementById('mojiUnequipAll'),
+    unequipped:Object.values(account.equipped).every(x=>x==null),
+    secretInactive:!window.MojiDeveloperFX.active(),
+    secretUnlocked:JSON.parse(localStorage.getItem('moji_developer_effect_v1')||'{}').unlocked===true,
+    preserved:previous.wins===account.wins&&previous.coins===account.coins&&previous.owned===JSON.stringify(account.owned)};
+  });
+  if(!unequip.button||!unequip.unequipped||!unequip.secretInactive||!unequip.secretUnlocked||!unequip.preserved)
+   throw Error('All-unequip button cleared wrong data or did not clear all slots '+JSON.stringify(unequip));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!!window.MojiDeveloperFX,{timeout:15000});
+  if(await page.evaluate(()=>window.MojiDeveloperFX.active()))
+   throw Error('Un-equipped cyber effects reappeared after reload');
   if(errors.length)throw Error('Page JavaScript errors: '+errors.join('; '));
   console.log('GLYPH BOOK + BACKUP + CYBER FX PASSED: mobile, Unicode copy, save, import, reload and secret toggle.');
  }finally{await ctx.close();await browser.close()}

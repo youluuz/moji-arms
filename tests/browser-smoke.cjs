@@ -721,10 +721,17 @@ const { chromium } = require('playwright');
   const maxWorld=await page.evaluate(()=>window.MojiCpuBots.dimensions());
   if(maxWorld.w!==3450||maxWorld.h!==1950||maxWorld.scale!==1.5)
    throw Error('10-fighter CPU arena did not scale to 1.5x: '+JSON.stringify(maxWorld));
-  const maxParty=await page.evaluate(()=>window.MojiCpuBots.getBots().map(b=>({id:b.id,position:[b.x,b.y],kinds:b.loadout.map(s=>s.kind)})));
+  const maxParty=await page.evaluate(()=>window.MojiCpuBots.getBots().map(b=>({id:b.id,position:[b.x,b.y],style:b.style,kinds:b.loadout.map(s=>s.kind)})));
   if(maxParty.length!==9||new Set(maxParty.map(b=>b.id)).size!==9||
      !maxParty.every(b=>b.position.every(Number.isFinite)))
    throw Error('Maximum CPU free-for-all invalid '+JSON.stringify(maxParty));
+  const personalities=new Set(maxParty.map(b=>b.style));
+  if(personalities.size!==5||!['rusher','skirmisher','sniper','survivor','ambusher'].every(x=>personalities.has(x)))
+   throw Error('CPU roster lacked varied tactical personalities '+JSON.stringify(maxParty));
+  const playerSpawn=await page.evaluate(()=>[player.x,player.y]);
+  const fighters=[{position:playerSpawn},...maxParty];
+  const gaps=fighters.flatMap((a,i)=>fighters.slice(i+1).map(b=>Math.hypot(a.position[0]-b.position[0],a.position[1]-b.position[1])));
+  if(Math.min(...gaps)<345)throw Error('Players spawn too close together '+Math.min(...gaps));
   const firstKill=await page.evaluate(()=>{
    const units=window.MojiCpuBots.getBots();
    damage(units[0],100000,performance.now(),true,{owner:'p'});

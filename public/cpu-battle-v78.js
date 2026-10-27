@@ -46,10 +46,15 @@ function randomGlyph(){
  const ch=samples[roll(samples.length)],n=typeof getStrokeCount==='function'?getStrokeCount(ch):8;
  return {ch,n:Number.isInteger(n)?n:8};
 }
+const cpuStyles=['rusher','skirmisher','sniper','survivor','ambusher'];
+let cpuStyleOffset=0;
 function equip(bot,i){
- // Guarantee all five action kinds each round, shuffle slots and vary each glyph.
+ // Distinct, persistent personalities for each CPU; reassigned on every round.
  bot.id='cpu-'+i;bot.ch='敵';bot.loadout=shuffle(kinds.map(kind=>({...randomGlyph(),kind,ready:0})));
+ bot.style=cpuStyles[(i+cpuStyleOffset)%cpuStyles.length];
  bot.nextDecision=0;bot.intent=roll(5);bot.speed=125+roll(31);
+ bot.flank=roll(2)?1:-1;bot.switchFlankAt=0;bot.tacticUntil=0;
+ bot.aggression=.65+Math.random()*.7;bot.dodgeUntil=0;
  bot.ready=0;bot.guardReady=0;bot.targetId=null;bot.hardenUntil=0;
 }
 function spawnPosition(index,total,now,ignorePlayer=false){
@@ -57,7 +62,7 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  // The instant-safe-zone variant must remain within its 180-unit radius.
  const instant=typeof zoneSetting!=='undefined'&&zoneSetting==='instant';
  const cx=WORLD_W/2,cy=WORLD_H/2;
- const rx=(instant?136:750)*mapFactor,ry=(instant?136:430)*mapFactor;
+ const rx=(instant?136:820)*mapFactor,ry=(instant?136:480)*mapFactor;
  for(let attempt=0;attempt<115;attempt++){
   const angle=(index/total)*Math.PI*2+attempt*.12;
   const x=Math.max(40,Math.min(WORLD_W-40,cx+rx*Math.cos(angle)));
@@ -69,13 +74,14 @@ function spawnPosition(index,total,now,ignorePlayer=false){
  }
  // Fallback remains inside bounds / the safe zone even on crowded maps.
  const angle=index/total*Math.PI*2;
- return {x:cx+Math.cos(angle)*(instant?115:630)*mapFactor,y:cy+Math.sin(angle)*(instant?115:345)*mapFactor};
+ return {x:cx+Math.cos(angle)*(instant?115:695)*mapFactor,y:cy+Math.sin(angle)*(instant?115:398)*mapFactor};
 }
 function startRound(token,now){
  cpuSpectating=false;cpuWatchIndex=0;cpuSpectateTarget=null;
  document.getElementById('cpuDeathChoice')?.remove();
  document.getElementById('cpuWatchControls')?.remove();
  bots.length=0;
+ cpuStyleOffset=roll(cpuStyles.length);
  chosenCount=countSetting();
  // Two total fighters use 80% of the legacy map; ten use 150%.
  const participants=chosenCount+1;
@@ -119,13 +125,23 @@ function botAction(bot,target,now){
  // Feet and offensive equipment are locked; self-heal and shield stay available.
  const available=bot.loadout.filter(s=>now>=s.ready&&(!hardened||s.kind==='heal'||s.kind==='defense'));
  if(!available.length)return;
- const urgent=bot.hp<MAX_HP*.55&&available.find(s=>s.kind==='heal');
- const risky=bullets.some(b=>b.sourceId!==bot.id&&Math.hypot(bot.x-b.x,bot.y-b.y)<140);
- const guard=risky&&available.find(s=>s.kind==='defense');
+ const urgent=bot.hp<MAX_HP*(bot.style==='survivor'?.72:.48)&&available.find(s=>s.kind==='heal');
+ const risky=bullets.some(b=>b.sourceId!==bot.id&&Math.hypot(bot.x-b.x,bot.y-b.y)<(bot.style==='survivor'?215:145));
+ const guard=(risky || (bot.style==='survivor'&&bot.hp<MAX_HP*.6&&Math.random()<.27))
+  &&available.find(s=>s.kind==='defense');
  const attacks=available.filter(s=>!['defense','heal'].includes(s.kind));
+ const preferences={
+  rusher:['attack','pierce','homing'],
+  skirmisher:['homing','attack','pierce'],
+  sniper:['pierce','homing','attack'],
+  survivor:['homing','pierce','attack'],
+  ambusher:['pierce','attack','homing']
+ };
+ const kindsPreferred=preferences[bot.style]||preferences.skirmisher;
+ const preferred=kindsPreferred.map(kind=>attacks.find(s=>s.kind===kind)).filter(Boolean);
  let action=hardened
   ? (urgent||(bot.hp<MAX_HP&&available.find(s=>s.kind==='heal'))||guard||available.find(s=>s.kind==='defense'))
-  : (urgent||guard||(attacks.length?attacks[roll(attacks.length)]:null));
+  : (urgent||guard||(preferred.length?(Math.random()<.64?preferred[0]:preferred[roll(preferred.length)]):null));
  if(!action&&!hardened&&risky)action=available.find(s=>s.kind==='defense');
  if(!action)return;
  const n=action.n;
@@ -135,7 +151,7 @@ function botAction(bot,target,now){
  }else if(action.kind==='defense'){
   bot.shield=n*SHIELD_PER_STROKE;bot.shieldEnd=now+2300;
  }else{
-  const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*.18;
+  const angle=Math.atan2(target.y-bot.y,target.x-bot.x)+(Math.random()-.5)*(bot.style==='sniper'?.07:bot.style==='rusher'?.28:.18);
   const speed=action.kind==='homing'?220:action.kind==='pierce'?430:345;
   bullets.push({x:bot.x,y:bot.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
    n,owner:'e',sourceId:bot.id,life:action.kind==='homing'?4.8:2.4,ch:action.ch,
@@ -412,11 +428,32 @@ function boot(){
     const target=hardened?null:chooseTarget(bot,now);
     if(!hardened&&target){
      const dx=target.x-bot.x,dy=target.y-bot.y,d=Math.hypot(dx,dy)||1;
-     const approach=d<170?-1:d>310?1:0;
-     const speed=bot.speed;
-     moveActor(bot,dx/d*approach*speed*dt,dy/d*approach*speed*dt+Math.sin(now/600+Number(bot.id.slice(4)))*24*dt,now);
+     const desired={
+      rusher:[110,240],skirmisher:[225,400],sniper:[330,565],
+      survivor:[380,580],ambusher:[180,360]
+     }[bot.style]||[180,360];
+     // Refresh a tactical phase every few seconds: each personality alternates
+     // between holding ground, flanking and retreating instead of a fixed orbit.
+     if(now>bot.tacticUntil){
+      bot.tacticUntil=now+2100+roll(3600);
+      bot.flank=roll(2)?1:-1;
+      bot.tactic=roll(3); // 0: flank, 1: pressure, 2: caution
+     }
+     const hpRisk=bot.hp<MAX_HP*(bot.style==='survivor'?.7:.28);
+     const retreat=hpRisk||(bot.tactic===2&&d<desired[1]);
+     const approach=retreat&&d<desired[1]*1.15?-1:d<desired[0]?-1:d>desired[1]?1:0;
+     const orbit=(bot.tactic===1?.17:bot.tactic===2?.34:.70)*bot.flank;
+     const mx=dx/d*approach-dy/d*orbit;
+     const my=dy/d*approach+dx/d*orbit;
+     const magnitude=Math.max(1,Math.hypot(mx,my));
+     const speed=bot.speed*(bot.style==='rusher'?1.12:bot.style==='sniper'?.87:1);
+     moveActor(bot,mx/magnitude*speed*dt,my/magnitude*speed*dt,now);
     }
-    if(now>=bot.nextDecision&&(hardened||target)){botAction(bot,target,now);bot.nextDecision=now+450+roll(430);}
+    if(now>=bot.nextDecision&&(hardened||target)){
+     botAction(bot,target,now);
+     const pace={rusher:[360,300],skirmisher:[450,450],sniper:[690,540],survivor:[510,620],ambusher:[580,570]}[bot.style]||[450,430];
+     bot.nextDecision=now+pace[0]+roll(pace[1]);
+    }
    }
    const elapsed=(now-startTime)/1000;
    zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:

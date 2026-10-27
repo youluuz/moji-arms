@@ -31,7 +31,7 @@ func TestNamepuUsedSurvivesVictoryAndResultAssetsLoad(t *testing.T) {
  }
  html,err:=gameFiles.ReadFile("public/multiplayer.html")
  if err!=nil {t.Fatal(err)}
- if !strings.Contains(string(html),"owner-cyber-v114.css?v=115") {
+ if !strings.Contains(string(html),"owner-cyber-v114.css?v=116") {
   t.Fatal("online game was missing its own Namepu victory stylesheet")
  }
 }
