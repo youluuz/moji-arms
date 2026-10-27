@@ -24,6 +24,7 @@ func TestCustomRuleRangeValidationAndUI(t *testing.T) {
  raw,err:=gameFiles.ReadFile("public/index.html");if err!=nil{t.Fatal(err)}
  html:=mobilePatchedIndex(string(raw))
  for _,s:=range []string{"custom-match-v120.js?v=120","custom-match-v120.css?v=120","let MAX_HP=600","cpuHpMax","cpuEnemyHpMax","window.MojiCustomRules?.hpForMode(matchMode)"} {if !strings.Contains(html,s){t.Errorf("solo custom wiring missing: %s",s)}}
+ for _,s:=range []string{"maxHp:window.MojiCustomRules?.hpForMode(matchMode)","maxHp:window.MojiCustomRules?.hpForMode(currentMode)","ultimateStartPercent:window.MojiCustomRules?.chargeForMode(currentMode)"} {if !strings.Contains(html,s){t.Errorf("custom rules not carried from parent to iframe: %s",s)}}
  ult,_:=gameFiles.ReadFile("public/ultimate-cpu.js")
  if !strings.Contains(string(ult),"window.MojiCustomRules?.chargeForMode"){t.Fatal("solo ultimate charge missing")}
  online,_:=gameFiles.ReadFile("public/multiplayer.html")

@@ -1559,6 +1559,14 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.Replace(source,"id=\"php\">600</span> / 600","id=\"php\">600</span> / <span id=\"cpuHpMax\">600</span>",1)
 	source = strings.Replace(source,"id=\"ehp\">600</span> / 600","id=\"ehp\">600</span> / <span id=\"cpuEnemyHpMax\">600</span>",1)
 	source = strings.Replace(source,"player={x:825,y:650,hp:MAX_HP","MAX_HP=window.MojiCustomRules?.hpForMode(matchMode)||600;document.getElementById('cpuHpMax')?.replaceChildren(String(MAX_HP));document.getElementById('cpuEnemyHpMax')?.replaceChildren(String(MAX_HP));player={x:825,y:650,hp:MAX_HP",1)
+	// Both launch paths must carry the custom rule inputs into the embedded
+	// online page; otherwise the server silently starts with default settings.
+	source = strings.Replace(source,
+		"shrink:document.getElementById('shrinkMode').value};",
+		"shrink:document.getElementById('shrinkMode').value,maxHp:window.MojiCustomRules?.hpForMode(matchMode)||600,ultimateStartPercent:window.MojiCustomRules?.chargeForMode(matchMode)||0};",1)
+	source = strings.Replace(source,
+		"shrink:custom?document.getElementById('shrinkMode').value:'normal'};",
+		"shrink:custom?document.getElementById('shrinkMode').value:'normal',maxHp:window.MojiCustomRules?.hpForMode(currentMode)||600,ultimateStartPercent:window.MojiCustomRules?.chargeForMode(currentMode)||0};",1)
 	// The multiplayer battle lives in an iframe inside the CPU lobby. CSS inside
 	// the iframe cannot expand its parent's old lobby-sized frame: expand it at the
 	// parent level while a match is playing, then restore the exact prior styles.
