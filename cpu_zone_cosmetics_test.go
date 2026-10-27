@@ -43,3 +43,25 @@ func TestCpuSafeZoneAvoidanceRunsBeforeCombat(t *testing.T) {
  server,err:=gameFiles.ReadFile("public/weapon-visuals-v86.js");if err!=nil{t.Fatal(err)}
  if !strings.Contains(string(server),"drawProjectile(cx,b)"){t.Fatal("shared visual helper unavailable")}
 }
+
+func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
+ b,err:=gameFiles.ReadFile("public/cpu-battle-v78.js")
+ if err!=nil {t.Fatal(err)}
+ src:=string(b)
+ for _,want:=range []string{
+  "const CPU_ATTACK_COOLDOWN_FACTOR=1.08",
+  "const CPU_AIM_SPREAD_FACTOR=1.15",
+  "(action.kind==='heal'||action.kind==='defense'?1:CPU_ATTACK_COOLDOWN_FACTOR)",
+  "(bot.style==='sniper'?.07:bot.style==='rusher'?.28:.18)*CPU_AIM_SPREAD_FACTOR",
+  "const escaping=moveIntoSafeZone(bot,now,dt)",
+  "bot.hp=Math.min(MAX_HP,bot.hp+n*3.4)",
+  "bot.shield=n*SHIELD_PER_STROKE",
+  "const speed=action.kind==='homing'?220:action.kind==='pierce'?430:345",
+ } {
+  if !strings.Contains(src,want){t.Fatalf("CPU modest balance rule missing or unexpectedly changed: %s",want)}
+ }
+ index,err:=gameFiles.ReadFile("public/index.html")
+ if err!=nil {t.Fatal(err)}
+ served:=mobilePatchedIndex(string(index))
+ if !strings.Contains(served,"/cpu-battle-v78.js?v=127"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
+}
