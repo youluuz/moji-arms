@@ -746,6 +746,44 @@ const { chromium } = require('playwright');
   await page.evaluate(()=>document.getElementById('retreat').click());
   await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
 
+  // Namepu is an honest gameplay cast, not a decorative preview.
+  // Accrue the required 160 strokes via the actual successful-cast accounting,
+  // activate it, win, and require the deluxe result in the SAME transition.
+  await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click();
+  await page.locator('[data-mode-tile="normal"]').click();
+  await page.locator('#cpuBotCount').selectOption('1');
+  await page.locator('#start').click();
+  await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===1 &&
+    window.MojiCpuBots?.countdownLeft?.()===0,{timeout:15000});
+  const charged=await page.evaluate(()=>{
+   for(let n=0;n<160;n++)recordCast();
+   return {charge:document.querySelector('#weapons .ultimate-left')?.textContent,
+    button:!!document.querySelector('#weapons .ultimate-cast'),
+    running};
+  });
+  if(!charged.button||!charged.running)throw Error('CPU Namepu ultimate not ready for actual cast '+JSON.stringify(charged));
+  await page.locator('#weapons .ultimate-cast').click({force:true});
+  await page.waitForFunction(()=>window.MojiCpuNamepuVictory?.used()===true,{timeout:7000});
+  const namepuResult=await page.evaluate(()=>{
+   const remaining=window.MojiCpuBots.getBots().filter(x=>x.hp>0);
+   for(const cpu of remaining)damage(cpu,100000,performance.now(),true,{owner:'p'});
+   const panel=document.getElementById('result');
+   return {
+    shown:panel.classList.contains('show'),
+    special:panel.classList.contains('ultimate-namepu-victory'),
+    title:document.getElementById('resultTitle')?.textContent,
+    background:getComputedStyle(panel).backgroundImage,
+    visible:getComputedStyle(panel).display!=='none',
+    alive:player.hp>0
+   };
+  });
+  if(!namepuResult.shown||!namepuResult.special||!namepuResult.alive||
+     !namepuResult.title?.includes('優勝：蒼月の勇者')||
+     !namepuResult.background?.includes('radial-gradient')||!namepuResult.visible)
+   throw Error('Successful CPU Namepu cast did not reveal gold victory immediately '+JSON.stringify(namepuResult));
+  await page.evaluate(()=>document.getElementById('retreat').click());
+  await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
+
   // Force a genuine post-KO decision in a CPU free-for-all and verify the
   // simulation can continue through the spectate path instead of freezing.
   await page.locator('[data-mode-tile="normal"]').click();
