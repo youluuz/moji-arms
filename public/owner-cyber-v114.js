@@ -199,6 +199,29 @@
   // Unlocked owners can also equip all three pieces from the real locker.
   // This is NOT an item in the public cosmetic inventory/gacha listing.
   const collection=document.getElementById('collectionPanel');
+  // One safe action clears every visual equipment slot, without changing
+  // owned inventory, wins, achievements, coins, or developer code unlock.
+  // Works in the shared locker and in the room's mounted copy of that locker.
+  if(collection&&!document.getElementById('mojiUnequipAll')){
+   const clear=document.createElement('button');
+   clear.id='mojiUnequipAll';clear.type='button';
+   clear.textContent='✕ 装備をすべて外す';
+   clear.setAttribute('aria-label','通常装飾と隠し装備の3枠をすべて解除');
+   clear.addEventListener('click',()=>{
+    if(typeof account!=='undefined'&&account?.equipped){
+     for(const category of ['aura','frame','attack'])account.equipped[category]=null;
+     if(typeof safeStore==='function')safeStore();
+    }
+    for(const type of ['icon','wing','attack'])stored[type]=false;
+    save();refresh();
+    if(typeof updateCollection==='function')updateCollection();
+    if(typeof updatePreview==='function')updatePreview();
+    clear.textContent='✓ すべての装備を解除しました';
+    window.setTimeout(()=>{if(clear.isConnected)clear.textContent='✕ 装備をすべて外す'},1700);
+   });
+   const next=document.getElementById('collectionDrawer');
+   if(next)collection.insertBefore(clear,next);else collection.append(clear);
+  }
   if(collection&&!document.getElementById('mojiCyberLocker')){
    const locker=area.cloneNode(true);
    locker.id='mojiCyberLocker';locker.hidden=true;
