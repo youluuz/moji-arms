@@ -797,7 +797,10 @@ const { chromium } = require('playwright');
   await page.locator('#shuffleLoadout').click();
   await page.locator('#start').click();
   await page.waitForSelector('#gameScreen.active .weapon',{timeout:12000});
-  await page.waitForFunction(()=>document.getElementById('cpuBattleCountdown')?.hidden,{timeout:12000});
+  // The old countdown node may still be hidden before startRound rebuilds the
+  // new 3-bot match. Require the new roster AND a completed real countdown.
+  await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3&&
+    window.MojiCpuBots?.countdownLeft?.()===0&&running,{timeout:15000});
   await page.evaluate(()=>{
    player.hp=1;player.shield=0;player.shieldEnd=0;
    damage(player,120,performance.now(),true);
