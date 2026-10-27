@@ -506,7 +506,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     await host.locator('#roomLoadoutMount #onlineGlyph0').fill('イ');
     if(mode==='custom')await host.locator('#roomLoadoutMount #onlineGlyph0').locator('xpath=..').locator('.slot-strokes').fill('19');
     const updatedN=mode==='custom'?19:2;
-    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+(n*9),updatedN,{timeout:8000});
+    await host.waitForFunction(n=>document.querySelector('#roomWeaponSummary [data-room-slot="0"] .moji-room-weapon-metric')?.textContent==='威力'+Math.round(n*(9-.02*(n-1))),updatedN,{timeout:8000});
     await host.locator('#saveRoomLoadout').click();
     await host.waitForFunction(n=>{
      const p=roomState?.players.find(p=>p.id===myId);
