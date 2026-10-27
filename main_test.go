@@ -164,8 +164,8 @@ func TestObstacleSpawnSafety(t *testing.T) {
     if len(obstacles)<7 {t.Fatalf("not enough cover %s/%d",theme,count)}
     for i:=0;i<count;i++ {
      angle:=2*math.Pi*float64(i)/float64(count)
-     px:=w/2+600*scale*math.Cos(angle)
-     py:=h/2+380*scale*math.Sin(angle)
+     px:=w/2+680*scale*math.Cos(angle)
+     py:=h/2+430*scale*math.Sin(angle)
      for _,o:=range obstacles {
       if circleRect(px,py,22,o) {t.Fatalf("spawn overlaps cover: %s/%d at %0.1f,%0.1f",theme,count,px,py)}
      }
