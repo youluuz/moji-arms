@@ -329,7 +329,7 @@ const { chromium } = require('playwright');
   }
   await page.locator('#loadoutPanel .ultimate-option[data-ultimate=namepu]').click();
   const cpuNamepuGuide=await cpuGuide.innerText();
-  if(!cpuNamepuGuide.includes('真顔')||!cpuNamepuGuide.includes('5.5秒')||!cpuNamepuGuide.includes('超豪華'))throw Error('CPU namepu description omitted key game rules');
+  if(!cpuNamepuGuide.includes('真顔')||!cpuNamepuGuide.includes('5秒')||!cpuNamepuGuide.includes('0.8倍')||!cpuNamepuGuide.includes('豪華'))throw Error('CPU namepu description omitted key game rules');
   if(await page.locator('#loadoutPanel .ultimate-option[aria-pressed=true]').count()!==1)throw Error('CPU selection must have exactly one pressed button');
   const guideFits=await cpuGuide.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2&&el.getBoundingClientRect().left>=-2);
   if(!guideFits)throw Error('CPU mobile guide overflows viewport');
