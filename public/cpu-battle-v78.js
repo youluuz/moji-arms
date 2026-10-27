@@ -47,10 +47,11 @@ function randomGlyph(){
  return {ch,n:Number.isInteger(n)?n:8};
 }
 const cpuStyles=['rusher','skirmisher','sniper','survivor','ambusher'];
+let cpuStyleOffset=0;
 function equip(bot,i){
  // Distinct, persistent personalities for each CPU; reassigned on every round.
  bot.id='cpu-'+i;bot.ch='敵';bot.loadout=shuffle(kinds.map(kind=>({...randomGlyph(),kind,ready:0})));
- bot.style=cpuStyles[(i+roll(cpuStyles.length))%cpuStyles.length];
+ bot.style=cpuStyles[(i+cpuStyleOffset)%cpuStyles.length];
  bot.nextDecision=0;bot.intent=roll(5);bot.speed=125+roll(31);
  bot.flank=roll(2)?1:-1;bot.switchFlankAt=0;bot.tacticUntil=0;
  bot.aggression=.65+Math.random()*.7;bot.dodgeUntil=0;
@@ -80,6 +81,7 @@ function startRound(token,now){
  document.getElementById('cpuDeathChoice')?.remove();
  document.getElementById('cpuWatchControls')?.remove();
  bots.length=0;
+ cpuStyleOffset=roll(cpuStyles.length);
  chosenCount=countSetting();
  // Two total fighters use 80% of the legacy map; ten use 150%.
  const participants=chosenCount+1;
