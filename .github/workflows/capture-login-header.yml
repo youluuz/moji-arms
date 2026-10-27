@@ -47,6 +47,10 @@ jobs:
             console.log('REAL LOGIN SCREEN',JSON.stringify(details));
             await page.screenshot({path:'docs/文字武装_ログイン画面_フル.png',fullPage:false});
             await page.screenshot({path:'docs/文字武装_Xヘッダー_ログイン画面.png',clip:{x:0,y:0,width:1500,height:500}});
+            const preview=await browser.newPage({viewport:{width:1500,height:500},deviceScaleFactor:1});
+            await preview.goto('http://127.0.0.1:8083/',{waitUntil:'domcontentloaded',timeout:60000});
+            await preview.waitForTimeout(1500);
+            await preview.screenshot({path:'docs/文字武装_Xヘッダー_プレビュー.jpg',type:'jpeg',quality:28});
             console.log('Saved actual 1500x500 viewport capture at 2x device scale.');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
@@ -55,6 +59,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/文字武装_ログイン画面_フル.png docs/文字武装_Xヘッダー_ログイン画面.png
+          git add docs/文字武装_ログイン画面_フル.png docs/文字武装_Xヘッダー_ログイン画面.png docs/文字武装_Xヘッダー_プレビュー.jpg
           git commit -m "Add authentic login screenshot and X profile banner" || exit 0
           git push
