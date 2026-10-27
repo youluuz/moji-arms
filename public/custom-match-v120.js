@@ -23,7 +23,7 @@ function mount(){
  const hpLabel=document.createElement('label');hpLabel.className='custom-hp-label';hpLabel.htmlFor='customHpInput';
  const hpInput=document.createElement('input');hpInput.id='customHpInput';hpInput.type='number';hpInput.min='1';hpInput.max='1000';hpInput.step='1';hpInput.inputMode='numeric';hpInput.value=String(customHp);
  hpInput.setAttribute('aria-label','カスタムマッチのプレイヤー最大HP');
- hpLabel.append('♥ HP ',hpInput,' / 1000');
+ hpLabel.append('♥ 最大HP ',hpInput,'（1〜1000）');
  const fields=document.createElement('div');fields.id='mojiCustomRuleFields';
  const chargeLabel=document.createElement('label');chargeLabel.htmlFor='customChargeInput';chargeLabel.className='custom-charge-label';
  const chargeInput=document.createElement('input');chargeInput.id='customChargeInput';chargeInput.type='number';chargeInput.min='0';chargeInput.max='100';chargeInput.step='1';chargeInput.inputMode='numeric';chargeInput.value=String(customCharge);

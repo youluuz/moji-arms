@@ -24,6 +24,7 @@ jobs:
           node --check public/glyph_random.js
           node --check public/ultimate-core.js
           node --check public/ultimate-cpu.js
+          node --check public/custom-match-v120.js
           node --check public/ultimate-multi.js
           node --check public/roman-effects-v97.js
           node --check public/mobile-stick-dock-v100.js
@@ -82,6 +83,8 @@ jobs:
         run: node tests/browser-room-invite.cjs
       - name: Test glyph encyclopedia, copy, personal backup and hidden cyber FX
         run: node tests/browser-glyph-book.cjs
+      - name: Verify editable custom HP and starting ultimate charge in real browser
+        run: node tests/browser-custom-rules.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
       - name: Test embedded online match in mobile portrait and landscape
