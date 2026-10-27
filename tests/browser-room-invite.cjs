@@ -34,9 +34,9 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   const locker=await host.evaluate(()=>({
    inOverlay:document.querySelector('#mojiRoomLockerOverlay #collectionPanel')!==null,
    code:document.getElementById('onlineFrame')?.contentDocument?.getElementById('code')?.textContent,
-   socket:document.getElementById('onlineFrame')?.contentWindow?.sock?.readyState,
+   playerInRoster:document.getElementById('onlineFrame')?.contentDocument?.getElementById('roster')?.textContent?.includes('作成者'),
   }));
-  if(!locker.inOverlay||!/^[A-Z0-9]{6}$/.test(locker.code||'')||locker.socket!==1)
+  if(!locker.inOverlay||!/^[A-Z0-9]{6}$/.test(locker.code||'')||!locker.playerInRoster)
    throw Error('In-room locker disconnected the live waiting room '+JSON.stringify(locker));
   await host.locator('#mojiRoomLockerClose').click();
   if(await host.locator('#mojiRoomLockerOverlay').isVisible())
