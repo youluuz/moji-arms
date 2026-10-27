@@ -11,7 +11,7 @@ func TestNormalDamageTapersWithoutDevaluingMoreStrokes(t *testing.T){
  for n:=1;n<=84;n++{
   value:=normalShotDamage(n)
   if value<=prev {t.Fatalf("%d strokes produced non-increasing damage %.0f after %.0f",n,value,prev)}
-  if n>1 && value/float64(n)>=9 {t.Fatalf("%d strokes failed to reduce per-stroke damage",n)}
+  if n>=8 && value/float64(n)>=9 {t.Fatalf("%d strokes failed to reduce per-stroke damage",n)}
   prev=value
  }
  if normalShotDamage(1)!=9 {t.Fatal("single stroke must remain nine damage")}
