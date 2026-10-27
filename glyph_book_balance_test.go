@@ -11,11 +11,11 @@ func TestNormalDamageTapersWithoutDevaluingMoreStrokes(t *testing.T){
  for n:=1;n<=84;n++{
   value:=normalShotDamage(n)
   if value<=prev {t.Fatalf("%d strokes produced non-increasing damage %.0f after %.0f",n,value,prev)}
-  if n>=8 && value/float64(n)>=9 {t.Fatalf("%d strokes failed to reduce per-stroke damage",n)}
+  if n>=8 && value/float64(n)>=7 {t.Fatalf("%d strokes failed to reduce per-stroke damage",n)}
   prev=value
  }
- if normalShotDamage(1)!=9 {t.Fatal("single stroke must remain nine damage")}
- if normalShotDamage(84)>=84*9 || normalShotDamage(84)<84*7 {t.Fatal("high strokes too strong or made useless")}
+ if normalShotDamage(1)!=7 {t.Fatal("single stroke must now deal seven damage")}
+ if normalShotDamage(84)>=84*7 || normalShotDamage(84)<84*5 {t.Fatal("high strokes too strong or made useless")}
  for _,mode:=range []string{"normal","custom"}{
   p:=&Player{ID:"a",Alive:true,HP:600,X:300,Y:350,Keys:map[string]bool{},Fire:true,Selected:0,Aim:0,LastInput:time.Now(),C:&Client{send:make(chan []byte,128)},
    Slots:[]Slot{{Ch:"𰻞",Kind:"attack",N:58},{Ch:"水",Kind:"defense",N:4},{Ch:"木",Kind:"heal",N:4},{Ch:"金",Kind:"pierce",N:8},{Ch:"土",Kind:"homing",N:3}}}
@@ -33,7 +33,7 @@ func TestGlyphBookAndSecretFXAreAvailableInRealGame(t *testing.T){
   "owner-cyber-v114.js?v=114","owner-cyber-v114.css?v=114",
   "window.MojiGlyphBook?.record(s.ch,s.kind,s.n)",
   "window.MojiDeveloperFX.paint(g,t)",
-  "Math.round(n*(9-.02*(n-1)))",
+  "Math.round(n*(7-.02*(n-1)))",
  }{if !strings.Contains(html,part){t.Errorf("CPU live page missing glyph collection, damage or cyber cosmetic: %s",part)}}
  for _,path:=range []string{"public/glyph-book-v114.js","public/owner-cyber-v114.js"}{
   f,e:=gameFiles.ReadFile(path);if e!=nil{t.Fatal(e)}
