@@ -124,10 +124,10 @@ else{
 const incomingRoom=new URLSearchParams(location.search).get('room');if(incomingRoom){$('roomCode').value=incomingRoom.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)}
 $('modeText').textContent=setup.mode==='custom'?'カスタムマルチ':'通常マルチ';$('match').style.display=setup.mode==='custom'?'none':'';// All combat math comes from the same rules as the CPU and server.
 const ONLINE_HP=600;
-const onlineCD=(kind,n)=>Math.round(1000*({attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1)),defense:1.4*(9+n*.4),heal:1.4*(13+n*.55),pierce:1.4*(7+n*.45),homing:1.4*(4.5+n*.42)}[kind]));
+const onlineCD=(kind,n)=>Math.round(1000*({attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1)),defense:1.4*(9+n*.4),heal:1.4*(13+n*.55),pierce:1.4*(7+n*.45),homing:1.4*(4.5+n*.42)*0.9}[kind]));
 const onlineNames={attack:'通常攻撃',defense:'防御',heal:'回復',pierce:'貫通',homing:'ホーミング'};
 $('settingsText').textContent='HP '+ONLINE_HP+' / '+ONLINE_HP+' ｜ '+(setup.slots||[]).map(s=>{
- const effect=s.kind==='heal'?`回復${Math.round(s.n*3.4)}`:s.kind==='defense'?`軽減${s.n*6}`:`火力${s.n*6}`;
+ const effect=s.kind==='heal'?`回復${Math.round(s.n*3.4)}`:s.kind==='defense'?`軽減${s.n*6}`:`火力${s.n*(s.kind==='attack'?9:s.kind==='homing'?3:6)}`;
  return `${s.ch}・${onlineNames[s.kind]||s.kind} ${effect} CT${(onlineCD(s.kind,s.n)/1000).toFixed(1)}秒`;
 }).join(' / ')+' ｜ 収縮：'+setup.shrink;
 // Loadout editor: guests joining with an invite must deliberately equip five glyphs.
