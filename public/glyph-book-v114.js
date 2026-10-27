@@ -43,7 +43,11 @@
   if(found){found.uses=(found.uses||0)+1;found.last=Date.now();found.kind=kind||found.kind;found.n=Number(n)||found.n}
   else {entries.push({ch,kind:String(kind||'attack'),n:Number(n)||0,uses:1,last:Date.now()});if(entries.length>600)entries=order().slice(0,600)}
   try{localStorage.setItem(STORE,JSON.stringify(entries))}catch(_){$('mojiBookStatus')&&($('mojiBookStatus').textContent='保存が制限されています')}
-  render();return true;
+  const counter=$('mojiGlyphBookCount');if(counter)counter.textContent=String(entries.length);
+  // Game casts can be frequent. Avoid rebuilding hundreds of cards while
+  // a match is running; update once when the encyclopedia tab opens.
+  if($('lobbyScreen')?.dataset.view==='glyphbook')render();
+  return true;
  }
  function init(){
   const lobby=$('lobbyScreen'),tabs=$('appTabs');
