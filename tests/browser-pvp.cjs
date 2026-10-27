@@ -460,7 +460,11 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     // Guest disconnects: host wins, then returns to the SAME room without reconnecting.
     await guest.evaluate(()=>sock.close());
     await host.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
-    if(!await host.locator('#onlineRematch').isVisible())throw Error(mode+': missing same-room rematch button');
+    // The WebSocket phase flag becomes visible before the result animation's
+    // DOM work has necessarily completed. Wait for the actual rendered modal
+    // instead of assuming it is synchronous at the moment roomState changes.
+    await host.locator('#onlineRematch').waitFor({state:'visible',timeout:12000});
+    if(!await host.locator('#onlineOutcome').isVisible())throw Error(mode+': missing match results');
     // Every participant sees a shared winner announcement; there is no
     // separate defeat screen even when the local player loses.
     const sharedResults=await host.evaluate(()=>{
