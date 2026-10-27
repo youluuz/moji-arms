@@ -21,3 +21,28 @@
 
 /* A finished result must never block the lobby after its .show state is cleared. */
 #result.moji-namepu-deluxe:not(.show){display:none!important;pointer-events:none!important}
+
+/* v12.4 — an intentionally extravagant blue-and-gold champion celebration. */
+#result.moji-namepu-deluxe,#onlineOutcome.moji-namepu-deluxe{
+ background:radial-gradient(ellipse at 50% 16%,#45d6ff69 0%,transparent 52%),radial-gradient(ellipse at 50% 84%,#d5a64e42,transparent 70%),repeating-conic-gradient(from 0deg at 50% 43%,#1c658350 0 7deg,#061125da 7deg 18deg),#020717!important;
+}
+#result.moji-namepu-deluxe .result-inner,#onlineOutcome.moji-namepu-deluxe .online-outcome-card{
+ border:4px double #ffe5a4!important;
+ box-shadow:0 0 0 3px #08142d,0 0 0 6px #44d6ff,0 0 0 11px #986a2d,0 0 0 13px #ffe5b0,0 0 85px #13ceffbb,0 0 150px #f2b04c83,inset 0 0 0 2px #53d5ff,inset 0 0 85px #187abb6d!important;
+}
+#result.moji-namepu-deluxe .result-inner:after,#onlineOutcome.moji-namepu-deluxe .online-outcome-card:after{
+ content:'✦  ◈  ✦  ❖  ✦  ◈  ✦';position:absolute;pointer-events:none;bottom:0;left:0;right:0;font-size:clamp(11px,2vw,22px);letter-spacing:1.2em;color:#f4ce79;text-shadow:0 0 15px #fff9c2,0 0 28px #29c9ff;opacity:.72;
+}
+#result.moji-namepu-deluxe #resultTitle,#onlineOutcome.moji-namepu-deluxe #onlineOutcomeTitle{
+ font-size:clamp(29px,5.3vw,60px)!important;line-height:1.18!important;color:#ffedb7!important;-webkit-text-stroke:.5px #9c6619;text-shadow:0 2px 0 #855025,0 4px 0 #49341c,0 0 22px #fff5ce,0 0 51px #fbd47b,0 0 82px #41d8ff!important;
+}
+.namepu-champion{position:relative;border:3px ridge #ffd36f!important;border-radius:18px!important;padding:16px 12px 19px!important;background:radial-gradient(ellipse at 50% 0%,#3dd9ff39,transparent 67%),linear-gradient(120deg,#503a1f90,#062842dd,#3f291488)!important;box-shadow:0 0 24px #f7bc4f77,inset 0 0 38px #4cdfff3c!important}
+.namepu-champion:before,.namepu-champion:after{position:absolute;top:27%;font-size:clamp(19px,5vw,44px);color:#ffd675;text-shadow:0 0 14px #ffc560,0 0 24px #33d8ff}
+.namepu-champion:before{content:'❖';left:2%}.namepu-champion:after{content:'❖';right:2%}
+.namepu-wings{font-size:clamp(36px,7vw,62px)!important;letter-spacing:clamp(.04em,.55vw,.26em)!important;text-shadow:0 0 15px #a5f5ff,0 0 38px #129dff,0 0 61px #ffcf62!important}
+.namepu-crown{font-size:clamp(36px,5vw,50px)!important}
+.namepu-winner-plate{border:3px solid #ffdc99!important;box-shadow:0 0 0 3px #34d7ff70,inset 0 0 32px #ffd76b66,0 0 30px #f1bd7775!important}
+.namepu-avatar{box-shadow:0 0 0 5px #55e9ff51,0 0 25px #ffe28ba8,0 0 48px #32d3ffac!important}
+.namepu-victory-stats>div{border:2px solid #f7d48c!important;box-shadow:inset 0 0 16px #279bd548,0 0 12px #f7b63a59!important}
+@media(max-width:560px){.namepu-champion:before,.namepu-champion:after{font-size:15px;top:39%}
+ #result.moji-namepu-deluxe .result-inner:after,#onlineOutcome.moji-namepu-deluxe .online-outcome-card:after{letter-spacing:.24em}}
