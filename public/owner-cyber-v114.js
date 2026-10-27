@@ -71,11 +71,11 @@
   for(const direction of [-1,1]){
    g.save();g.scale(direction,1);
    const sway=Math.sin(t*2.6)*1.1;
-   // Three long, razor-pointed armor feathers per side, each with a distinct tip.
+   // Three long, razor-pointed armor feathers per side. The lowest blade is longer, narrower and sweeps down to a sharp tip.
    const blades=[
     [[17,-9],[55,-54+sway],[50,-27+sway],[36,-12],[24,-1]],
     [[17,-3],[66,-25+sway],[53,-7+sway],[39,2],[24,5]],
-    [[18,5],[60,23+sway],[43,42+sway],[31,17],[23,11]]
+    [[18,5],[54,19+sway],[39,61+sway],[32,21],[23,11]]
    ];
    blades.forEach((p,i)=>feather(g,p,i%2===0));
    // Silver articulated mounting plates, cyan reactor, etched neon diamonds.

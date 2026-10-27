@@ -11,7 +11,7 @@ func TestDirectionalProjectileCosmeticsPreserveHitboxes(t *testing.T) {
  fx, err := gameFiles.ReadFile("public/owner-cyber-v114.js")
  if err != nil {t.Fatal(err)}
  a := string(fx)
- for _,want:=range []string{"function paintShot(g,kind,t,heading=0)","g.rotate(Number.isFinite(heading)?heading:0)","const blades=[","Three long, razor-pointed armor feathers per side"} {
+ for _,want:=range []string{"function paintShot(g,kind,t,heading=0)","g.rotate(Number.isFinite(heading)?heading:0)","const blades=[","Three long, razor-pointed armor feathers per side","[[18,5],[54,19+sway],[39,61+sway],[32,21],[23,11]]"} {
   if !strings.Contains(a,want){t.Fatalf("missing directional cosmetic or three-blade wing: %s",want)}
  }
  if strings.Contains(a,"// Reactor rings and a compact rotating hexagonal targeting reticle.") {
