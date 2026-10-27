@@ -19,12 +19,13 @@
  function enabled(slot){return !!(stored.unlocked&&stored[slot])}
  function active(){return enabled('icon')||enabled('wing')||enabled('attack')}
  function refresh(){
-  const area=document.getElementById('mojiCyberControl');
-  if(!area)return;
-  area.hidden=!stored.unlocked;
-  for(const type of ['icon','wing','attack']){
-   const button=area.querySelector('[data-cyber-part="'+type+'"]');
-   if(button){
+  for(const id of ['mojiCyberControl','mojiCyberLocker']){
+   const area=document.getElementById(id);
+   if(!area)continue;
+   area.hidden=!stored.unlocked;
+   for(const type of ['icon','wing','attack']){
+    const button=area.querySelector('[data-cyber-part="'+type+'"]');
+    if(!button)continue;
     button.setAttribute('aria-pressed',String(enabled(type)));
     button.classList.toggle('equipped',enabled(type));
     button.querySelector('.moji-cyber-state').textContent=enabled(type)?'装備中 ✓':'装備する';
@@ -58,6 +59,7 @@
  function wings(g,t){
   if(!enabled('wing'))return;
   g.save();g.lineCap='round';g.lineJoin='round';
+  g.scale(.82,.82); // compact in-game silhouette: reference-inspired, not screen-filling
   for(const direction of [-1,1]){
    g.save();g.scale(direction,1);
    const sway=Math.sin(t*2.6)*1.1;
@@ -164,6 +166,23 @@
    area.append(b);
   }
   document.getElementById('secretStatus')?.insertAdjacentElement('afterend',area);
+  // Unlocked owners can also equip all three pieces from the real locker.
+  // This is NOT an item in the public cosmetic inventory/gacha listing.
+  const collection=document.getElementById('collectionPanel');
+  if(collection&&!document.getElementById('mojiCyberLocker')){
+   const locker=area.cloneNode(true);
+   locker.id='mojiCyberLocker';locker.hidden=true;
+   locker.querySelector('strong').textContent='非公開カスタム装備｜3つの専用枠';
+   for(const b of locker.querySelectorAll('[data-cyber-part]')){
+    const type=b.dataset.cyberPart;
+    b.addEventListener('click',()=>{
+     if(!stored.unlocked)return;
+     stored[type]=!stored[type];save();refresh();
+     if(typeof updatePreview==='function')updatePreview();
+    });
+   }
+   collection.append(locker);
+  }
   refresh();
  }
  window.MojiDeveloperFX={paint,paintShot,goggles,wings,active,enabled,unlock,refresh};
