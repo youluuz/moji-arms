@@ -35,12 +35,9 @@ func TestNamepuUsedSurvivesVictoryAndResultAssetsLoad(t *testing.T) {
   t.Fatal("Namepu styling detached the CPU victory overlay from the viewport")
  }
  if !strings.Contains(string(css),"#onlineOutcome .ultimate-gold-win{position:relative!important") {t.Fatal("online inner card positioning regressed")}
- if false {
-  t.Fatal("both Namepu victories require the deluxe effect CSS")
- }
  html,err:=gameFiles.ReadFile("public/multiplayer.html")
  if err!=nil {t.Fatal(err)}
- if !strings.Contains(string(html),"owner-cyber-v114.css?v=116") {
+ if !strings.Contains(string(html),"owner-cyber-v114.css?v=117") {
   t.Fatal("online game was missing its own Namepu victory stylesheet")
  }
 }
