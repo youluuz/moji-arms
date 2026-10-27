@@ -177,7 +177,7 @@ function boot(){
   }
   return true;
  }
- window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu};
+ window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu,debug:()=>({charge,chosen,ready:isReady(),spent,canAct:canAct(),running:typeof running==='undefined'?null:running,n:typeof slots!=='undefined'?slots?.[selected]?.n:null})};
  let lastFxPaint=0;
  function tick(){
   const now=performance.now(),active=isReady();
