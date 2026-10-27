@@ -39,11 +39,12 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      solo.hpMax!=='725'||solo.enemyMax!=='725')
    throw Error('CPU custom HP or initial charge did not carry into battle '+JSON.stringify(solo));
   await page.locator('#retreat').click();
+  const priorRounds=await page.evaluate(()=>window.MojiCpuBots?.rounds||0);
   await page.locator('[data-mode-tile="normal"]').click();
   if(await page.locator('#mojiCustomRuleFields').isVisible())
    throw Error('Normal mode exposed custom controls');
   await page.locator('#start').click();
-  await page.waitForFunction(()=>window.MojiCpuBots?.countdownLeft?.()<=0 && MAX_HP===600 && window.MojiCpuNamepuVictory?.debug()?.running===true,null,{timeout:20000});
+  await page.waitForFunction(prev=>window.MojiCpuBots?.rounds>prev && window.MojiCpuBots?.countdownLeft?.()<=0 && MAX_HP===600 && window.MojiCpuNamepuVictory?.debug()?.charge===0,priorRounds,{timeout:20000});
   const normal=await page.evaluate(()=>({
    hp:player.hp,maxHP:MAX_HP,charge:window.MojiCpuNamepuVictory.debug().charge
   }));
