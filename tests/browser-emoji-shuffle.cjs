@@ -65,7 +65,13 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   await page.locator('#shuffleLoadout').click();
   const all=await page.locator('#setup .slot .kanji').evaluateAll(fields=>fields.map(x=>x.value));
   if(all.length!==5||all.some(x=>!x))throw Error('Original all-category shuffle broke: '+JSON.stringify(all));
-  if(errors.length)throw Error('Browser script error: '+errors.join('; '));
+  const priorUltimate=await page.locator('#loadoutPanel .ultimate-option[aria-pressed=true]').getAttribute('data-ultimate');
+   await page.locator('#loadoutPanel .ultimate-random-button').click();
+   const randomChoice=await page.locator('#loadoutPanel .ultimate-option[aria-pressed=true]').getAttribute('data-ultimate');
+   if(randomChoice===priorUltimate||
+      await page.locator('#loadoutPanel .ultimate-option').count()!==6)
+    throw Error('Random ultimate must choose one of six different skills');
+   if(errors.length)throw Error('Browser script error: '+errors.join('; '));
   console.log('LOBBY EMOJI SHUFFLE PASSED: two buttons, normal/custom, five distinct emoji, stroke values, unchanged roles/ultimate, old random control.');
  }finally{await page.close();await browser.close()}
 })().catch(err=>{console.error(err);process.exit(1)});
