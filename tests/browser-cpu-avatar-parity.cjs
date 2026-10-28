@@ -53,22 +53,23 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      window.drawHeroIcon=hero;ctx.fillRect=oldRect;
      bots.forEach((b,i)=>{b.loadout[0].ch=previous[i].ch;b.x=previous[i].x;b.y=previous[i].y;b.hp=previous[i].hp});
     }
-    const first=seen.find(x=>x.ch==='炎'&&x.isEnemy===true);
-    const others=expected.slice(1).every(ch=>seen.some(x=>x.ch===ch&&x.isEnemy===true));
-    const self=seen.some(x=>x.ch===avatarChar&&x.isEnemy===false);
+    const enemyDraws=expected.map(ch=>seen.filter(x=>x.ch===ch&&x.isEnemy===true).length);
+    const first=enemyDraws[0]===1;
+    const others=enemyDraws.slice(1).every(n=>n===1);
+    const self=seen.filter(x=>x.ch===avatarChar&&x.isEnemy===false).length===1;
     const hpBars=rects.filter(r=>r.w===50&&r.h===5);
     return {mode:'CPU',failed,expected,draws:seen,first:!!first,others,self,
-      count:bots.length,uniformHpBars:hpBars.length,
+      count:bots.length,enemyDraws,uniformHpBars:hpBars.length,
       oversized:rects.filter(r=>r.w===62||r.w===60)};
    });
    console.log('CPU AVATAR PARITY',mode,JSON.stringify(result));
    if(result.failed||!result.first||!result.others||!result.self||
-      result.count!==3||result.uniformHpBars<3||result.oversized.length)
+      result.count!==3||result.uniformHpBars!==6||result.oversized.length)
     throw Error(mode+' unaligned original enemy/extra CPU portraits or HP bars '+JSON.stringify(result));
    await page.locator('#retreat').click();
    await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
   }
   if(errors.length)throw Error('Browser errors: '+errors.join(' | '));
-  console.log('PASS: normal and custom CPU use one avatar renderer and 50x5 HP bar for all enemies.');
+  console.log('PASS: normal and custom CPU draw exactly one icon per fighter and two 50x5 HP rectangles per enemy.');
  }finally{await context.close();await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
