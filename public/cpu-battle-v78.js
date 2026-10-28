@@ -270,7 +270,10 @@ function boot(){
   // On touch phones, preserve the full-speed battle simulation but cap only
   // expensive arena paint work at about 30 fps. This noticeably reduces
   // canvas load without affecting player movement, collision or cooldown.
-  if(document.body.classList.contains('mobile-touch-input')&&lastPaint&&now-lastPaint<33)return;
+  const touch=document.body.classList.contains('mobile-touch-input');
+   const portrait=touch&&window.innerHeight>=window.innerWidth;
+   // Portrait: target 20fps drawing, keep movement and simulation full speed.
+   if(touch&&lastPaint&&now-lastPaint<(portrait?50:33))return;
   lastPaint=now;
   // The legacy camera follows player coordinates. Temporarily aim it at
   // the observed CPU for painting only; never alter the combat simulation.
