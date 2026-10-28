@@ -37,8 +37,8 @@
     }
     for (const wall of walls) {
       if (wall===original) continue; // a shaped arm intentionally joins its bar
-      if (arm.x<wall.x+wall.w+25 && arm.x+arm.w>wall.x-25 &&
-          arm.y<wall.y+wall.h+25 && arm.y+arm.h>wall.y-25) return false;
+      if (arm.x<wall.x+wall.w+96 && arm.x+arm.w>wall.x-96 &&
+          arm.y<wall.y+wall.h+96 && arm.y+arm.h>wall.y-96) return false;
     }
     return playersSafe(arm);
   }
@@ -46,7 +46,11 @@
     const horizontal=wall.w>wall.h*1.55;
     const vertical=wall.h>wall.w*1.55;
     if (!horizontal && !vertical) return [];
-    const thickness=Math.max(30,Math.min(58,(horizontal?wall.h:wall.w)*.84));
+    let thickness=Math.max(30,Math.min(58,(horizontal?wall.h:wall.w)*.84));
+    // No dead-end U pocket narrower than a real player's collision diameter
+    // plus walking margin. Arm widths can shrink, but the gap cannot.
+    if(shape==='U')thickness=Math.min(thickness,((horizontal?wall.w:wall.h)-96)/2);
+    if(thickness<24)return [];
     const reach=105;
     const arms=[];
     if (horizontal) {
