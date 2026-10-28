@@ -882,3 +882,16 @@ func TestNamepuVictoryResultPanelStaysFullWidth(t *testing.T) {
   if !strings.Contains(string(online),s){t.Errorf("online browser may keep cached Namepu bug: %s",s)}
  }
 }
+
+func TestDanceBoostPowersAreCasterOnlyAndPersistInMatch(t *testing.T) {
+ p:=&Player{Ultimate:"dance"}
+ if normalPowerMultiplier(p)!=1 {t.Fatal("ordinary power before dance must be 1.0")}
+ p.DanceBoost=true
+ if math.Abs(normalPowerMultiplier(p)-1.1)>1e-9 {t.Fatal("dance multiplier must be 1.1")}
+ if normalPowerMultiplier(&Player{})!=1 {t.Fatal("other players must not inherit dance buff")}
+ if normalPowerMultiplier(&Player{NamepuUsed:true})!=.8 {t.Fatal("namepu weakening must remain")}
+ if normalPowerMultiplier(nil)!=1 {t.Fatal("nil player should stay neutral")}
+ r:=&Room{Phase:"lobby",Players:[]*Player{p}}
+ online:=r.state()["players"].([]map[string]any)[0]
+ if online["danceBoost"]!=true {t.Fatal("online UI should receive the authoritative dance buff")}
+}
