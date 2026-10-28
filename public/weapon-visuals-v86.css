@@ -85,3 +85,19 @@ body.online-battle #gameArea .weapon .wkind{font-weight:900!important}
  .moji-weapon-help{padding:10px 8px}
  .moji-weapon-help .moji-preview-lines span{min-height:0}
 }
+
+/* v14.1 — readable effective values in compact CPU and PvP combat slots */
+#gameScreen .weaponrow .moji-battle-metric,
+body.online-battle #gameArea .weaponrow .weapon-output{
+ white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;
+ line-height:1.12!important;text-align:center!important;font-size:clamp(9px,1.1vw,11px)!important
+}
+#gameScreen .weaponrow .moji-battle-strokes,
+body.online-battle #gameArea .weaponrow .weapon-strokes{
+ font-variant-numeric:tabular-nums;pointer-events:none
+}
+body.online-battle #gameArea .card.weapon{position:relative}
+body.online-battle #gameArea .weapon .weapon-strokes{
+ position:absolute!important;right:2px;top:2px;
+ font-size:9px!important;background:#0b2547cc;border-radius:4px;padding:0 2px
+}
