@@ -117,7 +117,7 @@ func TestGraphemes(t *testing.T) {
 	}
 }
 func TestStrokesAndCooldown(t *testing.T) {
-	for s, n := range map[string]int{"𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "イ": 2, "ー": 1, "フ": 1, "ノ": 1, "ネ": 4, "ッ": 3, "が": 5, "ぱ": 5, "ヴ": 5, "あ": 3, "く": 1, "し": 1, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
+	for s, n := range map[string]int{"𱁬": 84, "𰻞": 58, "𰻝": 43, "龘": 48, "薔": 16, "超": 12, "♨": 2, "♨️": 5, "A": 3, "イ": 2, "ー": 1, "フ": 1, "ノ": 1, "ネ": 4, "ッ": 3, "が": 5, "ぱ": 5, "ヴ": 5, "あ": 3, "く": 1, "し": 1, "★": 2, "⚡": 5, "⭐": 5, "🇯🇵": 5, "🔥": 5, "❤️": 5} {
 		if got := strokes(s); got != n {
 			t.Errorf("strokes(%q): got %d want %d", s, got, n)
 		}
@@ -730,26 +730,31 @@ func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
  }
 }
 
-func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T) {
- // Each stroke adds a growing CT penalty; 1 stroke is exactly 0.8 seconds in all four modes.
+func TestBasicAttackCooldownUpToTwentySecondsAcrossModes(t *testing.T) {
+ // One stroke remains 0.8s, while the 84-stroke glyph 𱁬 takes 20s in all four modes.
  for _,tc:=range []struct{n int; seconds float64}{
-  {1,0.8},{2,0.8429},{5,0.9824},{10,1.2509},{12,1.3709},{20,1.9229},{30,2.7749},{40,3.8069},{58,6.1181},{84,10.4861},
+  {1,0.8},{2,0.8850},{5,1.1616},{10,1.6938},{12,1.9317},{20,3.0258},{30,4.7147},{40,6.7603},{58,11.3417},{84,20.0},
  } {
-  if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000001 {
+  if got:=slotCooldown("attack",tc.n); math.Abs(got-tc.seconds)>.000051 {
    t.Errorf("attack %d strokes: got %.5fs want %.5fs",tc.n,got,tc.seconds)
   }
  }
- if slotCooldown("attack",10)>=slotCooldown("attack",20)||slotCooldown("attack",20)>=slotCooldown("attack",40) {
-  t.Fatal("high stroke attacks should fire more slowly")
+ for n:=2;n<=84;n++ {
+  if slotCooldown("attack",n)<=slotCooldown("attack",n-1) {
+   t.Fatalf("normal attack cooldown is not increasing at %d strokes",n)
+  }
  }
+ if got:=strokes("𱁬");got!=84 {t.Fatalf("𱁬 should be 84 strokes, got %d",got)}
+ if got:=slotCooldown("attack",strokes("𱁬"));math.Abs(got-20)>.0000001 {t.Fatalf("𱁬 should recharge in 20 seconds, got %.6f",got)}
+ if slotCooldown("attack",85)!=20 {t.Fatal("invalid stroke counts must not exceed 84-stroke cooldown")}
  index,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))") {
+ if !strings.Contains(served,"attack:0.8+19.2*(0.14*(n-1)+0.003*(n-1)*(n-1))/32.287") {
   t.Fatal("CPU normal/custom live HTML does not use the revised attack formula")
  }
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  for _,expected:=range []string{
-  "attack:0.8+0.3*(0.14*(n-1)+0.003*(n-1)*(n-1))",
+  "attack:0.8+19.2*(0.14*(n-1)+0.003*(n-1)*(n-1))/32.287",
   "const duration=onlineCD(slot.kind,slot.n)/1000",
  } {
   if !strings.Contains(string(online),expected) {t.Errorf("online attack cooldown display differs: %s",expected)}
@@ -763,7 +768,7 @@ func TestBasicAttackCooldownSlightlySlowerForHighStrokeAcrossModes(t *testing.T)
 func TestWeaponPreviewStylesAndDamageSummary(t *testing.T){
  js,e:=gameFiles.ReadFile("public/weapon-visuals-v86.js");if e!=nil{t.Fatal(e)}
  css,e:=gameFiles.ReadFile("public/weapon-visuals-v86.css");if e!=nil{t.Fatal(e)}
- for _,token:=range []string{"attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","Math.round(n*(7-.02*(n-1)))","Math.round(n*3.4)"} {
+ for _,token:=range []string{"attack:0.8+19.2*(0.14*(n-1)+0.003*(n-1)*(n-1))/32.287","attack:{name:'通常攻撃'","pierce:{name:'貫通'","homing:{name:'ホーミング'","drawProjectile","syncSoloBattle","preMatchOnline","preMatchSolo","Math.round(n*(7-.02*(n-1)))","Math.round(n*3.4)"} {
   if !strings.Contains(string(js),token){t.Errorf("missing projectile or weapon metric: %s",token)}
  }
  if !strings.Contains(string(css),"body.online-battle #gameArea .combat-hp.rival{display:none!important}") ||
@@ -807,7 +812,7 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
  ui,e:=gameFiles.ReadFile("public/ui-polish-v74.css");if e!=nil||!strings.Contains(string(ui),"#findRandomNow")||!strings.Contains(string(ui),".weaponrow") {t.Fatal("shared UI stylesheet missing")}
  servedBase,_:=gameFiles.ReadFile("public/index.html")
  served:=mobilePatchedIndex(string(servedBase))
- for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:0.8+0.3*(0.14*(n-1)","defense:1.4*(9+n*.4)"} {
+ for _,marker:=range []string{"MojiStrokeReady","ui-polish-v74.css","bgmAudio.volume=.10","n>84","attack:0.8+19.2*(0.14*(n-1)","defense:1.4*(9+n*.4)"} {
   if !strings.Contains(served,marker){t.Errorf("CPU side missing %q",marker)}
  }
  online,_:=gameFiles.ReadFile("public/multiplayer.html")
