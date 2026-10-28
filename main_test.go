@@ -135,12 +135,12 @@ func TestZoneAndRooms(t *testing.T) {
 		t.Fatal("no shrink")
 	}
 	room.Shrink = "instant"
-	if room.zone()["r"] != 180*mapScale(2) {
-		t.Fatal("instant shrink")
+	if room.zone()["r"] != 0 {
+		t.Fatal("instant shrink should reach zero after its closing phase")
 	}
 	room.Shrink = "fast"
-	if room.zone()["r"] != 180*mapScale(2) {
-		t.Fatal("fast shrink")
+	if room.zone()["r"] != 0 {
+		t.Fatal("fast shrink should reach zero after its closing phase")
 	}
 	room.Shrink = "normal"
 	room.Started = time.Now()
@@ -172,6 +172,68 @@ func TestObstacleSpawnSafety(t *testing.T) {
     }
     for _,o:=range obstacles {
      if o.X<65||o.Y<65||o.X+o.W>w-65||o.Y+o.H>h-65 {t.Fatalf("cover escapes %s/%d: %+v",theme,count,o)}
+    }
+   }
+  }
+ }
+}
+
+// Every shrinking mode eventually erases the entire safe area. Shrink
+// never reverses, and the explicit no-shrink option remains unchanged.
+func TestShrinkingZoneFinallyDisappears(t *testing.T) {
+ for _, tc := range []struct{mode string;mid,end float64}{
+  {"normal",120,150},{"fast",70,88},{"slow",180,225},{"instant",0,24},
+ } {
+  for _,scale:=range []float64{.8,1,1.5}{
+   last:=math.Inf(1)
+   for n:=0;n<=int(tc.end)+50;n++{
+    current:=zoneRadiusAt(tc.mode,float64(n),scale)
+    if current<0 || current>last+.00001 {t.Fatalf("%s radius increased or negative at %ds: %v -> %v",tc.mode,n,last,current)}
+    last=current
+   }
+   initial:=1350*scale
+   if tc.mode=="instant"{initial=180*scale}
+   if math.Abs(zoneRadiusAt(tc.mode,0,scale)-initial)>.001{t.Fatalf("%s initial radius unexpected",tc.mode)}
+   if math.Abs(zoneRadiusAt(tc.mode,tc.mid,scale)-180*scale)>.001{
+    t.Fatalf("%s phase 1 should reach 180 at %vs",tc.mode,tc.mid)
+   }
+   if zoneRadiusAt(tc.mode,tc.end,scale)!=0 || zoneRadiusAt(tc.mode,tc.end+100,scale)!=0 {
+    t.Fatalf("%s failed to erase safe zone at %.0fs",tc.mode,tc.end)
+   }
+   if zoneRadiusAt("none",tc.end+100,scale)!=1350*scale {t.Fatal("no-shrink mode must stay unchanged")}
+  }
+ }
+}
+
+// Other obstacle structures must not create corridors too narrow for a
+// 40-unit-diameter fighter. All generated U pockets must also have an exit.
+func TestPassableObstacleCorridors(t *testing.T){
+ const minGap=96.0
+ for _,theme:=range []string{"shrine","sakura","night"}{
+  for players:=2;players<=10;players++{
+   w,h:=mapDimensions(players)
+   for trial:=0;trial<5;trial++{
+    obstacles:=newObstaclesSized(theme,w,h,players,"normal")
+    if len(obstacles)<7{t.Fatalf("%s/%d lost all cover",theme,players)}
+    for i,a:=range obstacles{
+     for _,b:=range obstacles[i+1:]{
+      // Same-expiry bars are intentionally joined L/T/U structures.
+      if a.Expires==b.Expires{continue}
+      if a.X<b.X+b.W+minGap-0.001 && a.X+a.W>b.X-minGap+0.001 &&
+         a.Y<b.Y+b.H+minGap-0.001 && a.Y+a.H>b.Y-minGap+0.001 {
+       t.Fatalf("impassable narrow gap between separate cover %s/%d trial %d: %+v and %+v",theme,players,trial,a,b)
+      }
+     }
+    }
+    groups:=make(map[float64][]Obstacle)
+    for _,o:=range obstacles{groups[o.Expires]=append(groups[o.Expires],o)}
+    for _,parts:=range groups{
+     if len(parts)!=3{continue}
+     first,second:=parts[1],parts[2]
+     gap:=second.X-(first.X+first.W)
+     if math.Abs(first.Y-second.Y)<.001 { // parallel vertical arms
+     } else {gap=second.Y-(first.Y+first.H)}
+     if gap<99.9 {t.Fatalf("U-shaped cover has narrow dead-end lane: %s/%d gap %.2f",theme,players,gap)}
     }
    }
   }
