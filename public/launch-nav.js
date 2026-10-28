@@ -3,7 +3,7 @@
    No accounts, databases, server push, or personal analytics are required. */
 (function(){
  'use strict';
- const fallback=[{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
+ const fallback=[{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
  let announcements=fallback;
  const $=id=>document.getElementById(id);
  function init(){
