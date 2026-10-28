@@ -85,7 +85,9 @@ async function main(){
   const field=g.field;
   emit('pointerdown',{pointerType:'mouse',pointerId:20,button:0,target:field});
   assert.equal(s.window.MojiInputSafety.firingPointers(),1);
-  assert.deepEqual(field.captures,[20]);
+  // The game canvas owns pointer capture, not the document-level guard.
+  // Capturing too early can steal a touch from a chosen skill.
+  assert.deepEqual(field.captures,[]);
   s.down=true;
   emit('pointerup',{pointerId:20,pointerType:'mouse'},true);
   assert.equal(s.window.MojiInputSafety.firingPointers(),0);
@@ -119,7 +121,18 @@ async function main(){
   await Promise.resolve();
   assert.equal(s.touch,null,mode+' must handle touchcancel without pointerup');
   assert.equal(s.keys.d,false);
-  console.log(mode+': movement release, multi-touch, keyup and blur verified');
+  // If a WebView missed a cancel/up, the next physical primary press on
+  // the joystick must supersede the abandoned pointer and resume movement.
+  emit('pointerdown',{pointerType:'touch',pointerId:71,target:zone,isPrimary:true});
+  assert.equal(s.window.MojiInputSafety.activePointers(),1);
+  s.touch={x:1,y:0};s.keys.d=true;
+  emit('pointerdown',{pointerType:'touch',pointerId:72,target:zone,isPrimary:true});
+  assert.equal(s.window.MojiInputSafety.activePointers(),1);
+  assert.equal(s.touch,null,'stale old joystick finger must not lock new press');
+  emit('pointerup',{pointerType:'touch',pointerId:72,target:zone});
+  await Promise.resolve();
+  assert.equal(s.window.MojiInputSafety.activePointers(),0);
+  console.log(mode+': movement release, multi-touch, stale touch recovery, keyup and blur verified');
  }
 }
 main().catch(err=>{console.error(err);process.exitCode=1});
