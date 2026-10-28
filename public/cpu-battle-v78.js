@@ -299,13 +299,20 @@ function boot(){
    cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*Math.max(0,Math.min(1,bot.hp/MAX_HP)),5);
    cx.restore();
   }
-  // The first CPU avatar is already painted by the legacy render function.
-  // Only CPUs #2+ need their avatar drawn here, using that SAME function.
-  for(const bot of bots.slice(1)){
+  // Paint EVERY enemy exactly once in screen coordinates, including the
+  // original legacy "敵" fighter. The legacy map painter no longer paints
+  // that first CPU: one common icon and one 50x5 HP bar for all enemies.
+  for(const bot of bots){
    if(bot.hp<=0)continue;
    const x=bot.x-cam.x,y=bot.y-cam.y;
    if(x<-60||y<-60||x>cpuView.w+60||y>cpuView.h+60)continue;
+   cx.save();
+   if(bot.shieldEnd>now && bot.shield>0){
+    cx.strokeStyle='#73e9fa';cx.lineWidth=4;
+    cx.beginPath();cx.arc(x,y,35,0,Math.PI*2);cx.stroke();
+   }
    drawHeroIcon(cx,x,y,bot.loadout?.[0]?.ch||'敵',true,now/1000);
+   cx.restore();
   }
   for(const bot of bots)drawCpuHpBar(bot);
   // Full-map dance: each additional CPU also gets a disco ball and notes.
