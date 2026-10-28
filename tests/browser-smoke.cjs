@@ -350,7 +350,7 @@ const { chromium } = require('playwright');
    throw Error('CPU hardening-shot guide must explain the 3-second immobilization');
   if(!(await cpuGuide.innerText()).includes('回復と防御は使用できる'))
    throw Error('CPU hardening-shot guide must clearly allow healing and shielding');
-  for(const [id,phrase] of [['roman','即死'],['invincible','2.8秒'],['dance','マップ全域'],['invisible','4秒']]){
+  for(const [id,phrase] of [['roman','即死'],['invincible','2.8秒'],['dance','1.1倍'],['invisible','4秒']]){
    await page.locator('#loadoutPanel .ultimate-option[data-ultimate="'+id+'"]').click();
    if(!(await cpuGuide.innerText()).includes(phrase))throw Error('CPU '+id+' guide lacks '+phrase);
   }
