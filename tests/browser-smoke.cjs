@@ -117,7 +117,8 @@ const { chromium } = require('playwright');
   if(!await page.locator('#mojiNoticeOverlay').isVisible()||
      !(await page.locator('#mojiNoticeItems').innerText()).includes('3コイン')||
      !(await page.locator('#mojiNoticeItems').innerText()).includes('公開ベータテスト')||
-     !(await page.locator('#mojiNoticeItems').innerText()).includes('1.2倍'))
+     !(await page.locator('#mojiNoticeItems').innerText()).includes('1.2倍')||
+      !(await page.locator('#mojiNoticeItems').innerText()).includes('移動ボタン拡大'))
    throw Error('Lobby announcements not displayed');
   const giftBefore=await page.evaluate(()=>Number(JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').coins)||0);
   const giftButton=page.locator('.moji-welcome-claim');
