@@ -59,6 +59,36 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    window.MojiNamepuVictory.showSolo({name:'勝利プレイヤー',icon:'龍',kills:4,hp:480});
    if(medal.parentElement!==box)throw Error('Old narrow hero panel was not repaired');
   });
+
+  // The preview is intentionally simple. Test the ACTUAL monolithic lobby
+  // result hierarchy too: legacy .result-hero grid rules caused the reported
+  // 807x740 screenshot to collapse the champion into a ~130px column.
+  const real=await browser.newPage({viewport:{width:807,height:740}});
+  try{
+   await real.goto(base+'/',{waitUntil:'domcontentloaded',timeout:60000});
+   await real.waitForFunction(()=>!!window.MojiNamepuVictory && !!document.querySelector('#result .result-inner'),
+     {timeout:30000});
+   await real.evaluate(()=>{
+    const overlay=document.getElementById('result');
+    overlay.classList.add('show');
+    if(!window.MojiNamepuVictory.showSolo({name:'テスト勝者',icon:'光',kills:5,hp:600}))
+     throw Error('Real solo game cannot show Namepu result');
+   });
+   for(const [width,height] of [[807,740],[390,844],[844,390]]){
+    await real.setViewportSize({width,height});
+    const size=await real.evaluate(()=>{
+     const overlay=document.getElementById('result');
+     const card=overlay.querySelector('.result-inner');
+     const medal=card?.querySelector('.namepu-champion');
+     const c=card?.getBoundingClientRect(),m=medal?.getBoundingClientRect();
+     return {parent:medal?.parentElement===card,atRoot:overlay.parentElement===document.body,
+      cardWidth:c?.width,medalWidth:m?.width,left:c?.left,right:c?.right,viewport:innerWidth};
+    });
+    if(!size.parent||!size.atRoot||size.cardWidth<width*.65||
+       size.medalWidth<size.cardWidth*.72||size.left< -3||size.right>width+3)
+      throw Error('REAL solo Namepu win screen is squeezed or clipped '+width+'x'+height+' '+JSON.stringify(size));
+   }
+  }finally{await real.close()}
   if(errors.length)throw Error('JavaScript page error: '+errors.join(' | '));
   console.log('PASS: four randomized Namepu headings, stable on redraw, champion and kill count');
  }finally{await browser.close()}
