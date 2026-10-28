@@ -41,7 +41,12 @@
   const SEEN_KEY='moji_notice_viewed_at_v1',EXPIRE_MS=30*24*60*60*1000;
   let viewed={};
   try{const saved=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))viewed=saved}catch(_){}
-  const visible=()=>announcements.filter(item=>!Number.isFinite(Number(viewed[item.id]))||Date.now()-Number(viewed[item.id])<EXPIRE_MS);
+  const visible=()=>{
+    // Re-read the latest timestamps whenever the dialog opens or focus returns.
+    // This also keeps expiry correct across tabs and restored sessions.
+    try{const saved=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))viewed=saved}catch(_){}
+    return announcements.filter(item=>!Number.isFinite(Number(viewed[item.id]))||Date.now()-Number(viewed[item.id])<EXPIRE_MS);
+   };
   const saveViewed=()=>{try{localStorage.setItem(SEEN_KEY,JSON.stringify(viewed))}catch(_){}};
   const markRead=()=>{const now=Date.now();for(const item of visible())if(!Number.isFinite(Number(viewed[item.id])))viewed[item.id]=now;saveViewed()};
   function render(){
