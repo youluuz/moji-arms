@@ -487,6 +487,20 @@ const { chromium } = require('playwright');
    const expectedStrokes=await page.evaluate(()=>slots.map(s=>window.MojiWeaponVisual.battleStrokes(s.n)));
    if(JSON.stringify(liveStrokes)!==JSON.stringify(expectedStrokes))
     throw Error(mode+' battle stroke badges mismatched actual loadout '+JSON.stringify({liveStrokes,expectedStrokes}));
+   const endgameCurve=await page.evaluate(()=>{
+    const f=window.MojiCpuBots?.zoneRadiusAt;
+    if(!f)return null;
+    return {none:f('none',1000,1),instant:[f('instant',0,1),f('instant',12,1),f('instant',24,1)],
+      fast:[f('fast',0,1),f('fast',70,1),f('fast',79,1),f('fast',88,1)],
+      normal:[f('normal',0,1),f('normal',120,1),f('normal',135,1),f('normal',150,1)],
+      slow:[f('slow',180,1),f('slow',225,1)]};
+   });
+   if(!endgameCurve||endgameCurve.none!==1350||
+      JSON.stringify(endgameCurve.instant)!==JSON.stringify([180,90,0])||
+      JSON.stringify(endgameCurve.fast)!==JSON.stringify([1350,180,90,0])||
+      JSON.stringify(endgameCurve.normal)!==JSON.stringify([1350,180,90,0])||
+      JSON.stringify(endgameCurve.slow)!==JSON.stringify([180,0]))
+    throw Error('CPU safe zone did not shrink completely in all modes '+JSON.stringify(endgameCurve));
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
    if(!await page.locator('#cpuBattleCountdown').isVisible())throw Error(mode+' CPU start countdown not visible on map');
    const beforeStart=await page.evaluate(()=>({
