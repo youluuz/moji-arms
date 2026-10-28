@@ -288,6 +288,7 @@ type Player struct {
 	UltimateSerial int
 	LastUltimate string
 	NamepuUsed bool
+ DanceBoost bool // persists during the match
  Spectating bool
 }
 type Room struct {
@@ -383,7 +384,7 @@ func (r *Room) state() map[string]any {
 		}
 		char:=p.Ch
         if now<p.NamepuUntil {char="😐"}
-        entry := map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"romanWindupLeft":math.Max(0,p.UltimateWindupUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"hardenedLeft":math.Max(0,p.HardenedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char,"avatar":p.Ch, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind}
+        entry := map[string]any{"ultimate":p.Ultimate,"ultimateCharge":p.UltimateCharge,"ultimateSpent":p.UltimateSpent,"ultimateAiming":p.UltimateAiming,"ultimateAimLeft":math.Max(0,p.UltimateAimUntil-now),"romanWindupLeft":math.Max(0,p.UltimateWindupUntil-now),"invincibleLeft":math.Max(0,p.InvincibleUntil-now),"invisibleLeft":math.Max(0,p.InvisibleUntil-now),"hardenedLeft":math.Max(0,p.HardenedUntil-now),"namepuLeft":math.Max(0,p.NamepuUntil-now),"namepuUsed":p.NamepuUsed,"danceBoost":p.DanceBoost,"ultimateSerial":p.UltimateSerial,"lastUltimate":p.LastUltimate,"danceLeft":math.Max(0,r.DanceUntil-now),"id":p.ID,"name":p.Name,"ch":char,"avatar":p.Ch, "x": math.Round(p.X*10) / 10, "y": math.Round(p.Y*10) / 10, "hp": math.Round(math.Max(0, p.HP)*10) / 10, "alive": p.Alive, "shield": math.Round(math.Max(0, p.Shield)*10) / 10, "shieldLeft": math.Round(math.Max(0, p.ShieldUntil-now)*100) / 100, "ready": p.Ready, "selected": p.Selected, "cooldowns": cd, "guardSlot": p.GuardSlot, "casts": p.Casts, "kills":p.Kills, "actionSerial": p.ActionSerial, "lastKind": lastKind}
         // The waiting room sends the AUTHORITATIVE saved five-slot loadout.
         // Do not stream the larger equipment arrays during combat at 30 Hz.
         if r.Phase == "lobby" { entry["slots"] = p.Slots }
@@ -572,6 +573,13 @@ func ultimateCost(id string) int {
  return 0
 }
 func chooseUltimate(id string) string { if ultimateCost(id)>0 {return id}; return "roman" }
+// Post-dance: only the caster gains 10% ordinary weapon power until this match ends.
+func normalPowerMultiplier(p *Player) float64 {
+ if p==nil{return 1}
+ if p.NamepuUsed{return .8}
+ if p.DanceBoost{return 1.1}
+ return 1
+}
 func ultimateLaunch(room *Room,p *Player,now float64) {
  if p.Ultimate=="roman" {p.UltimateWindupUntil=now+1;return}
  if p.Ultimate=="slow" {angle:=p.UltimateAim;room.Bullets=append(room.Bullets,Bullet{X:p.X,Y:p.Y,VX:math.Cos(angle)*610,VY:math.Sin(angle)*610,Damage:60,TTL:2.5,Owner:p.ID,Ch:"硬化弾",Special:"slow"})}
@@ -846,7 +854,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 			pp.PendingUntil = 0
 			pp.UltimateCharge=float64(ultimateCost(pp.Ultimate))*float64(room.startChargePercent())/100;pp.UltimateSpent=false;pp.UltimateAiming=false;pp.UltimateAim=0
 			pp.UltimateAimUntil=0;pp.UltimateWindupUntil=0;pp.InvincibleUntil=0;pp.InvisibleUntil=0;pp.HardenedUntil=0;pp.NamepuUntil=0
-			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false
+			pp.UltimateSerial=0;pp.LastUltimate="";pp.NamepuUsed=false;pp.DanceBoost=false
 		}
 		room.broadcast()
 	case "ultimate":
@@ -857,7 +865,7 @@ func (a *Arena) handle(c *Client, raw []byte) {
 		switch p.Ultimate {
 		case "roman","slow":p.UltimateAiming=true;p.UltimateAim=p.Aim;p.UltimateAimUntil=now+5
 		case "invincible":p.InvincibleUntil=now+2.8
-		case "dance":room.DanceUntil=now+2
+		case "dance":room.DanceUntil=now+2;p.DanceBoost=true
 		case "invisible":p.InvisibleUntil=now+4
 		case "namepu":p.NamepuUntil=now+5;p.NamepuUsed=true
 		}
@@ -1116,6 +1124,7 @@ func (a *Arena) tick(dt float64) {
 			}
 			slot := p.Slots[castSelected]
 			kind, n := slot.Kind, slot.N
+			power := normalPowerMultiplier(p)
 			if now<p.HardenedUntil && kind!="defense" && kind!="heal" {
 				p.CastPending=false
 				continue
@@ -1131,19 +1140,19 @@ func (a *Arena) tick(dt float64) {
 				a := p.Aim
 				damage := float64(n * 6)
 				if kind=="attack" {damage=normalShotDamage(n)} else if kind=="homing" {damage=float64(n*3+10)}
-				if p.NamepuUsed {damage*=.8}
+				damage *= power
 				room.Bullets = append(room.Bullets, Bullet{X: p.X, Y: p.Y, VX: math.Cos(a) * speed, VY: math.Sin(a) * speed, Damage: damage, TTL: 2.1, Owner: p.ID, Ch: slot.Ch, Pierce: kind == "pierce", Homing: kind == "homing"})
 				if kind == "homing" {
 					room.Bullets[len(room.Bullets)-1].TTL = 3.8
 				}
 			case "defense":
 				p.Shield = float64(n * 6)
-				if p.NamepuUsed {p.Shield*=.8}
+				p.Shield *= power
 				p.ShieldUntil = now + 1.8
 				p.GuardSlot = p.Selected
 			case "heal":
 				healAmount:=float64(n)*3.4
-				if p.NamepuUsed {healAmount*=.8}
+				healAmount *= power
 				p.HP = math.Min(room.maxHP(), p.HP+healAmount)
 			}
 			p.Last[castSelected] = now + slotCooldown(kind, n)
