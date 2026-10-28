@@ -828,7 +828,7 @@ func TestSoloAvatarAndInputReleaseRegression(t *testing.T) {
  if !strings.Contains(served, "/* player and all CPUs rendered exactly once by cpu-battle-v78.js */") {
   t.Fatal("solo fighter drawing replacement is missing")
  }
- if !strings.Contains(served, "/mobile-input-v70.js?v=132") ||
+ if !strings.Contains(served, "/mobile-input-v70.js?v=133") ||
     !strings.Contains(served, "/cpu-battle-v78.js?v=132") {
   t.Fatal("busted cache versions would retain stale CPU icon or input behavior")
  }

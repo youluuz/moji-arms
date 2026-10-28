@@ -30,10 +30,16 @@ function game(mode) {
   navigator:{userAgent:'unit test',maxTouchPoints:0},
   screen:{width:1200,height:900},
   matchMedia:()=>({matches:false}),queueMicrotask,console,
+  performance:{now:()=>1000},
+  setInterval:()=>0, // timers are tested separately in a browser, never run in the VM fixture
+  MutationObserver:class { observe(){} disconnect(){} },
   releaseStick:()=>{sandbox.releases++},releases:0
  };
  vm.runInNewContext(fs.readFileSync('public/mobile-input-v70.js','utf8'),sandbox,{filename:'mobile-input-v70.js'});
  const emit=(t,e={},onWindow=false)=>{
+  // A document-targeted event passes through window capture before document.
+  // Model the real propagation path so release listeners are not skipped.
+  if(!onWindow)for(const fn of winEvents.get(t)||[])fn(e);
   for(const fn of (onWindow?winEvents:docEvents).get(t)||[])fn(e);
  };
  return {sandbox,emit,zone:new FakeElement(true),field:new FakeElement(false,true),other:new FakeElement()};
@@ -64,7 +70,7 @@ async function main(){
   assert.equal(s.keys.w,true,'held keyboard movement must survive touch release');
   assert.equal(s.keys.d,false);
 
-  emit('keyup',{key:'w',target:zone});
+  emit('keyup',{key:'w',target:zone},true);
   await Promise.resolve();
   assert.equal(s.keys.w,false);
   emit('keydown',{key:'ArrowRight',target:zone});
@@ -97,7 +103,7 @@ async function main(){
 
   emit('keydown',{key:' ',target:field});
   s.down=true;
-  emit('keyup',{key:' ',target:field});
+  emit('keyup',{key:' ',target:field},true);
   await Promise.resolve();
   assert.equal(s.down,false,mode+' space auto-fire must release');
 
