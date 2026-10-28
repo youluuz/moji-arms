@@ -381,6 +381,21 @@ const { chromium } = require('playwright');
   if(hardeningArt.text!=='硬化弾'||!hardeningArt.svg?.includes('M23 13H45L43 53H30')||
      !hardeningArt.svg?.includes('x="62" y="59" width="28" height="25"'))
    throw Error('Hardening icon must show two feet and a visible ankle padlock: '+JSON.stringify(hardeningArt).slice(0,120));
+  // Damage, defense and healing displayed mid-match must reflect the
+  // authoritative 1.2x Dance / 0.8x Namepu multipliers, including fractions.
+  const values=await page.evaluate(()=>{
+   const w=window.MojiWeaponVisual;
+   const neutral=w.battleMultiplier({}),up=w.battleMultiplier({danceBoost:true}),
+         down=w.battleMultiplier({namepuUsed:true});
+   return {neutral,up,down,base:w.battleValue('attack',10,neutral),
+    boosted:w.battleValue('attack',10,up),weakened:w.battleValue('attack',10,down),
+    heal:w.battleValue('heal',7,up),strokes:w.battleStrokes(16),
+    label:w.battleMetric('attack',10,up)};
+  });
+  if(values.neutral!==1||values.up!==1.2||values.down!==.8||
+     values.base!=='68'||values.boosted!=='81.6'||values.weakened!=='54.4'||
+     values.heal!=='28.56'||values.strokes!=='16画'||!values.label.includes('×1.2'))
+    throw Error('Solo slot power/stroke values mismatched real combat formulas '+JSON.stringify(values));
   // Disco ball pixels and enlarged shot silhouettes must be truly drawn.
   const discoVisual=await page.evaluate(()=>{
    const renderer=window.MojiWeaponVisual,canvas=document.createElement('canvas');
