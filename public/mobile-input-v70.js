@@ -1,4 +1,4 @@
-/* Glyph Strike v7.0: independent multi-touch equipment selection for CPU arena.
+/* Glyph Strike v13.2: reliable hold-to-fire, keyboard and two-finger safety.
    The first finger can remain captured by the joystick while the second picks a slot.
    Pointerdown fires immediately, before delayed touch click synthesis. */
 (() => {
@@ -32,7 +32,7 @@
   // Hold-to-fire pointers are separate from joystick fingers. When the mouse
   // releases outside the canvas, or the browser cancels a long touch, don't
   // leave the legacy 'down' flag stuck in autofire mode.
-  const firingPointers = new Set();
+  const firingPointers = new Map(); // pointerId -> pointerType; mouseup must not cancel a separate touch
   let heldSpace = false;
   const arrowMap = {ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
   const arrows = {w:'ArrowUp',a:'ArrowLeft',s:'ArrowDown',d:'ArrowRight'};
@@ -77,7 +77,7 @@
     if(!playing() || !(e.target instanceof Element))return;
     const canvas=e.target.closest('#field,#arena');
     if(!canvas || (e.pointerType==='mouse' && e.button!==0))return;
-    firingPointers.add(e.pointerId);
+    firingPointers.set(e.pointerId,e.pointerType);
     // Preserve hold-to-fire in solo mode, including touch, until release/cancel.
     // Online touch stays one server cast per tap.
     if(canvas.id==='field'&&typeof down!=='undefined')down=true;
@@ -92,7 +92,7 @@
   // Compatibility events for mouse releases that happen outside the canvas.
   window.addEventListener('mouseup',e=>{
     if(e.button!==0)return;
-    for(const id of firingPointers)firingPointers.delete(id);
+    for(const [id,type] of firingPointers){if(type==='mouse')firingPointers.delete(id);}
     stopFiring();
   },true);
   document.addEventListener('pointermove',e=>{
@@ -143,7 +143,7 @@
     const key = movementKey(e);
     if(key){heldDirections.add(key);keyLastSeen.set(key,performance.now());}
   }, true);
-  document.addEventListener('keyup', e => {
+  window.addEventListener('keyup', e => {
     if(e.key===' '){
       heldSpace=false;spaceLastSeen=0;
       // In mixed keyboard+mouse input, mouse hold may still be active.
@@ -179,7 +179,7 @@
   }, true);
   const releaseAll = () => {
     stopFiring(true);
-    if(playing())releaseMovement(false);
+    releaseMovement(false);
   };
   window.addEventListener('blur', releaseAll);
   window.addEventListener('pagehide', releaseAll);
