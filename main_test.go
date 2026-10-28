@@ -834,7 +834,7 @@ func TestSoloAvatarAndInputReleaseRegression(t *testing.T) {
   t.Fatal("solo fighter drawing replacement is missing")
  }
  if !strings.Contains(served, "/mobile-input-v70.js?v=133") ||
-    !strings.Contains(served, "/cpu-battle-v78.js?v=132") {
+    !strings.Contains(served, "/cpu-battle-v78.js?v=133") {
   t.Fatal("busted cache versions would retain stale CPU icon or input behavior")
  }
  cpu, err := gameFiles.ReadFile("public/cpu-battle-v78.js")
@@ -854,5 +854,31 @@ func TestSoloAvatarAndInputReleaseRegression(t *testing.T) {
   if !strings.Contains(string(input), safe) {
    t.Fatalf("missing held input cleanup guard: %s", safe)
   }
+ }
+}
+
+ 
+// The Namepu medal must be a direct child of the full result card, not of
+// .result-message's narrow grid column: this was the 130px victory screen bug.
+func TestNamepuVictoryResultPanelStaysFullWidth(t *testing.T) {
+ namepu,e:=gameFiles.ReadFile("public/namepu-victory-v123.js");if e!=nil{t.Fatal(e)}
+ css,e:=gameFiles.ReadFile("public/namepu-victory-v123.css");if e!=nil{t.Fatal(e)}
+ cpu,e:=gameFiles.ReadFile("public/cpu-battle-v78.js");if e!=nil{t.Fatal(e)}
+ online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
+ rawIndex,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
+ served:=mobilePatchedIndex(string(rawIndex))
+ for _,marker:=range []string{":scope > .result-stats",":scope > .online-meta","target.insertAdjacentElement('beforebegin',panel)"}{
+  if !strings.Contains(string(namepu),marker){t.Errorf("Namepu panel must be anchored directly to card: %s",marker)}
+ }
+ if strings.Contains(string(namepu),"box.querySelector('.result-stats,.moji-result-kills,.online-meta')"){t.Fatal("old selector inserts champion into narrow kill counter parent")}
+ if !strings.Contains(string(cpu),"stats.insertAdjacentElement('afterend',tally)"){t.Fatal("solo kill count must not be placed inside hero title")}
+ for _,marker:=range []string{"#result.moji-namepu-deluxe .result-inner","max-height:calc(100dvh - 24px)","overflow-y:auto!important","width:100%!important;","grid-column:1 / -1!important"}{
+  if !strings.Contains(string(css),marker){t.Errorf("Namepu scrolling/full-width layout missing: %s",marker)}
+ }
+ for _,s:=range []string{"/namepu-victory-v123.css?v=131","/namepu-victory-v123.js?v=131","/cpu-battle-v78.js?v=133"}{
+  if !strings.Contains(served,s){t.Errorf("solo browser may keep cached Namepu bug: %s",s)}
+ }
+ for _,s:=range []string{"namepu-victory-v123.css?v=131","namepu-victory-v123.js?v=131"}{
+  if !strings.Contains(string(online),s){t.Errorf("online browser may keep cached Namepu bug: %s",s)}
  }
 }
