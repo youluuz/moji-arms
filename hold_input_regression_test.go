@@ -17,7 +17,7 @@ func TestTouchHoldAndAvatarPatchRegression(t *testing.T) {
   "down=true;",
   "c.setPointerCapture(e.pointerId)",
   "c.addEventListener('pointermove',e=>{",
-  "/mobile-input-v70.js?v=132",
+  "/mobile-input-v70.js?v=133",
   "/cpu-battle-v78.js?v=132",
   "let WORLD_W=2300,WORLD_H=1300",
   "MAX_HP=window.MojiCustomRules?.hpForMode(matchMode)||600",
