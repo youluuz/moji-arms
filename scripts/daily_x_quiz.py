@@ -229,9 +229,13 @@ def posts_for(day):
     return question, answer, number
 
 def gql(query):
-    token = os.environ.get("BUFFER_API_KEY")
+    token = os.environ.get("BUFFER_API_KEY", "").strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
     if not token:
         raise RuntimeError("BUFFER_API_KEY is missing. Set it in GitHub Actions repository secrets.")
+    if any(ch in token for ch in "\\r\\n\\x00"):
+        raise RuntimeError("BUFFER_API_KEY has unexpected whitespace or control characters. Copy only the key value into GitHub Secrets.")
     payload = json.dumps({"query": query}, ensure_ascii=False).encode()
     req = Request(API, data=payload,
                   headers={"Content-Type": "application/json",
