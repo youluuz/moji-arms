@@ -12,6 +12,24 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const safeN=n=>Number.isFinite(Number(n))&&Number(n)>0?Math.max(1,Math.min(84,Number(n))):0;
 function amount(kind,n){n=safeN(n);return n?((kind==='heal'?Math.round(n*3.4):(kind==='attack'?Math.round(n*(7-.02*(n-1))):(kind==='homing'?n*3+10:n*6)))):'—'}
 function metric(kind,n){return (kind==='heal'?'回復':kind==='defense'?'防御':'威力')+amount(kind,n)}
+ // HUD uses unrounded authoritative base values. Healing keeps fractions.
+ function battleMultiplier(state){
+  if(state?.namepuUsed)return .8;
+  if(state?.danceBoost)return 1.2;
+  return 1;
+ }
+ function battleValue(kind,n,multiplier=1){
+  n=safeN(n);
+  if(!n||!types[kind])return '—';
+  const base=kind==='heal'?n*3.4:kind==='attack'?Math.round(n*(7-.02*(n-1))):kind==='homing'?n*3+10:n*6;
+  return String(Math.round(base*multiplier*100)/100);
+ }
+ function battleMetric(kind,n,multiplier=1){
+  const label=kind==='heal'?'回復':kind==='defense'?'防御':'威力';
+  return label+' '+battleValue(kind,n,multiplier)+(multiplier!==1?' (×'+multiplier.toFixed(1)+')':'');
+ }
+ function battleStrokes(n){return safeN(n)+'画'}
+
 function cooldown(kind,n){
  n=safeN(n);if(!n)return '—';
  const k={attack:0.8+19.2*(0.14*(n-1)+0.003*(n-1)*(n-1))/32.287,
@@ -229,7 +247,7 @@ function preMatchSolo(){
   item.dataset.version=html;
  }
 }
-function syncSoloBattle(slots){
+function syncSoloBattle(slots,state){
  const row=document.querySelector('#gameScreen .weaponrow')||
            document.querySelector('#gameScreen .cards')||
            document.querySelector('#gameScreen .weapon')?.parentElement;
@@ -240,9 +258,14 @@ function syncSoloBattle(slots){
   const s=slots[i],kind=s?.kind||['attack','defense','heal','pierce','homing'][i];
   let metricEl=el.querySelector('.moji-battle-metric');
   if(!metricEl){metricEl=document.createElement('small');metricEl.className='moji-battle-metric';el.append(metricEl)}
-  const label=types[kind]?.marker+' '+metric(kind,s?.n);
+  const multiplier=battleMultiplier(state),label=types[kind]?.marker+' '+battleMetric(kind,s?.n,multiplier);
+  let strokeEl=el.querySelector('.moji-battle-strokes');
+  if(!strokeEl){strokeEl=document.createElement('small');strokeEl.className='moji-battle-strokes';el.insertBefore(strokeEl,metricEl)}
+  const strokeText=battleStrokes(s?.n);
+  if(strokeEl.textContent!==strokeText)strokeEl.textContent=strokeText;
   if(metricEl.textContent!==label)metricEl.textContent=label;
-  el.title=(types[kind]?.name||kind)+'：'+metric(kind,s?.n)+' / 再使用 '+cooldown(kind,s?.n);
+  el.dataset.powerMultiplier=String(multiplier);
+  el.title=(types[kind]?.name||kind)+'：'+strokeText+' / '+battleMetric(kind,s?.n,multiplier)+' / 再使用 '+cooldown(kind,s?.n);
  });
 }
 function bootstrap(){
@@ -259,5 +282,5 @@ function bootstrap(){
  if(online){const scheduled=()=>requestAnimationFrame(preMatchOnline);document.querySelector('#joinArea')?.addEventListener('click',scheduled,true);document.querySelector('#waitArea')?.addEventListener('click',scheduled,true);online.addEventListener('click',()=>setTimeout(preMatchOnline,0),true);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrap,{once:true});else bootstrap();
-window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,drawDanceAura,preMatchSolo,preMatchOnline,renderOnlineStats,syncSoloBattle};
+window.MojiWeaponVisual={types,amount,metric,cooldown,preview,drawProjectile,drawMirrorBall,drawDanceAura,preMatchSolo,preMatchOnline,renderOnlineStats,syncSoloBattle,battleMultiplier,battleMetric,battleValue,battleStrokes};
 })();
