@@ -286,30 +286,28 @@ function boot(){
   if(score)score.textContent='⚔ キル '+playerKills;
   window.MojiWeaponVisual?.syncSoloBattle(typeof slots==='undefined'?[]:slots);
   const cx=ctx;cx.save();cx.textAlign='center';cx.textBaseline='middle';
-  // Original first CPU labeled 敵 uses a separate drawing path. Give it
-  // the same visible overhead HP bar as the additional enemies.
-  if(enemy.hp>0){
-   const x=enemy.x-cam.x,y=enemy.y-cam.y;
-   if(x>=-60&&y>=-60&&x<=cpuView.w+60&&y<=cpuView.h+60){
-    cx.fillStyle='#142032';cx.fillRect(x-31,y-46,62,8);
-    cx.fillStyle='#ff88a5';cx.fillRect(x-30,y-45,60*Math.max(0,enemy.hp/MAX_HP),6);
-    cx.strokeStyle='#ffe1ea';cx.lineWidth=1;cx.strokeRect(x-31,y-46,62,8);
-   }
+  // Shared enemy health bar for EVERY CPU, including the original first
+  // enemy. Keep it identical in size and position: 50x5px at y-38.
+  // Avatars use the legacy drawHeroIcon for all fighters, preserving the
+  // player's equipped cosmetics and the same base geometry/typography.
+  function drawCpuHpBar(bot){
+   if(bot.hp<=0)return;
+   const x=bot.x-cam.x,y=bot.y-cam.y;
+   if(x<-60||y<-60||x>cpuView.w+60||y>cpuView.h+60)return;
+   cx.save();
+   cx.fillStyle='#1a202c';cx.fillRect(x-25,y-38,50,5);
+   cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*Math.max(0,Math.min(1,bot.hp/MAX_HP)),5);
+   cx.restore();
   }
+  // The first CPU avatar is already painted by the legacy render function.
+  // Only CPUs #2+ need their avatar drawn here, using that SAME function.
   for(const bot of bots.slice(1)){
    if(bot.hp<=0)continue;
    const x=bot.x-cam.x,y=bot.y-cam.y;
    if(x<-60||y<-60||x>cpuView.w+60||y>cpuView.h+60)continue;
-   cx.save();
-   cx.shadowBlur=10;cx.shadowColor='#f68ca6';
-   cx.fillStyle='#b34762';cx.beginPath();cx.arc(x,y,20,0,Math.PI*2);cx.fill();
-   cx.shadowBlur=0;cx.strokeStyle='#fff0f0';cx.lineWidth=2.5;cx.stroke();
-   cx.font='bold 18px sans-serif';cx.fillStyle='#fff';if(window.MojiGlyphDisplay?.draw)window.MojiGlyphDisplay.draw(cx,bot.loadout?.[0]?.ch||'敵',x,y+1,37);
-   else cx.fillText(bot.loadout?.[0]?.ch||'敵',x,y+1);
-   cx.fillStyle='#1a202c';cx.fillRect(x-25,y-38,50,5);
-   cx.fillStyle='#f6829b';cx.fillRect(x-25,y-38,50*bot.hp/MAX_HP,5);
-   cx.restore();
+   drawHeroIcon(cx,x,y,bot.loadout?.[0]?.ch||'敵',true,now/1000);
   }
+  for(const bot of bots)drawCpuHpBar(bot);
   // Full-map dance: each additional CPU also gets a disco ball and notes.
   // The original enemy already receives the same overlay from ultimate-cpu.js.
   if(window.MojiCpuUltimateState?.danceActive?.()){
