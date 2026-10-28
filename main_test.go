@@ -867,18 +867,18 @@ func TestNamepuVictoryResultPanelStaysFullWidth(t *testing.T) {
  online,e:=gameFiles.ReadFile("public/multiplayer.html");if e!=nil{t.Fatal(e)}
  rawIndex,e:=gameFiles.ReadFile("public/index.html");if e!=nil{t.Fatal(e)}
  served:=mobilePatchedIndex(string(rawIndex))
- for _,marker:=range []string{":scope > .result-stats",":scope > .online-meta","target.insertAdjacentElement('beforebegin',panel)"}{
+ for _,marker:=range []string{":scope > .result-stats",":scope > .online-meta","box.insertBefore(panel,target||null)","ensureFullWidthPanel(box,mode)","if(panel.parentElement!==box","box.insertBefore(kills,anchor||null)"}{
   if !strings.Contains(string(namepu),marker){t.Errorf("Namepu panel must be anchored directly to card: %s",marker)}
  }
  if strings.Contains(string(namepu),"box.querySelector('.result-stats,.moji-result-kills,.online-meta')"){t.Fatal("old selector inserts champion into narrow kill counter parent")}
  if !strings.Contains(string(cpu),"stats.insertAdjacentElement('afterend',tally)"){t.Fatal("solo kill count must not be placed inside hero title")}
- for _,marker:=range []string{"#result.moji-namepu-deluxe .result-inner","max-height:calc(100dvh - 24px)","overflow-y:auto!important","width:100%!important;","grid-column:1 / -1!important"}{
+ for _,marker:=range []string{"#result.moji-namepu-deluxe .result-inner","max-height:calc(100dvh - 24px)","overflow-y:auto!important","width:100%!important;","grid-column:1 / -1!important","display:flex!important;flex-direction:column!important;align-items:stretch!important","width:min(820px,calc(100vw - 32px))!important","grid-template-columns:none!important"}{
   if !strings.Contains(string(css),marker){t.Errorf("Namepu scrolling/full-width layout missing: %s",marker)}
  }
- for _,s:=range []string{"/namepu-victory-v123.css?v=131","/namepu-victory-v123.js?v=131","/cpu-battle-v78.js?v=133"}{
+ for _,s:=range []string{"/namepu-victory-v123.css?v=135","/namepu-victory-v123.js?v=135","/cpu-battle-v78.js?v=133"}{
   if !strings.Contains(served,s){t.Errorf("solo browser may keep cached Namepu bug: %s",s)}
  }
- for _,s:=range []string{"namepu-victory-v123.css?v=131","namepu-victory-v123.js?v=131"}{
+ for _,s:=range []string{"namepu-victory-v123.css?v=135","namepu-victory-v123.js?v=135"}{
   if !strings.Contains(string(online),s){t.Errorf("online browser may keep cached Namepu bug: %s",s)}
  }
 }
