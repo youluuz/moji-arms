@@ -25,6 +25,12 @@
 #onlineSlots .moji-preview-track{height:30px}
 #onlineSlots .moji-preview-lines strong{font-size:11px}
 #onlineSlots .moji-preview-lines small{font-size:10px}
+.moji-battle-strokes{display:block!important;min-width:0;font-size:clamp(9px,1.3vw,12px)!important;font-weight:900!important;line-height:1.15!important;color:#bdefff!important;white-space:nowrap!important}
+body.online-battle #gameArea .weapon .weapon-strokes{display:block!important;font-size:clamp(9px,1.2vw,12px)!important;font-weight:900!important;line-height:1.15!important;color:#bdefff!important;white-space:nowrap!important}
+#gameScreen [data-power-multiplier="1.2"] .moji-battle-metric,
+body.online-battle #gameArea [data-power-multiplier="1.2"] .weapon-output{color:#a7ffbd!important}
+#gameScreen [data-power-multiplier="0.8"] .moji-battle-metric,
+body.online-battle #gameArea [data-power-multiplier="0.8"] .weapon-output{color:#ffd0ac!important}
 #gameScreen .moji-battle-metric{display:block!important;color:#ffe8ac!important;font-size:clamp(9px,1.2vw,12px)!important;white-space:nowrap;font-weight:900;line-height:1.15}
 #gameScreen .hud>.combat-hp:nth-of-type(2),#gameScreen .hud>.hp-group:nth-of-type(2),#gameScreen .hud>.hud-card:nth-of-type(2){display:none!important}
 #gameScreen .hud>.combat-hp:first-child{width:100%;max-width:600px}
