@@ -10,7 +10,32 @@
   catch(_){return []}
  }
  let entries=load();
- const order=()=>entries.slice().sort((a,b)=>(b.last||0)-(a.last||0));
+ const SORT_STORE='moji_glyph_sort_v1';
+ const options=new Set(['last','uses','strokes','kana','type']);
+ let sortKey='last',direction='desc';
+ try{const saved=JSON.parse(localStorage.getItem(SORT_STORE)||'{}');if(options.has(saved.sortKey))sortKey=saved.sortKey;if(['asc','desc'].includes(saved.direction))direction=saved.direction}catch(_){}
+ const collator=new Intl.Collator('ja',{numeric:true,sensitivity:'base'});
+ const typeOf=ch=>{
+  if(/\p{Extended_Pictographic}/u.test(ch))return '絵文字';
+  if(/\p{Script=Han}/u.test(ch))return '漢字';
+  if(/\p{Script=Hiragana}/u.test(ch))return 'ひらがな';
+  if(/\p{Script=Katakana}/u.test(ch))return 'カタカナ';
+  if(/[a-zA-Z]/.test(ch))return '英字';
+  if(/[0-9０-９]/.test(ch))return '数字';
+  return '記号・その他';
+ };
+ const types=['ひらがな','カタカナ','漢字','英字','数字','記号・その他','絵文字'];
+ const order=()=>entries.slice().sort((a,b)=>{
+  let compare=0;
+  if(sortKey==='last')compare=(a.last||0)-(b.last||0);
+  else if(sortKey==='uses')compare=(a.uses||0)-(b.uses||0);
+  else if(sortKey==='strokes')compare=(a.n||0)-(b.n||0);
+  else if(sortKey==='kana')compare=collator.compare(a.ch,b.ch);
+  else if(sortKey==='type')compare=types.indexOf(typeOf(a.ch))-types.indexOf(typeOf(b.ch));
+  return (direction==='desc'?-1:1)*compare||collator.compare(a.ch,b.ch);
+ });
+ const saveSort=()=>{try{localStorage.setItem(SORT_STORE,JSON.stringify({sortKey,direction}))}catch(_){}};
+
  function render(){
   const grid=$('mojiGlyphBookGrid'),count=$('mojiGlyphBookCount');
   if(!grid)return;
@@ -59,6 +84,19 @@
   const heading=document.createElement('h2');heading.textContent='字｜文字図鑑';
   const sub=document.createElement('p');sub.textContent='対戦で実際に発動した文字を自動収集。タップで1文字ずつコピーできます。';
   const counter=document.createElement('p');counter.className='moji-book-count';counter.innerHTML='登録済み <strong id="mojiGlyphBookCount">0</strong> 文字';
+  const sortBar=document.createElement('div');sortBar.className='moji-book-sort-controls';
+  const sortLabel=document.createElement('label');sortLabel.textContent='並び替え';
+  const sortSelect=document.createElement('select');sortSelect.id='mojiBookSort';sortSelect.setAttribute('aria-label','文字図鑑の並び替え項目');
+  for(const [value,label] of [['last','最近使った順'],['uses','使用回数'],['strokes','画数'],['kana','あいうえお順'],['type','文字の種類']]){
+   const op=document.createElement('option');op.value=value;op.textContent=label;sortSelect.append(op);
+  }
+  const dirLabel=document.createElement('label');dirLabel.textContent='順序';
+  const dirSelect=document.createElement('select');dirSelect.id='mojiBookDirection';dirSelect.setAttribute('aria-label','図鑑の昇順・降順');
+  for(const [value,label] of [['asc','昇順'],['desc','降順']]){const op=document.createElement('option');op.value=value;op.textContent=label;dirSelect.append(op)}
+  sortSelect.value=sortKey;dirSelect.value=direction;
+  sortSelect.onchange=()=>{sortKey=sortSelect.value;saveSort();render()};
+  dirSelect.onchange=()=>{direction=dirSelect.value;saveSort();render()};
+  sortLabel.append(sortSelect);dirLabel.append(dirSelect);sortBar.append(sortLabel,dirLabel);
   const status=document.createElement('p');status.id='mojiBookStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const grid=document.createElement('div');grid.id='mojiGlyphBookGrid';grid.className='moji-glyph-book-grid';
   const backup=document.createElement('section');backup.className='moji-book-backup';
@@ -69,7 +107,7 @@
   const importFile=document.createElement('input');importFile.type='file';importFile.accept='application/json,.json';importFile.setAttribute('aria-label','保存データのファイルを選択');
   importLabel.append(importFile);
   exportBtn.onclick=()=>{
-   const keys=['kanji_arms_duel_save_v4','moji_arena_player_name','moji_ultimate_choice','moji_cpu_count',STORE,'moji_developer_effect_v1'];
+   const keys=['kanji_arms_duel_save_v4','moji_arena_player_name','moji_ultimate_choice','moji_cpu_count',STORE,SORT_STORE,'moji_developer_effect_v1'];
    const data={app:'moji-arms',version:1,exportedAt:new Date().toISOString(),values:{}};
    for(const key of keys){try{const v=localStorage.getItem(key);if(v!==null)data.values[key]=v}catch(_){}}
    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
@@ -80,7 +118,7 @@
    const file=importFile.files?.[0];if(!file)return;
    try{
     if(file.size>1000000)throw Error('ファイルが大きすぎます');
-    const data=JSON.parse(await file.text()),allowed=new Set(['kanji_arms_duel_save_v4','moji_arena_player_name','moji_ultimate_choice','moji_cpu_count',STORE,'moji_developer_effect_v1']);
+    const data=JSON.parse(await file.text()),allowed=new Set(['kanji_arms_duel_save_v4','moji_arena_player_name','moji_ultimate_choice','moji_cpu_count',STORE,SORT_STORE,'moji_developer_effect_v1']);
     if(data?.app!=='moji-arms'||data.version!==1||!data.values||typeof data.values!=='object')throw Error('文字武装の保存データではありません');
     for(const [k,v]of Object.entries(data.values)){if(allowed.has(k)&&typeof v==='string'&&v.length<700000){if(k===STORE){const check=JSON.parse(v);if(!Array.isArray(check))throw Error('文字図鑑が不正です')}else if(k==='kanji_arms_duel_save_v4')JSON.parse(v);}}
     for(const [k,v]of Object.entries(data.values))if(allowed.has(k)&&typeof v==='string'&&v.length<700000)localStorage.setItem(k,v);
@@ -88,10 +126,10 @@
    }catch(e){status.textContent='読み込み失敗：'+e.message}
   };
   backup.append(backupTitle,backupInfo,exportBtn,importLabel);
-  panel.append(heading,sub,counter,status,grid,backup);
+  panel.append(heading,sub,counter,sortBar,status,grid,backup);
   lobby.append(panel);render();
  }
- window.MojiGlyphBook={record,entries:()=>entries.slice(),render};
+ window.MojiGlyphBook={record,entries:()=>entries.slice(),render,typeOf,sorted:()=>order()};
  window.addEventListener('message',e=>{
   if(e.origin!==location.origin||e.source!==$('onlineFrame')?.contentWindow)return;
   if(e.data?.type==='moji:glyphCast')record(e.data.glyph,e.data.kind,e.data.strokes);
