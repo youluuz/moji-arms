@@ -689,8 +689,15 @@ function releaseStick(e){
  }
 }
 moveZone.addEventListener('pointerdown',e=>{
- if(e.pointerType==='mouse'||padPointer!==null)return;
- e.preventDefault();padPointer=e.pointerId;moveZone.setPointerCapture(e.pointerId);
+ if(e.pointerType==='mouse')return;
+ // An old lost touch must not permanently lock the joystick. A new primary
+ // press replaces its abandoned owner; secondary presses never steal it.
+ if(padPointer!==null){
+  if(!e.isPrimary)return;
+  releaseStick();
+ }
+ e.preventDefault();padPointer=e.pointerId;
+ try{moveZone.setPointerCapture(e.pointerId)}catch(_){};
  const zone=moveZone.getBoundingClientRect();
  // Keep the stick visually concentric with the hit circle; only the inner
  // thumb moves. Previous clamping used the wrong coordinate system.
@@ -701,7 +708,18 @@ moveZone.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preve
 moveZone.addEventListener('pointerup',releaseStick);
 moveZone.addEventListener('pointercancel',releaseStick);
 moveZone.addEventListener('lostpointercapture',releaseStick);
-window.addEventListener('blur',()=>{down=false;releaseStick();keys={}});
+const resetTouchControls=()=>{
+ cancelFire();releaseStick();keys={};down=false;
+};
+window.addEventListener('blur',resetTouchControls);
+window.addEventListener('pagehide',resetTouchControls);
+window.addEventListener('orientationchange',resetTouchControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetTouchControls()});
+document.addEventListener('touchcancel',e=>{if(!e.touches.length)resetTouchControls()},true);
+document.addEventListener('touchend',e=>{if(!e.touches.length){
+ // Legacy WebViews may emit touchend without pointerup/lostcapture.
+ releaseStick();if(fieldHoldPointer!==null)cancelFire();
+}},true);
 window.addEventListener('keydown',e=>{
  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
  let k=e.key.toLowerCase();if(['w','a','s','d'].includes(k))keys[k]=true;
