@@ -72,6 +72,7 @@ function show(overlay,box,info,mode){
  // A repeated win notification should repair layout, not replay the fanfare.
  if(overlay.classList.contains('moji-namepu-deluxe')&&box.querySelector('.namepu-champion')){
   ensureFullWidthPanel(box,mode);
+  rescueNamepuCard(overlay,mode);
   return true;
  }
  overlay.classList.add('moji-namepu-deluxe');
@@ -96,10 +97,74 @@ function show(overlay,box,info,mode){
  // If no familiar stats anchor exists, append directly to the card.
  box.insertBefore(panel,target||null);
  ensureFullWidthPanel(box,mode);
+ rescueNamepuCard(overlay,mode);
  const sound=document.getElementById('musicEnabled');
  if(!sound||sound.checked)fanfare()
  return true;
 }
+
+/* v13.3: Last-resort live result repair. Some legacy result callbacks rebuild
+   children after the win is shown, and old CSS can squeeze them into the
+   fixed-size hero message column. Repair each visible finished layout without
+   recreating the medal or restarting the fanfare. */
+const namepuGuardProperties=['box-sizing','display','flex-direction','align-items','flex','width','min-width','max-width','grid-template-columns','margin-left','margin-right'];
+function rescueNamepuCard(overlay,mode){
+ if(!overlay?.classList.contains('show')||!overlay.classList.contains('moji-namepu-deluxe'))return;
+ const box=overlay.querySelector(mode==='solo'?'.result-inner':'.online-outcome-card');
+ if(!box||!box.querySelector('.namepu-champion'))return;
+ // CSS position:fixed can be trapped by a transformed ancestor; move SOLO
+ // result to the actual document root. Do not dislocate online's iframe UI.
+ if(mode==='solo'&&overlay.parentElement!==document.body)document.body.appendChild(overlay);
+ ensureFullWidthPanel(box,mode);
+ if(box.dataset.namepuLayoutGuard!=='133wide'){
+  box.dataset.namepuLayoutGuard='133wide';
+  const wide='min(820px, calc(100vw - 32px))';
+  for(const [property,value] of [
+   ['box-sizing','border-box'],['display','flex'],['flex-direction','column'],
+   ['align-items','stretch'],['flex','0 0 auto'],['width',wide],
+   ['min-width',wide],['max-width','820px'],['grid-template-columns','none'],
+   ['margin-left','auto'],['margin-right','auto']
+  ])box.style.setProperty(property,value,'important');
+ }
+ const panel=box.querySelector(':scope > .namepu-champion');
+ if(panel&&panel.dataset.namepuLayoutGuard!=='133wide'){
+  panel.dataset.namepuLayoutGuard='133wide';
+  panel.style.setProperty('width','100%','important');
+  panel.style.setProperty('min-width','0','important');
+  panel.style.setProperty('grid-column','1 / -1','important');
+  panel.style.setProperty('align-self','stretch','important');
+ }
+}
+function watchNamepuResult(id,mode){
+ const overlay=document.getElementById(id);
+ if(!overlay)return;
+ let scheduled=false;
+ const refresh=()=>{
+  if(scheduled)return;
+  scheduled=true;
+  queueMicrotask(()=>{
+   scheduled=false;
+   const box=overlay.querySelector(mode==='solo'?'.result-inner':'.online-outcome-card');
+   if(!overlay.classList.contains('moji-namepu-deluxe')){
+    if(box?.dataset.namepuLayoutGuard==='133wide'){
+     namepuGuardProperties.forEach(property=>box.style.removeProperty(property));
+     delete box.dataset.namepuLayoutGuard;
+    }
+    return;
+   }
+   rescueNamepuCard(overlay,mode);
+  });
+ };
+ new MutationObserver(refresh).observe(overlay,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+ refresh();
+}
+function startNamepuGuards(){
+ watchNamepuResult('result','solo');
+ watchNamepuResult('onlineOutcome','online');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startNamepuGuards,{once:true});
+else startNamepuGuards();
+
 window.MojiNamepuVictory={
  stop,playFanfare:fanfare,
  showSolo(info){
