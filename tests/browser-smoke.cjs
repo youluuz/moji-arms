@@ -482,6 +482,10 @@ const { chromium } = require('playwright');
    const expectedMetrics=await page.evaluate(()=>slots.map(s=>(window.MojiWeaponVisual.types[s.kind]?.marker||'')+' '+window.MojiWeaponVisual.battleMetric(s.kind,s.n)));
    if(JSON.stringify(soloMetrics)!==JSON.stringify(expectedMetrics))
     throw Error(mode+' solo battle slot stats disagree with randomized actual equipment: '+JSON.stringify({soloMetrics,expectedMetrics}));
+   const liveStrokes=await page.locator('#gameScreen .moji-battle-strokes').allInnerTexts();
+   const expectedStrokes=await page.evaluate(()=>slots.map(s=>window.MojiWeaponVisual.battleStrokes(s.n)));
+   if(JSON.stringify(liveStrokes)!==JSON.stringify(expectedStrokes))
+    throw Error(mode+' battle stroke badges mismatched actual loadout '+JSON.stringify({liveStrokes,expectedStrokes}));
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
    if(!await page.locator('#cpuBattleCountdown').isVisible())throw Error(mode+' CPU start countdown not visible on map');
    const beforeStart=await page.evaluate(()=>({
@@ -555,7 +559,7 @@ const { chromium } = require('playwright');
    // confirm the actual CPU avatar moves; merely drawing a ring is not enough.
    const preStick=await page.evaluate(()=>({x:player.x,y:player.y}));
    const stick=await page.locator('#cpuMoveZone').boundingBox();
-   if(!stick||stick.width<60)throw Error('Joystick missing real thumb-sized touch target');
+   if(!stick||stick.width<90)throw Error('Joystick is too small for repeated smartphone movement input');
    const startX=stick.x+stick.width/2,startY=stick.y+stick.height/2;
    const cdp=await page.context().newCDPSession(page);
    try{
@@ -578,6 +582,31 @@ const { chromium } = require('playwright');
     });
     if(!cursorDrag.moved||!cursorDrag.visible||cursorDrag.vector?.x<=0)
      throw Error(mode+' CPU cursor fails to follow real rightward drag '+JSON.stringify(cursorDrag));
+   // Reproduce reported phone sequence with actual simultaneous fingers:
+   // move held → ability button → switch a slot → tap/hold attack.
+   // Releasing finger #2/#3 must never cancel finger #1's movement.
+   const targets=await page.evaluate(()=>{
+    const center=q=>{const r=document.querySelector(q)?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null};
+    return {ability:center('#gameScreen #weapons .ultimate-cast'),
+      slot:center('#gameScreen #weapons .weapon:nth-child(2)'),
+      field:center('#gameScreen #field')};
+   });
+   if(!targets.ability||!targets.slot||!targets.field)throw Error('Phone input targets are missing '+JSON.stringify(targets));
+   const finger1={id:1,x:startX+26,y:startY};
+   for(const [id,point] of [[2,targets.ability],[3,targets.slot],[4,targets.field]]){
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1,{id,x:point.x,y:point.y}]});
+    await page.waitForTimeout(75);
+    const during=await page.evaluate(()=>({move:window.MojiInputSafety.activePointers(),
+      vector:typeof touch==='undefined'?null:touch,down:typeof down==='undefined'?null:down}));
+    if(during.move!==1||!(during.vector?.x>0)||(id===4&&during.down!==true))
+     throw Error(mode+' simultaneous move/skill/attack input lost '+id+' '+JSON.stringify(during));
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[finger1]});
+    await page.waitForTimeout(70);
+    const after=await page.evaluate(()=>({move:window.MojiInputSafety.activePointers(),
+      vector:typeof touch==='undefined'?null:touch}));
+    if(after.move!==1||!(after.vector?.x>0))
+     throw Error(mode+' finishing a skill/attack finger cancelled movement '+id+' '+JSON.stringify(after));
+   }
    }finally{
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     await cdp.detach();
