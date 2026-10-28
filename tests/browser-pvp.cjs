@@ -348,6 +348,26 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         !touchUI.hint.includes('タップ／クリック')||!touchUI.pointerSafe||
         touchUI.ratio>1.55||touchUI.attackColor!=='#dbff70')
       throw Error(mode+': non-overlapping six slots, concentric joystick or lime attack missing '+JSON.stringify(touchUI));
+     // Assert actual online HUD from authoritative server multiplier flags.
+     const powerSlot=await page.evaluate(()=>{
+      const me=roomState.players.find(p=>p.id===myId);
+      const saved={danceBoost:me.danceBoost,namepuUsed:me.namepuUsed};
+      const slot=activeSetup.slots[0],w=window.MojiWeaponVisual;
+      function check(dance,namepu){
+       me.danceBoost=dance;me.namepuUsed=namepu;showGame(roomState);
+       const card=document.querySelector('#cards .card[data-slot="0"]');
+       return {strokes:card?.querySelector('.weapon-strokes')?.textContent,
+        value:card?.querySelector('.weapon-output')?.textContent,
+        mult:card?.dataset.powerMultiplier,
+        expected:w.battleMetric(slot.kind,slot.n,w.battleMultiplier(me))};
+      }
+      const base=check(false,false),boost=check(true,false),weak=check(false,true);
+      me.danceBoost=saved.danceBoost;me.namepuUsed=saved.namepuUsed;showGame(roomState);
+      return {base,boost,weak,strokes:w.battleStrokes(slot.n)};
+     });
+     if([powerSlot.base,powerSlot.boost,powerSlot.weak].some(s=>s.strokes!==powerSlot.strokes||s.value!==s.expected)||
+        powerSlot.base.mult!=='1'||powerSlot.boost.mult!=='1.2'||powerSlot.weak.mult!=='0.8')
+      throw Error(mode+': PvP HUD did not show stroke count or authoritative modified values '+JSON.stringify(powerSlot));
      // The joystick must MOVE the server-authoritative fighter, not just
      // remain visually outside the map with a disconnected touch listener.
      const p0=await page.evaluate(()=>{const me=roomState.players.find(p=>p.id===myId);return {x:me.x,y:me.y}});
