@@ -1,5 +1,5 @@
 // End-to-end canvas regression: the local player, original enemy and every
-// additional CPU all use drawHeroIcon. First enemy's HP bar is NOT oversized.
+// additional CPU all use drawHeroIcon. Every fighter's HP bar has equal dimensions.
 // Test both normal and custom CPU games without relying on a screenshot.
 const {chromium}=require('playwright');
 const base=process.env.BASE_URL||'http://127.0.0.1:8083';
@@ -64,12 +64,12 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    });
    console.log('CPU AVATAR PARITY',mode,JSON.stringify(result));
    if(result.failed||!result.first||!result.others||!result.self||
-      result.count!==3||result.uniformHpBars!==6||result.oversized.length)
+      result.count!==3||result.uniformHpBars!==8||result.oversized.length)
     throw Error(mode+' unaligned original enemy/extra CPU portraits or HP bars '+JSON.stringify(result));
    await page.locator('#retreat').click();
    await page.waitForSelector('#lobbyScreen:not(.hidden)',{timeout:10000});
   }
   if(errors.length)throw Error('Browser errors: '+errors.join(' | '));
-  console.log('PASS: normal and custom CPU draw exactly one icon per fighter and two 50x5 HP rectangles per enemy.');
+  console.log('PASS: normal and custom CPU draw exactly one icon per fighter and two 50x5 HP rectangles per fighter, including the player.');
  }finally{await context.close();await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
