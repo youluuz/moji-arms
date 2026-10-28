@@ -568,7 +568,7 @@ function boot(){
   draw(now);
   if(running)requestAnimationFrame(t=>loop(t,token));
  };
- window.MojiCpuBots={getBots:()=>bots,count:countSetting,dimensions:()=>({w:WORLD_W,h:WORLD_H,scale:mapFactor}),kills:()=>playerKills,countdownLeft:()=>Math.max(0,(roundStartAt-performance.now())/1000),lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
+ window.MojiCpuBots={zoneRadiusAt:shrinkingZoneRadius,getBots:()=>bots,count:countSetting,dimensions:()=>({w:WORLD_W,h:WORLD_H,scale:mapFactor}),kills:()=>playerKills,countdownLeft:()=>Math.max(0,(roundStartAt-performance.now())/1000),lastLoadouts:[],rounds:0,casts:Object.fromEntries(kinds.map(k=>[k,0]))};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
