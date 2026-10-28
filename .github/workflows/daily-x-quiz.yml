@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 8 * * *'
       timezone: 'Asia/Tokyo'
+  pull_request:
+    paths:
+      - 'scripts/daily_x_quiz.py'
+      - '.github/workflows/daily-x-quiz.yml'
   workflow_dispatch:
     inputs:
       mode:
@@ -13,6 +17,7 @@ on:
         type: choice
         options:
           - dry-run
+          - check-connection
           - publish
 
 permissions:
@@ -24,6 +29,7 @@ concurrency:
 
 jobs:
   post-quiz:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -38,6 +44,25 @@ jobs:
         run: |
           if [ "${{ github.event_name == 'schedule' || inputs.mode == 'publish' }}" = "true" ]; then
             python scripts/daily_x_quiz.py --publish
+          elif [ "${{ inputs.mode == 'check-connection' }}" = "true" ]; then
+            python scripts/daily_x_quiz.py --check-connection
           else
             python scripts/daily_x_quiz.py
           fi
+
+  verify-no-post:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ vars.BUFFER_CHANNEL_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate quiz generation without posting
+        run: python scripts/daily_x_quiz.py
+      - name: Validate Buffer connection without posting
+        run: python scripts/daily_x_quiz.py --check-connection
