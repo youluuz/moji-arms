@@ -63,7 +63,7 @@ func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil {t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"/cpu-battle-v78.js?v=128"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
+ if !strings.Contains(served,"/cpu-battle-v78.js?v=131"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
 }
 
 func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
@@ -73,6 +73,7 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
  for _,required:=range []string{
   "drawHeroIcon(cx,x,y,bot.loadout?.[0]?.ch||'敵',true,now/1000)",
   "for(const bot of bots)drawCpuHpBar(bot)",
+  "for(const bot of bots){",
   "cx.fillRect(x-25,y-38,50,5)",
   "50*Math.max(0,Math.min(1,bot.hp/MAX_HP))",
  }{
@@ -82,15 +83,20 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
   "cx.fillRect(x-31,y-46,62,8)",
   "cx.fillRect(x-30,y-45,60*",
   "cx.arc(x,y,20,0,Math.PI*2)",
+  "for(const bot of bots.slice(1)){\n   if(bot.hp<=0)continue;\n   const x=bot.x-cam.x,y=bot.y-cam.y;\n   if(x<-60||y<-60||x>cpuView.w+60||y>cpuView.h+60)continue;\n   drawHeroIcon",
  }{
   if strings.Contains(src,legacy){t.Fatalf("inconsistent first enemy or extra CPU drawing still present: %q",legacy)}
  }
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil{t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
+  if !strings.Contains(served,"drawMarker(player,avatarChar,false);") ||
+    strings.Contains(served,"drawMarker(enemy,enemy.loadout?.[0]?.ch||'敵',true)") {
+  t.Fatal("first CPU remains in the legacy avatar renderer")
+ }
  for _,required:=range []string{
-  "drawMarker(enemy,enemy.loadout?.[0]?.ch||'敵',true)",
-  "/cpu-battle-v78.js?v=128",
+  "drawMarker(player,avatarChar,false);",,
+  "/cpu-battle-v78.js?v=131",
  }{
   if !strings.Contains(served,required){t.Fatalf("live game missed first enemy visual integration: %q",required)}
  }
