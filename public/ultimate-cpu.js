@@ -37,7 +37,7 @@ function boot(){
  let chosen=localStorage.getItem('moji_ultimate_choice')||'roman';
  if(!U.byId[chosen])chosen='roman';
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
- let immortalUntil=0,invisibleUntil=0,namepuUntil=0,danceUntil=0;
+ let immortalUntil=0,invisibleUntil=0,namepuUntil=0,danceUntil=0,danceBoost=false;
  // v7.8 CPU opponents respect player invisibility and global dance freeze.
  window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil};
  let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
@@ -51,12 +51,13 @@ function boot(){
  function curr(){return U.byId[chosen]}
  function choose(id){if(!U.byId[id])return;chosen=id;localStorage.setItem('moji_ultimate_choice',id);pick.show(chosen);battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-performance.now())/1000))}
  pick.picker.addEventListener('click',e=>{const b=e.target.closest('[data-ultimate]');if(b)choose(b.dataset.ultimate)});
+ pick.random.addEventListener('click',()=>choose(U.randomId(chosen)));
  choose(chosen);
  function reset(){
   charge=Math.round(curr().cost*(window.MojiCustomRules?.chargeForMode(typeof matchMode==='undefined'?'normal':matchMode)||0)/100);spent=false;aiming=false;aimUntil=windupUntil=0;usedNamepu=false;ultimateUsed='';
   const result=document.getElementById('result');
   if(result){window.MojiNamepuVictory?.stop?.();result.classList.remove('moji-namepu-deluxe','ultimate-namepu-victory');result.querySelector('.namepu-champion')?.remove();delete result.dataset.ultimateNamepu;}
-  immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;specialBullets.clear();romanImpacts=[];
+  immortalUntil=invisibleUntil=namepuUntil=danceUntil=0;danceBoost=false;specialBullets.clear();romanImpacts=[];
   lastActive=true;banner.hidden=true;prevEnemyHP=typeof MAX_HP==='number'?MAX_HP:600;
  }
  function isReady(){return typeof running!=='undefined'&&running&&typeof player!=='undefined'&&player&&Array.isArray(slots)&&slots.length===5&&!(window.MojiCpuBots?.countdownLeft?.()>0)}
@@ -70,11 +71,12 @@ function boot(){
   const oldAct=act;
   act=function(...args){if(!canAct())return;const ready=Array.isArray(slots)&&slots[selected]&&Number.isFinite(args[0])&&args[0]>=slots[selected].ready;const kind=slots?.[selected]?.kind,oldHP=player.hp,oldCount=bullets.length;
    const t=oldAct.apply(this,args);
-   if(ready&&usedNamepu&&performance.now()>=namepuUntil){
-    if(kind==='heal')player.hp=oldHP+(player.hp-oldHP)*.8;
-    else if(kind==='defense')player.shield*=.8;
+   if(ready&&(usedNamepu||danceBoost)&&performance.now()>=namepuUntil){
+    const power=usedNamepu?.8:1.1;
+    if(kind==='heal')player.hp=Math.min(typeof MAX_HP==='number'?MAX_HP:600,oldHP+(player.hp-oldHP)*power);
+    else if(kind==='defense')player.shield*=power;
     else if(['attack','pierce','homing'].includes(kind))
-     for(const b of bullets.slice(oldCount))if(b.owner==='p')b.namepuWeakened=true;
+     for(const b of bullets.slice(oldCount))if(b.owner==='p'){if(usedNamepu)b.namepuWeakened=true;else b.danceBoosted=true;}
    }
    if(ready&&invisibleUntil>performance.now())invisibleUntil=0;return t};
  }
@@ -84,6 +86,7 @@ function boot(){
    const t=performance.now();
    if(t<danceUntil || (actor===player && t<immortalUntil))return;
    if(rest[1]?.namepuWeakened&&actor!==player)amount*=.8;
+   if(rest[1]?.danceBoosted&&actor!==player)amount*=1.1;
    if(rest[1]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0]=true}
    return oldDamage.call(this,actor,amount,now,...rest);
   };
@@ -113,7 +116,7 @@ function boot(){
    aimAngle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
   }else switch(chosen){
    case 'invincible':immortalUntil=now+2800;break;
-   case 'dance':danceUntil=now+2000;break;
+   case 'dance':danceUntil=now+2000;danceBoost=true;break;
    case 'invisible':invisibleUntil=now+4000;break;
    case 'namepu':namepuUntil=now+5000;usedNamepu=true;break;
   }
@@ -189,7 +192,7 @@ function boot(){
   window.MojiNamepuVictory?.showSolo({name:window.MojiLoginWinnerName?.()||'あなた',icon:typeof avatarChar==='string'?avatarChar:'武',kills:window.MojiCpuBots?.kills?.()||0,hp:player.hp});
   return true;
  }
- window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu,debug:()=>({charge,chosen,ready:isReady(),spent,canAct:canAct(),running:typeof running==='undefined'?null:running,n:typeof slots!=='undefined'?slots?.[selected]?.n:null})};
+ window.MojiCpuNamepuVictory={show:showNamepuVictory,used:()=>usedNamepu,debug:()=>({charge,chosen,danceBoost,ready:isReady(),spent,canAct:canAct(),running:typeof running==='undefined'?null:running,n:typeof slots!=='undefined'?slots?.[selected]?.n:null})};
  let lastFxPaint=0;
  function tick(){
   const now=performance.now(),active=isReady();
