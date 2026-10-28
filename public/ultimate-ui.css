@@ -4,6 +4,8 @@
 .ultimate-picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:8px 0 14px}
 .ultimate-option{min-width:0!important;border:1px solid #607a9d!important;background:#1a2943!important;color:#d3e5fa!important;border-radius:10px;padding:5px!important;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px!important;touch-action:manipulation;cursor:pointer}
 .ultimate-option svg{width:48px;height:48px;max-width:100%;filter:drop-shadow(0 3px 5px #030918)}
+.ultimate-random-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;max-width:100%;padding:8px 14px;margin:2px 0 6px;border:1px solid #f1c47d;border-radius:10px;color:#1d2436;background:linear-gradient(120deg,#fff0be,#ffc875);font-weight:900;cursor:pointer;touch-action:manipulation}
+.ultimate-random-button[hidden]{display:none!important}
 .ultimate-option.chosen{border:2px solid #f2cc8c!important;background:#3a3350!important;box-shadow:0 0 12px #f2cc8c55}
 .ultimate-option span{white-space:nowrap}
 .ultimate-battle{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:85px;z-index:46;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
