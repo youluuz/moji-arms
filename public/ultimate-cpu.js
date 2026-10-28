@@ -72,7 +72,7 @@ function boot(){
   act=function(...args){if(!canAct())return;const ready=Array.isArray(slots)&&slots[selected]&&Number.isFinite(args[0])&&args[0]>=slots[selected].ready;const kind=slots?.[selected]?.kind,oldHP=player.hp,oldCount=bullets.length;
    const t=oldAct.apply(this,args);
    if(ready&&(usedNamepu||danceBoost)&&performance.now()>=namepuUntil){
-    const power=usedNamepu?.8:1.1;
+    const power=usedNamepu?.8:1.2;
     if(kind==='heal')player.hp=Math.min(typeof MAX_HP==='number'?MAX_HP:600,oldHP+(player.hp-oldHP)*power);
     else if(kind==='defense')player.shield*=power;
     else if(['attack','pierce','homing'].includes(kind))
@@ -86,7 +86,7 @@ function boot(){
    const t=performance.now();
    if(t<danceUntil || (actor===player && t<immortalUntil))return;
    if(rest[1]?.namepuWeakened&&actor!==player)amount*=.8;
-   if(rest[1]?.danceBoosted&&actor!==player)amount*=1.1;
+   if(rest[1]?.danceBoosted&&actor!==player)amount*=1.2;
    if(rest[1]?.ultimate==='roman'){amount=Math.max(amount,actor?.hp||0);rest[0]=true}
    return oldDamage.call(this,actor,amount,now,...rest);
   };
