@@ -391,7 +391,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        const during=await page.evaluate(()=>({active:window.MojiInputSafety?.activePointers(),moving:keys.d===true,fire:down}));
        if(during.active!==1||!during.moving||(id===4&&during.fire!==true))
         throw Error(mode+': phone switching lost movement/fire '+id+' '+JSON.stringify(during));
-       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[held]});
+       await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[held]});
        await page.waitForTimeout(70);
        const after=await page.evaluate(()=>({active:window.MojiInputSafety?.activePointers(),moving:keys.d===true}));
        if(after.active!==1||!after.moving)
