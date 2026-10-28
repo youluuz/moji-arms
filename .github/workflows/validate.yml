@@ -77,6 +77,8 @@ jobs:
           done
           cat /tmp/mojiarms.log
           exit 1
+      - name: Verify matching CPU avatar designs and HP bars
+        run: node tests/browser-cpu-avatar-parity.cjs
       - name: Run Android-size, landscape and shared-mode browser smoke
         run: node tests/browser-smoke.cjs
       - name: Test real two-player online normal and custom matches
@@ -95,8 +97,6 @@ jobs:
         run: node tests/browser-namepu-headline.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
-      - name: Verify matching CPU avatar designs and HP bars
-        run: node tests/browser-cpu-avatar-parity.cjs
       - name: Verify more vertical arena space on phones
         run: node tests/browser-mobile-battle-growth.cjs
       - name: Test embedded online match in mobile portrait and landscape
