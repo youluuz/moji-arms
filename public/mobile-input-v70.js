@@ -53,8 +53,8 @@
   }
   function stopFiring(force=false) {
     if(force){firingPointers.clear();heldSpace=false;}
-    if(typeof down !== 'undefined' && (force || !firingPointers.size))
-      down = !force && heldSpace;
+    if(typeof down !== 'undefined')
+      down = !force && (firingPointers.size>0 || heldSpace);
   }
   function releaseMovement(preserveKeyboard=false) {
     movePointers.clear();
@@ -150,7 +150,10 @@
     queueMicrotask(() => { if (playing() && !movePointers.size) syncDirections(true); });
   }, true);
   document.addEventListener('focusin', e => {
-    if (playing() && editable(e.target)) releaseMovement(false);
+    if (playing() && editable(e.target)) {
+      stopFiring(true);
+      releaseMovement(false);
+    }
   }, true);
   const releaseAll = () => {
     stopFiring(true);
