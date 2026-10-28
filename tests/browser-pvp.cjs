@@ -378,6 +378,25 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x,y}]});
       await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:x+25,y}]});
       await page.waitForTimeout(350);
+      if(jbox.width<90)throw Error(mode+': PvP joystick still too small '+jbox.width);
+      const targets=await page.evaluate(()=>{
+       const center=selector=>{const b=document.querySelector(selector)?.getBoundingClientRect();return b?{x:b.x+b.width/2,y:b.y+b.height/2}:null};
+       return {skill:center('#cards .ultimate-cast'),slot:center('#cards .card[data-slot="1"]'),attack:center('#arena')};
+      });
+      if(Object.values(targets).some(x=>!x))throw Error(mode+': missing mobile skill/slot/fire targets');
+      const held={id:1,x:x+25,y};
+      for(const [id,point] of [[2,targets.skill],[3,targets.slot],[4,targets.attack]]){
+       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[held,{id,x:point.x,y:point.y}]});
+       await page.waitForTimeout(85);
+       const during=await page.evaluate(()=>({active:window.MojiInputSafety?.activePointers(),moving:keys.d===true,fire:down}));
+       if(during.active!==1||!during.moving||(id===4&&during.fire!==true))
+        throw Error(mode+': phone switching lost movement/fire '+id+' '+JSON.stringify(during));
+       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[held]});
+       await page.waitForTimeout(70);
+       const after=await page.evaluate(()=>({active:window.MojiInputSafety?.activePointers(),moving:keys.d===true}));
+       if(after.active!==1||!after.moving)
+        throw Error(mode+': releasing second finger cancelled joystick '+id+' '+JSON.stringify(after));
+      }
      }finally{
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
       await cdp.detach();
