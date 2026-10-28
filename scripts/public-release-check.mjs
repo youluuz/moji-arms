@@ -64,9 +64,9 @@ const icon=await check('/mojibusou-icon.png','⑦ ゲームのアイコン画像
 const notices=await check('/notices.json','⑦a 公開ベータ案内と初プレイ報酬',s=>{
  try{
   const list=JSON.parse(s).notices;
-  return Array.isArray(list)&&list.length>=2&&
-   list[0].id==='2026-10-28-public-beta-open'&&
-   list[0].title.includes('公開ベータテスト')&&list[0].body.length>0&&
+  return Array.isArray(list)&&list.length>=3&&
+   list[0].id==='2026-10-28-balance-mobile-book-v14'&&list[0].title.includes('図鑑ソート')&&
+   list.some(n=>n.id==='2026-10-28-public-beta-open'&&n.title.includes('公開ベータテスト'))&&
    list.some(n=>n.id==='2026-10-27-welcome-gift'&&n.rewardCoins===3&&n.title.includes('3コイン'));
  }catch{return false}
 });
@@ -76,7 +76,7 @@ const dock=await check('/mobile-stick-dock-v100.js','⑦b モバイル操作欄'
 const css=await check('/lobby-refresh-v100.css','⑦c ロビー表示刷新',s=>s.includes('moji-notice-overlay')&&s.includes('moji-sortie-dock'));
 if(root.ok){
  mark('⑧ トップページで最新版を参照',root.body.includes('roman-effects-v97.js'),root.body.includes('roman-effects-v97.js')?'ロマン砲v97読み込み':'更新前のHTMLです');
- mark('⑧a 一般公開ベータのお知らせ表示',root.body.includes('/launch-nav.js?v=138'),'告知スクリプト最新版');
+ mark('⑧a 一般公開ベータのお知らせ表示',root.body.includes('/launch-nav.js?v=140'),'告知スクリプト最新版');
  mark('⑧b 検索エンジン用ゲーム情報',root.body.includes('"@type":"VideoGame"')&&root.body.includes('rel="canonical"'),'構造化データ・canonical');
 }
 if(multi.ok)mark('⑨ オンライン側で最新版を参照',multi.body.includes('roman-effects-v97.js'),multi.body.includes('roman-effects-v97.js')?'ロマン砲v97読み込み':'更新前のHTMLです');
