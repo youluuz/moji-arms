@@ -39,7 +39,7 @@ function boot(){
  let charge=0,spent=false,aiming=false,aimUntil=0,aimAngle=0,windupUntil=0,ultimateUsed='',usedNamepu=false;
  let immortalUntil=0,invisibleUntil=0,namepuUntil=0,danceUntil=0,danceBoost=false;
  // v7.8 CPU opponents respect player invisibility and global dance freeze.
- window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil};
+ window.MojiCpuUltimateState={danceActive:()=>performance.now()<danceUntil,invisibleActive:()=>performance.now()<invisibleUntil,powerState:()=>({danceBoost,namepuUsed:usedNamepu})};
  let matchId=-1,lastActive=false,prevCast=0,prevEnemyHP=600;
  let specialBullets=new Set(),romanImpacts=[];
  const banner=document.createElement('div');banner.className='ultimate-aiming-banner';banner.hidden=true;shell.append(banner);
@@ -214,6 +214,7 @@ function boot(){
   // Match start and slot reconfiguration rebuild the legacy #weapons DOM.
   // Keep the SAME ultimate button (and its listener) attached as slot six.
   if(weaponRow && battle.root.parentElement!==weaponRow)weaponRow.append(battle.root);
+  if(active)window.MojiWeaponVisual?.syncSoloBattle(slots,{danceBoost,namepuUsed:usedNamepu});
   battle.show(chosen,charge,spent,aiming,Math.max(0,(aimUntil-now)/1000));
   banner.hidden=!active||!aiming;if(!banner.hidden)banner.textContent=curr().name+' 照準中・残り'+Math.ceil(Math.max(0,aimUntil-now)/1000)+'秒';
   const result=document.getElementById('result');
