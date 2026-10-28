@@ -79,3 +79,97 @@
  #result.moji-namepu-deluxe .namepu-identity{text-align:center}
  #result.moji-namepu-deluxe .result-actions{grid-template-columns:minmax(0,1fr)!important}
 }
+
+
+/* v13.2: deterministic fullscreen result layout (desktop and phone).
+ * A Namepu medal is a top-level row, never a 94–155px result-hero grid cell.
+ * Override legacy victory grid/flex/transform rules from the monolithic HTML. */
+#result.moji-namepu-deluxe,
+#onlineOutcome.moji-namepu-deluxe{
+ position:fixed!important;inset:0!important;
+ box-sizing:border-box!important;width:100vw!important;
+ height:100dvh!important;min-height:100dvh!important;max-width:none!important;
+ display:flex!important;flex-direction:column!important;
+ align-items:center!important;justify-content:safe center!important;
+ padding:clamp(12px,2vw,24px)!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+}
+#result.moji-namepu-deluxe .result-inner,
+#onlineOutcome.moji-namepu-deluxe .online-outcome-card{
+ box-sizing:border-box!important;position:relative!important;
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ flex:0 0 auto!important;gap:9px!important;
+ width:min(820px,calc(100vw - 32px))!important;
+ min-width:0!important;max-width:820px!important;
+ max-height:calc(100dvh - 24px)!important;
+ margin:auto!important;
+ padding:clamp(13px,3vw,28px)!important;
+ transform:none!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ scrollbar-width:thin;overscroll-behavior:contain;
+}
+#result.moji-namepu-deluxe .result-inner>.namepu-champion,
+#onlineOutcome.moji-namepu-deluxe .online-outcome-card>.namepu-champion{
+ display:block!important;position:relative!important;
+ box-sizing:border-box!important;flex:0 0 auto!important;
+ align-self:stretch!important;grid-column:1 / -1!important;
+ width:100%!important;min-width:0!important;max-width:none!important;
+ margin:8px 0 10px!important;
+}
+#result.moji-namepu-deluxe .result-hero{
+ display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;
+ align-items:center!important;justify-content:center!important;
+ align-self:stretch!important;grid-template-columns:none!important;
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;
+ gap:12px!important;margin:0!important;
+}
+#result.moji-namepu-deluxe .result-hero>.result-message{
+ flex:1 1 190px!important;min-width:0!important;
+ text-align:center!important;overflow-wrap:anywhere!important;
+}
+#result.moji-namepu-deluxe .result-hero .result-laurel{
+ flex:0 0 auto!important;
+}
+#result.moji-namepu-deluxe .result-stats,
+#result.moji-namepu-deluxe .result-actions,
+#result.moji-namepu-deluxe .result-reward,
+#result.moji-namepu-deluxe .result-loadout,
+#result.moji-namepu-deluxe #cpuResultKills{
+ box-sizing:border-box!important;align-self:stretch!important;
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ margin-left:0!important;margin-right:0!important;
+}
+#result.moji-namepu-deluxe .result-stats{
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+#result.moji-namepu-deluxe #resultTitle{
+ overflow-wrap:anywhere!important;word-break:normal!important;
+}
+#result.moji-namepu-deluxe .namepu-winner-plate,
+#onlineOutcome.moji-namepu-deluxe .namepu-winner-plate{
+ display:flex!important;flex-wrap:wrap!important;
+ justify-content:center!important;align-items:center!important;
+ box-sizing:border-box!important;width:min(100%,550px)!important;max-width:100%!important;
+}
+#result.moji-namepu-deluxe .namepu-identity,
+#onlineOutcome.moji-namepu-deluxe .namepu-identity{
+ flex:1 1 120px!important;min-width:0!important;
+ overflow-wrap:anywhere!important;
+}
+#result.moji-namepu-deluxe:not(.show),
+#onlineOutcome.moji-namepu-deluxe:not(.show){display:none!important;pointer-events:none!important}
+@media(max-width:560px){
+ #result.moji-namepu-deluxe .result-inner,
+ #onlineOutcome.moji-namepu-deluxe .online-outcome-card{
+  width:calc(100vw - 20px)!important;
+  max-height:calc(100dvh - 16px)!important;
+  padding:13px!important;
+ }
+ #result.moji-namepu-deluxe .result-stats{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;
+ }
+ #result.moji-namepu-deluxe .result-stats>div{padding:8px 3px!important}
+ #result.moji-namepu-deluxe .result-stats b{font-size:clamp(12px,3.7vw,20px)!important}
+ #result.moji-namepu-deluxe .namepu-winner-plate,
+ #onlineOutcome.moji-namepu-deluxe .namepu-winner-plate{padding:9px!important;gap:9px!important}
+}
