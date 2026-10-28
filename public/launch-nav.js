@@ -3,7 +3,7 @@
    No accounts, databases, server push, or personal analytics are required. */
 (function(){
  'use strict';
- const fallback=[{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
+ const fallback=[{id:'2026-10-28-balance-mobile-book-v14',date:'2026-10-28',category:'アップデート',title:'🆕 ダンス強化・必殺技ランダム・図鑑ソート・スマホ軽量化',body:'スマホ縦画面を軽量化。Let\'s DANCE後は使用者の通常武装が試合終了まで1.1倍！必殺技ランダムと図鑑の並び替えも追加。お知らせは閲覧後30日で消えます。'},{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
  let announcements=fallback;
  const $=id=>document.getElementById(id);
  function init(){
@@ -36,9 +36,19 @@
   $('mojiNoticeClose').addEventListener('click',close);
   overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)close()});
+  // Read timestamps are per notice and per browser. A viewed notice expires
+  // from this device after 30 days; the server feed remains unchanged.
+  const SEEN_KEY='moji_notice_viewed_at_v1',EXPIRE_MS=30*24*60*60*1000;
+  let viewed={};
+  try{const saved=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))viewed=saved}catch(_){}
+  const visible=()=>announcements.filter(item=>!Number.isFinite(Number(viewed[item.id]))||Date.now()-Number(viewed[item.id])<EXPIRE_MS);
+  const saveViewed=()=>{try{localStorage.setItem(SEEN_KEY,JSON.stringify(viewed))}catch(_){}};
+  const markRead=()=>{const now=Date.now();for(const item of visible())if(!Number.isFinite(Number(viewed[item.id])))viewed[item.id]=now;saveViewed()};
   function render(){
    const list=$('mojiNoticeItems');list.replaceChildren();
-   for(const item of announcements){
+   const available=visible();
+   if(!available.length){const empty=document.createElement('p');empty.textContent='現在表示するお知らせはありません。';list.append(empty)}
+   for(const item of available){
     const article=document.createElement('article');article.className='moji-notice-item';
     const meta=document.createElement('small');meta.textContent=(item.date||'')+' ・ '+(item.category||'お知らせ');
     const title=document.createElement('h3');title.textContent=item.title||'お知らせ';
@@ -57,13 +67,10 @@
     list.append(article);
    }
   }
-  const currentId=()=>announcements[0]?.id||'';
-  const lastRead=()=>{try{return localStorage.getItem('moji_notice_seen_id')||''}catch{return ''}};
-  const markRead=()=>{try{localStorage.setItem('moji_notice_seen_id',currentId())}catch{}};
   const badge=()=>{
    let rewardAvailable=false;
-   try{rewardAvailable=announcements.some(n=>n.rewardCoins===3&&!JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').firstPlayGiftClaimed)}catch(_){rewardAvailable=true}
-   const unread=rewardAvailable||lastRead()!==currentId();
+   try{rewardAvailable=visible().some(n=>n.rewardCoins===3&&!JSON.parse(localStorage.getItem('kanji_arms_duel_save_v4')||'{}').firstPlayGiftClaimed)}catch(_){rewardAvailable=true}
+   const unread=rewardAvailable||visible().some(n=>!Number.isFinite(Number(viewed[n.id])));
    $('mojiUnread').hidden=!unread;noticeButton.classList.toggle('moji-notice-attention',unread);
    noticeButton.setAttribute('aria-label',unread?'未読のお知らせ・初プレイ報酬があります':'お知らせを開く');
   };
@@ -72,10 +79,12 @@
    noticeButton.setAttribute('aria-expanded','true');markRead();badge();$('mojiNoticeClose').focus();
   });
   badge();
+  window.addEventListener('focus',()=>{if(!overlay.hidden)render();badge()});
   fetch('/notices.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{
    if(!data||!Array.isArray(data.notices))return;
-   announcements=data.notices.filter(x=>typeof x.title==='string'&&typeof x.body==='string').slice(0,15);
-   badge();if(!overlay.hidden)render()
+   announcements=data.notices.filter(x=>typeof x.id==='string'&&typeof x.title==='string'&&typeof x.body==='string').slice(0,15);
+   if(!overlay.hidden){render();markRead()}
+   badge()
   }).catch(()=>{});
   // Keep the original buttons (including their listeners and IDs) while
   // removing the redundant online matchmaking panel from the lower lobby.
