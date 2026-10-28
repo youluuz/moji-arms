@@ -5,11 +5,12 @@ const defs=[
  {id:'roman',name:'ロマン砲',cost:320,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
  {id:'slow',name:'硬化弾',cost:275,icon:'硬',color:'#85eaff',tip:'命中した相手を3秒間硬直',target:true},
  {id:'invincible',name:'無敵',cost:280,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
- {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員で強制ダンス',target:false},
+ {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員停止・使用後は自分の武装威力1.1倍',target:false},
  {id:'invisible',name:'透明化',cost:240,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
  {id:'namepu',name:'ナメプ',cost:160,icon:'😐',color:'#e9ff85',tip:'5秒間踊る・その後は武装効果80%',target:false}
 ];
 const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
+function randomId(previous){const options=defs.filter(d=>d.id!==previous);return options[Math.floor(Math.random()*options.length)].id;}
 // Accessible, mobile-readable explanations shared by all four battle modes.
 const guides={
  roman:{
@@ -31,10 +32,10 @@ const guides={
   caution:'無敵中は通常武装を使えない。短時間の緊急回避やエリア脱出に使おう。'
  },
  dance:{
-  role:'全体妨害・即時発動',short:'全員停止',
-  summary:'距離や位置に関係なく、マップ全域にいる自分を含む全プレイヤーが強制的に踊る。',
+  role:'全体妨害・永続強化',short:'全員停止＋1.1倍',
+  summary:'マップ内の全員が2秒間踊る。使用後は発動者だけ通常攻撃・貫通・ホーミング・防御・回復の威力／効果量が、その試合中ずっと1.1倍になる。',
   usage:'必殺技ボタンを1回タップ／クリックすると即発動。現在の効果時間は約2秒。',
-  caution:'自分自身も移動・攻撃ができない。ダンス中は全員のダメージも一時停止する。'
+  caution:'自分も2秒間移動・攻撃できない。ダンス中は全員のダメージが一時停止。1.1倍の効果は使用者のみで、試合を終了すると消える。'
  },
  invisible:{
   role:'かく乱・即時発動',short:'隠密',
@@ -87,6 +88,7 @@ function attachUI(container,opts={}){
  const root=document.createElement('div');root.className='ultimate-widget';
  root.innerHTML='<div class="ultimate-picker-heading"><strong class="ultimate-picker-label">必殺技を選択</strong><span class="ultimate-picker-note">1試合に1回だけ使える</span></div><div class="ultimate-picker" role="group" aria-label="必殺技6種類"></div><button type="button" class="ultimate-guide-toggle" aria-expanded="false" aria-label="必殺技の使い方を開く"><span class="ultimate-guide-toggle-main"><span class="ultimate-guide-toggle-label">選択中の必殺技の使い方</span><small class="ultimate-guide-toggle-hint">▼ タップで説明を開く</small></span><span class="ultimate-guide-chevron" aria-hidden="true">▼ <span>開く</span></span></button><section class="ultimate-guide" hidden aria-live="polite"><button class="ultimate-guide-close" type="button" aria-label="必殺技の説明を閉じる">✕ <span>閉じる</span></button><div class="ultimate-guide-header"><span class="ultimate-guide-icon" aria-hidden="true"></span><div class="ultimate-guide-heading"><strong class="ultimate-guide-name"></strong><span class="ultimate-guide-role"></span></div><span class="ultimate-guide-cost"></span></div><p class="ultimate-guide-summary"></p><div class="ultimate-guide-grid"><div class="ultimate-guide-section"><span class="ultimate-guide-label">使い方</span><p class="ultimate-guide-usage"></p></div><div class="ultimate-guide-section"><span class="ultimate-guide-label">注意点・弱点</span><p class="ultimate-guide-caution"></p></div></div><div class="ultimate-guide-footer">※ 画数・効果時間などのバランスは今後調整する場合があります。</div><button class="ultimate-guide-bottom-close" type="button">▲ 説明を閉じる</button></section><div class="ultimate-battle" hidden><button class="ultimate-cast" type="button" aria-label="必殺技"><span class="ultimate-icon"></span><span class="ultimate-left">残り --画</span></button><span class="ultimate-state"></span></div>';
  const picker=root.querySelector('.ultimate-picker');
+ const random=document.createElement('button');random.type='button';random.className='ultimate-random-button';random.textContent='🎲 必殺技をランダムに選ぶ';random.setAttribute('aria-label','6種類の必殺技からランダム選択');picker.insertAdjacentElement('beforebegin',random);
  const guide=root.querySelector('.ultimate-guide'),guideId='ultimate-guide-'+(++widgetSerial);
  const guideToggle=root.querySelector('.ultimate-guide-toggle');
  guide.id=guideId;
@@ -136,7 +138,7 @@ function attachUI(container,opts={}){
   button.disabled=spent||charge<d.cost||aiming;
   root.querySelector('.ultimate-state').textContent=aiming?'戦場をタップして発射／5秒後自動発射':spent?'必殺技を使用しました':'';
  }
- return {root,picker,guide,guideToggle,cast:root.querySelector('.ultimate-cast'),show,showBattle(flag){root.querySelector('.ultimate-battle').hidden=!flag;root.querySelector('.ultimate-picker-heading').hidden=flag;picker.hidden=flag;guideToggle.hidden=flag;if(flag)setGuideOpen(false);else guide.hidden=guideToggle.getAttribute('aria-expanded')!=='true'}};
+ return {root,picker,random,guide,guideToggle,cast:root.querySelector('.ultimate-cast'),show,showBattle(flag){random.hidden=flag;root.querySelector('.ultimate-battle').hidden=!flag;root.querySelector('.ultimate-picker-heading').hidden=flag;picker.hidden=flag;guideToggle.hidden=flag;if(flag)setGuideOpen(false);else guide.hidden=guideToggle.getAttribute('aria-expanded')!=='true'}};
 }
-window.MojiUlt={defs,byId,icon,play,victoryPhrase,attachUI};
+window.MojiUlt={defs,byId,randomId,icon,play,victoryPhrase,attachUI};
 })();
