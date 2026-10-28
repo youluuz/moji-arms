@@ -25,7 +25,25 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
   });
   if(saved.entries.length!==2||saved.entries.find(e=>e.ch==='龍')?.uses!==2)
    throw Error('Different actual glyphs or repetition count not stored '+JSON.stringify(saved));
-  await page.locator('[aria-label="龍をコピー"]').click();
+  // Verify all sort modes, both directions and saved preferences.
+   const glyphs=()=>page.locator('#mojiGlyphBookGrid .moji-book-glyph').allTextContents();
+   const sort=page.locator('#mojiBookSort'),dir=page.locator('#mojiBookDirection');
+   if((await sort.locator('option').count())!==5)throw Error('Five encyclopedia sorting methods required');
+   await sort.selectOption('strokes');await dir.selectOption('asc');
+   if((await glyphs())[0]!=='🌸')throw Error('Ascending stroke sort must show 9-stroke glyph first');
+   await sort.selectOption('uses');await dir.selectOption('desc');
+   if((await glyphs())[0]!=='龍')throw Error('Descending frequency sort must show twice-used glyph first');
+   await sort.selectOption('type');await dir.selectOption('asc');
+   if((await glyphs())[0]!=='龍')throw Error('Ascending type should place kanji before emoji');
+   await sort.selectOption('kana');await dir.selectOption('asc');
+   const sortedOrder=await glyphs();
+   await dir.selectOption('desc');
+   const reversed=await glyphs();
+   if(sortedOrder[0]===reversed[0])throw Error('Kana order did not reverse');
+   await sort.selectOption('last');await dir.selectOption('desc');
+   const sortSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('moji_glyph_sort_v1')||'{}'));
+   if(sortSaved.sortKey!=='last'||sortSaved.direction!=='desc')throw Error('Glyph sort preference not persisted');
+   await page.locator('[aria-label="龍をコピー"]').click();
   const pasted=await page.evaluate(()=>navigator.clipboard.readText());
   if(pasted!=='龍')throw Error('Copied glyph content mismatch: '+pasted);
   const downloadPromise=page.waitForEvent('download');
