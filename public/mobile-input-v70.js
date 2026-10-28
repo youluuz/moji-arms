@@ -1,4 +1,4 @@
-/* Glyph Strike v13.3: reliable hold-to-fire, keyboard and two-finger safety.
+/* Glyph Strike v14.2: reliable two-finger move/skill/fire transitions and input recovery.
    The first finger can remain captured by the joystick while the second picks a slot.
    Pointerdown fires immediately, before delayed touch click synthesis. */
 (() => {
@@ -78,10 +78,10 @@
     const canvas=e.target.closest('#field,#arena');
     if(!canvas || (e.pointerType==='mouse' && e.button!==0))return;
     firingPointers.set(e.pointerId,e.pointerType);
-    // Do not set 'down' in the capture phase. CPU aimed ultimates intercept
-    // the same pointer at target capture; only the game's ordinary field
-    // handler may activate continuous firing after that interception.
-    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+    // Only the original battlefield handler may capture this pointer.
+    // Capturing from document-capture phase can steal it from a subsequent
+    // ability-aim or movement interaction on some mobile browsers.
+    // The window-wide up/cancel listeners below still safely release it.
   }, true);
   function finishFirePointer(e){
     if(!firingPointers.delete(e.pointerId))return;
@@ -109,12 +109,19 @@
   },true);
   const releaseFinishedPointer = e => {
     if (!movePointers.delete(e.pointerId) || movePointers.size) return;
-    // Let the game's original handler finish first, then override stale input.
+    // Never reset a newly pressed joystick when the previous finger's
+    // cancel/lostcapture notification arrives late.
     queueMicrotask(() => { if (!movePointers.size) releaseMovement(true); });
   };
   document.addEventListener('pointerdown', e => {
     if (!playing() || e.pointerType === 'mouse' || !(e.target instanceof Element)) return;
-    if (e.target.closest('#cpuMoveZone,#moveZone')) movePointers.add(e.pointerId);
+    if (!e.target.closest('#cpuMoveZone,#moveZone')) return;
+    // After an interrupted or cancelled touch, the old joystick may still
+    // own an abandoned ID. A newly primary finger must always be able to
+    // start moving; do not require the player to restart the match.
+    // A secondary finger never resets an active primary joystick.
+    if (e.isPrimary && movePointers.size) releaseMovement(true);
+    movePointers.add(e.pointerId);
   }, true);
   window.addEventListener('pointerup', releaseFinishedPointer, true);
   window.addEventListener('pointercancel', releaseFinishedPointer, true);
@@ -196,6 +203,7 @@
     releaseAll,
     activePointers:()=>movePointers.size,
     firingPointers:()=>firingPointers.size,
+    resetFire:()=>stopFiring(true),
     heldDirections:()=>Array.from(heldDirections)
   };
 })();
