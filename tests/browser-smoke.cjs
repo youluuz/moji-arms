@@ -600,7 +600,7 @@ const { chromium } = require('playwright');
       vector:typeof touch==='undefined'?null:touch,down:typeof down==='undefined'?null:down}));
     if(during.move!==1||!(during.vector?.x>0)||(id===4&&during.down!==true))
      throw Error(mode+' simultaneous move/skill/attack input lost '+id+' '+JSON.stringify(during));
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[finger1]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[finger1]});
     await page.waitForTimeout(70);
     const after=await page.evaluate(()=>({move:window.MojiInputSafety.activePointers(),
       vector:typeof touch==='undefined'?null:touch}));
