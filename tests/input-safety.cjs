@@ -36,6 +36,9 @@ function game(mode) {
  };
  vm.runInNewContext(fs.readFileSync('public/mobile-input-v70.js','utf8'),sandbox,{filename:'mobile-input-v70.js'});
  const emit=(t,e={},onWindow=false)=>{
+  // A document-targeted event passes through window capture before document.
+  // Model the real propagation path so release listeners are not skipped.
+  if(!onWindow)for(const fn of winEvents.get(t)||[])fn(e);
   for(const fn of (onWindow?winEvents:docEvents).get(t)||[])fn(e);
  };
  return {sandbox,emit,zone:new FakeElement(true),field:new FakeElement(false,true),other:new FakeElement()};
