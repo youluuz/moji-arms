@@ -65,8 +65,15 @@ function show(overlay,box,info,mode){
  const stats=el('div','namepu-victory-stats','');
  for(const t of ['⚔ '+Math.max(0,Number(info.kills)||0)+' KILLS','♥ '+Math.max(0,Math.ceil(Number(info.hp)||0))+' HP',mode==='online'?'🌐 ONLINE CHAMPION':'✦ SOLO CHAMPION'])stats.append(el('div','',t));
  panel.append(stats,el('p','namepu-tagline','5秒の舞と20%の弱体化を乗り越え、王者の座へ。'));
- const target=box.querySelector('.result-stats,.moji-result-kills,.online-meta');
- if(target)target.insertAdjacentElement('beforebegin',panel);else box.prepend(panel);
+ // Only use a DIRECT child of the result card as the insertion anchor.
+ // Solo kill counters used to live inside .result-message (the narrow hero
+ // grid column); picking them with querySelector placed this huge panel
+ // inside that column and squashed it into a tall 130px strip.
+ const target=mode==='solo'
+  ?box.querySelector(':scope > .result-stats')
+  :box.querySelector(':scope > .online-meta');
+ if(target)target.insertAdjacentElement('beforebegin',panel);
+ else box.append(panel);
  const sound=document.getElementById('musicEnabled');
  if(!sound||sound.checked)fanfare()
  return true;
