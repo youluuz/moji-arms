@@ -65,7 +65,7 @@ const notices=await check('/notices.json','⑦a 公開ベータ案内と初プ�
  try{
   const list=JSON.parse(s).notices;
   return Array.isArray(list)&&list.length>=3&&
-   list[0].id==='2026-10-28-balance-mobile-book-v14'&&list[0].title.includes('図鑑ソート')&&
+   list[0].id==='2026-10-28-dance-120-slot-stats-v141'&&list[0].title.includes('ダンス1.2倍')&&
    list.some(n=>n.id==='2026-10-28-public-beta-open'&&n.title.includes('公開ベータテスト'))&&
    list.some(n=>n.id==='2026-10-27-welcome-gift'&&n.rewardCoins===3&&n.title.includes('3コイン'));
  }catch{return false}
