@@ -1,3 +1,4 @@
+# Connection verification: run this file with --check-connection in CI (no publishing).
 #!/usr/bin/env python3
 """Post one single-character quiz daily to the single Buffer-connected X account.
 
