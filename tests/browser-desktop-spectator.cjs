@@ -28,9 +28,15 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
     // The layout audit must not depend on stochastic CPU-vs-CPU eliminations.
     // Revive at least two CPU fighters before forcing the local KO.
     for(const bot of window.MojiCpuBots.getBots())bot.hp=Math.max(bot.hp,600);
-    player.hp=1;player.shield=0;player.shieldEnd=0;
-    damage(player,120,performance.now(),true);
-    if(!document.getElementById('cpuDeathChoice'))showResult(false);
+    // Exercise the defeat-to-spectate layout deterministically. Projectile
+    // damage and the async game loop can race and end the CPU round first.
+    player.hp=0;player.shield=0;player.shieldEnd=0;
+    showResult(false);
+    if(!document.getElementById('cpuDeathChoice'))
+      throw Error('No spectator choice after forced defeat: '+JSON.stringify({
+       living:window.MojiCpuBots.getBots().filter(b=>b.hp>0).length,
+       hp:player.hp,match:document.body.className
+      }));
    });
    await page.waitForSelector('#cpuDeathChoice',{timeout:12000});
    await page.locator('#cpuChooseWatch').click();
