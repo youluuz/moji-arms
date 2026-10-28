@@ -29,6 +29,11 @@
   // Both the CPU canvas and the embedded PvP frame load this script.
   const movePointers = new Set();
   const heldDirections = new Set();
+  // Hold-to-fire pointers are separate from joystick fingers. When the mouse
+  // releases outside the canvas, or the browser cancels a long touch, don't
+  // leave the legacy 'down' flag stuck in autofire mode.
+  const firingPointers = new Set();
+  let heldSpace = false;
   const arrowMap = {ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
   const arrows = {w:'ArrowUp',a:'ArrowLeft',s:'ArrowDown',d:'ArrowRight'};
   const moveKeys = ['w','a','s','d'];
@@ -46,6 +51,11 @@
       if (Object.prototype.hasOwnProperty.call(keys, arrows[key])) keys[arrows[key]] = pressed;
     }
   }
+  function stopFiring(force=false) {
+    if(force){firingPointers.clear();heldSpace=false;}
+    if(typeof down !== 'undefined' && (force || !firingPointers.size))
+      down = !force && heldSpace;
+  }
   function releaseMovement(preserveKeyboard=false) {
     movePointers.clear();
     if (!preserveKeyboard) heldDirections.clear();
@@ -57,6 +67,40 @@
     syncDirections(preserveKeyboard);
     if (!preserveKeyboard && typeof down !== 'undefined') down = false;
   }
+  // Capture the physical press on the battlefield. A pointerup outside the
+  // canvas still reaches it, while cancelled/dragged/blurred presses are cleared.
+  // Mouse and touch have independent pointer IDs: firing never steals the stick.
+  document.addEventListener('pointerdown', e => {
+    if(!playing() || !(e.target instanceof Element))return;
+    const canvas=e.target.closest('#field,#arena');
+    if(!canvas || (e.pointerType==='mouse' && e.button!==0))return;
+    firingPointers.add(e.pointerId);
+    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+  }, true);
+  function finishFirePointer(e){
+    if(!firingPointers.delete(e.pointerId))return;
+    stopFiring();
+  }
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])
+    window.addEventListener(type,finishFirePointer,true);
+  // Compatibility events for mouse releases that happen outside the canvas.
+  window.addEventListener('mouseup',e=>{
+    if(e.button!==0)return;
+    for(const id of firingPointers)firingPointers.delete(id);
+    stopFiring();
+  },true);
+  document.addEventListener('pointermove',e=>{
+    // Browsers can drop mouseup after context-menu or drag operations.
+    if(e.pointerType==='mouse' && !(e.buttons&1) && firingPointers.has(e.pointerId)){
+      firingPointers.delete(e.pointerId);stopFiring();
+    }
+  },true);
+  window.addEventListener('dragstart',()=>stopFiring(true),true);
+  document.addEventListener('contextmenu',e=>{
+    if(playing() && e.target?.closest?.('#field,#arena')){
+      e.preventDefault();stopFiring(true);
+    }
+  },true);
   const releaseFinishedPointer = e => {
     if (!movePointers.delete(e.pointerId) || movePointers.size) return;
     // Let the game's original handler finish first, then override stale input.
@@ -73,16 +117,32 @@
   for (const type of ['touchend','touchcancel']) {
     document.addEventListener(type, e => {
       if (playing() && e.touches.length === 0) {
-        queueMicrotask(() => releaseMovement(true));
+        queueMicrotask(() => {
+          releaseMovement(true);
+          // Legacy WebViews can deliver touchend without pointerup.
+          firingPointers.clear();stopFiring();
+        });
       }
     }, true);
   }
   document.addEventListener('keydown', e => {
-    if (!playing() || editable(e.target)) return;
+    if (!playing()) return;
+    // The old game's keydown handler lives on window. Do not let typing in
+    // a lobby/chat input accidentally enable movement during a match.
+    if(editable(e.target)){
+      if(movementKey(e) || e.key===' ')e.stopPropagation();
+      return;
+    }
+    if(e.key===' ')heldSpace=true;
     const key = movementKey(e);
     if (key) heldDirections.add(key);
   }, true);
   document.addEventListener('keyup', e => {
+    if(e.key===' '){
+      heldSpace=false;
+      // In mixed keyboard+mouse input, mouse hold may still be active.
+      queueMicrotask(()=>stopFiring());
+    }
     const key = movementKey(e);
     if (!key) return;
     heldDirections.delete(key);
@@ -92,7 +152,10 @@
   document.addEventListener('focusin', e => {
     if (playing() && editable(e.target)) releaseMovement(false);
   }, true);
-  const releaseAll = () => { if (playing()) releaseMovement(false); };
+  const releaseAll = () => {
+    stopFiring(true);
+    if(playing())releaseMovement(false);
+  };
   window.addEventListener('blur', releaseAll);
   window.addEventListener('pagehide', releaseAll);
   window.addEventListener('orientationchange', releaseAll);
@@ -100,5 +163,10 @@
     if (document.hidden) releaseAll();
   });
   // Test hook and an emergency reset for users switching modes.
-  window.MojiInputSafety = {releaseAll, activePointers:()=>movePointers.size};
+  window.MojiInputSafety = {
+    releaseAll,
+    activePointers:()=>movePointers.size,
+    firingPointers:()=>firingPointers.size,
+    heldDirections:()=>Array.from(heldDirections)
+  };
 })();
