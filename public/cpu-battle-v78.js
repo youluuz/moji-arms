@@ -407,8 +407,12 @@ function boot(){
      tally.id='cpuResultKills';
      tally.className='moji-result-kills';
      tally.setAttribute('role','status');
-     title.insertAdjacentElement('afterend',tally);
     }
+    // Keep the KO count in the main result card rather than the cramped
+    // two-column hero text. Relocate older counters on rematches as well.
+    const stats=document.getElementById('resultStats');
+    if(stats?.parentElement)stats.insertAdjacentElement('afterend',tally);
+    else title.insertAdjacentElement('afterend',tally);
     tally.textContent='⚔ この試合の合計キル数：'+playerKills;
    }
    const status=document.getElementById('status');
