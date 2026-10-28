@@ -1,0 +1,43 @@
+name: Publish daily Moji Arms X quiz
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+      timezone: 'Asia/Tokyo'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Preview only, or publish now to X'
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: moji-arms-x-quiz
+  cancel-in-progress: false
+
+jobs:
+  post-quiz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ vars.BUFFER_CHANNEL_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish previous answer and today's question
+        run: |
+          if [ "${{ github.event_name == 'schedule' || inputs.mode == 'publish' }}" = "true" ]; then
+            python scripts/daily_x_quiz.py --publish
+          else
+            python scripts/daily_x_quiz.py
+          fi
