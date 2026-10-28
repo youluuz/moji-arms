@@ -63,7 +63,7 @@ func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil {t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"/cpu-battle-v78.js?v=141"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
+ if !strings.Contains(served,"/cpu-battle-v78.js?v=143"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
 }
 
 func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
@@ -97,7 +97,7 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
  }
  for _,required:=range []string{
   "/* player and all CPUs rendered exactly once by cpu-battle-v78.js */",
-  "/cpu-battle-v78.js?v=141",
+  "/cpu-battle-v78.js?v=143",
  }{
   if !strings.Contains(served,required){t.Fatalf("live game missed first enemy visual integration: %q",required)}
  }
