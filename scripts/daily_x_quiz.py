@@ -234,7 +234,7 @@ def gql(query):
         token = token[7:].strip()
     if not token:
         raise RuntimeError("BUFFER_API_KEY is missing. Set it in GitHub Actions repository secrets.")
-    if any(ch in token for ch in "\\r\\n\\x00"):
+    if any(ch in token for ch in "\r\n\x00"):
         raise RuntimeError("BUFFER_API_KEY has unexpected whitespace or control characters. Copy only the key value into GitHub Secrets.")
     payload = json.dumps({"query": query}, ensure_ascii=False).encode()
     req = Request(API, data=payload,
