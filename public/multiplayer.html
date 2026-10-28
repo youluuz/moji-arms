@@ -466,13 +466,18 @@ function showGame(m){
  // Render slot buttons once: replacing them 30 times/sec eats mobile taps.
  if(!watching&&($('cards').dataset.loadoutKey!==JSON.stringify(activeSetup.slots)||$('cards').querySelectorAll(':scope > .card[data-slot]').length!==5)){
    $('cards').dataset.loadoutKey=JSON.stringify(activeSetup.slots);
-  $('cards').innerHTML=activeSetup.slots.map((slot,i)=>`<button type="button" data-slot="${i}" class="card weapon"><span class="wchar">${escapeHtml(slot.ch)}</span><small class="wkind">${i+1}｜${onlineNames[slot.kind]}</small><small class="weapon-output">${window.MojiWeaponVisual.metric(slot.kind,slot.n)}</small><div class="card-cooldown"></div><div class="card-track"><div class="progress"></div></div>${slot.kind==='defense'?'<div class="card-track guard-track"><div class="guard-progress"></div></div>':''}</button>`).join('');
+  $('cards').innerHTML=activeSetup.slots.map((slot,i)=>`<button type="button" data-slot="${i}" class="card weapon"><span class="wchar">${escapeHtml(slot.ch)}</span><small class="wkind">${i+1}｜${onlineNames[slot.kind]}</small><small class="weapon-strokes">${window.MojiWeaponVisual.battleStrokes(slot.n)}</small><small class="weapon-output">${window.MojiWeaponVisual.battleMetric(slot.kind,slot.n)}</small><div class="card-cooldown"></div><div class="card-track"><div class="progress"></div></div>${slot.kind==='defense'?'<div class="card-track guard-track"><div class="guard-progress"></div></div>':''}</button>`).join('');
  }
  if(!watching)window.MojiOnlineUltimateDock?.();
  if(watching){$('cards').replaceChildren();$('cards').dataset.loadoutKey='';}
  if(!watching)activeSetup.slots.forEach((slot,i)=>{
   const card=$('cards').children[i],remaining=self?.cooldowns?.[i]||0;
-  const weaponInfo=onlineNames[slot.kind]+'｜'+window.MojiWeaponVisual.metric(slot.kind,slot.n)+'｜CT '+window.MojiWeaponVisual.cooldown(slot.kind,slot.n)+'｜'+window.MojiWeaponVisual.types[slot.kind].note;
+  const power=window.MojiWeaponVisual.battleMultiplier(self);
+  const value=window.MojiWeaponVisual.battleMetric(slot.kind,slot.n,power);
+  const output=card.querySelector('.weapon-output');
+  if(output&&output.textContent!==value)output.textContent=value;
+  card.dataset.powerMultiplier=String(power);
+  const weaponInfo=onlineNames[slot.kind]+'｜'+window.MojiWeaponVisual.battleStrokes(slot.n)+'｜'+value+'｜CT '+window.MojiWeaponVisual.cooldown(slot.kind,slot.n)+'｜'+window.MojiWeaponVisual.types[slot.kind].note;
   const duration=onlineCD(slot.kind,slot.n)/1000;
   card.classList.toggle('active',i===selected);
   card.classList.toggle('harden-blocked',Boolean(self?.hardenedLeft>0&&!['heal','defense'].includes(slot.kind)));
