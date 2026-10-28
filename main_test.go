@@ -815,3 +815,39 @@ func TestRareHanAndUIAndRandomAccess(t *testing.T){
   if !strings.Contains(string(online),marker){t.Errorf("online side missing %q",marker)}
  }
 }
+
+
+// Guard against the same double-rendered first CPU and stuck input after hold.
+func TestSoloAvatarAndInputReleaseRegression(t *testing.T) {
+ index, err := gameFiles.ReadFile("public/index.html")
+ if err != nil { t.Fatal(err) }
+ served := mobilePatchedIndex(string(index))
+ if strings.Contains(served, "drawMarker(player,avatarChar,false);drawMarker(enemy,'敵',true);") {
+  t.Fatal("legacy CPU icons must not be painted on top of the unified renderer")
+ }
+ if !strings.Contains(served, "/* player and all CPUs rendered exactly once by cpu-battle-v78.js */") {
+  t.Fatal("solo fighter drawing replacement is missing")
+ }
+ if !strings.Contains(served, "/mobile-input-v70.js?v=132") ||
+    !strings.Contains(served, "/cpu-battle-v78.js?v=132") {
+  t.Fatal("busted cache versions would retain stale CPU icon or input behavior")
+ }
+ cpu, err := gameFiles.ReadFile("public/cpu-battle-v78.js")
+ if err != nil { t.Fatal(err) }
+ if !strings.Contains(string(cpu), "function drawFighter(fighter,own)") ||
+    !strings.Contains(string(cpu), "drawFighter(player,true)") ||
+    !strings.Contains(string(cpu), "for(const bot of bots)drawFighter(bot,false)") {
+  t.Fatal("self and every CPU must use the same avatar and HP renderer")
+ }
+ input, err := gameFiles.ReadFile("public/mobile-input-v70.js")
+ if err != nil { t.Fatal(err) }
+ for _, safe := range []string{
+   "cpuStickRelease === 'function'",
+   "window.addEventListener('pointerup', releaseFinishedPointer, true)",
+   "keyLastSeen.set(key,performance.now())",
+ } {
+  if !strings.Contains(string(input), safe) {
+   t.Fatalf("missing held input cleanup guard: %s", safe)
+  }
+ }
+}
