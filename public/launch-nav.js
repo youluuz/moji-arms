@@ -3,7 +3,7 @@
    No accounts, databases, server push, or personal analytics are required. */
 (function(){
  'use strict';
- const fallback=[{id:'2026-10-28-balance-mobile-book-v14',date:'2026-10-28',category:'アップデート',title:'🆕 ダンス強化・必殺技ランダム・図鑑ソート・スマホ軽量化',body:'スマホ縦画面を軽量化。Let\'s DANCE後は使用者の通常武装が試合終了まで1.1倍！必殺技ランダムと図鑑の並び替えも追加。お知らせは閲覧後30日で消えます。'},{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
+ const fallback=[{id:'2026-10-28-dance-120-slot-stats-v141',date:'2026-10-28',category:'アップデート',title:'🆕 ダンス1.2倍と試合中の武装性能表示',body:'スマホ縦画面を軽量化。Let\'s DANCE後は使用者の通常武装が試合終了まで1.2倍！武装スロットに画数と強化後・弱体化後の効果値を表示。必殺技ランダムと図鑑ソートも追加。お知らせは閲覧後30日で消えます。'},{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
  let announcements=fallback;
  const $=id=>document.getElementById(id);
  function init(){
