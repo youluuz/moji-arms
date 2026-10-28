@@ -1,4 +1,4 @@
-/* Glyph Strike v13.2: reliable hold-to-fire, keyboard and two-finger safety.
+/* Glyph Strike v13.3: reliable hold-to-fire, keyboard and two-finger safety.
    The first finger can remain captured by the joystick while the second picks a slot.
    Pointerdown fires immediately, before delayed touch click synthesis. */
 (() => {
