@@ -65,3 +65,33 @@ func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
  served:=mobilePatchedIndex(string(index))
  if !strings.Contains(served,"/cpu-battle-v78.js?v=127"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
 }
+
+func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
+ b,err:=gameFiles.ReadFile("public/cpu-battle-v78.js")
+ if err!=nil{t.Fatal(err)}
+ src:=string(b)
+ for _,required:=range []string{
+  "drawHeroIcon(cx,x,y,bot.loadout?.[0]?.ch||'敵',true,now/1000)",
+  "for(const bot of bots)drawCpuHpBar(bot)",
+  "cx.fillRect(x-25,y-38,50,5)",
+  "50*Math.max(0,Math.min(1,bot.hp/MAX_HP))",
+ }{
+  if !strings.Contains(src,required){t.Fatalf("CPU avatar/HP parity missing: %q",required)}
+ }
+ for _,legacy:=range []string{
+  "cx.fillRect(x-31,y-46,62,8)",
+  "cx.fillRect(x-30,y-45,60*",
+  "cx.arc(x,y,20,0,Math.PI*2)",
+ }{
+  if strings.Contains(src,legacy){t.Fatalf("inconsistent first enemy or extra CPU drawing still present: %q",legacy)}
+ }
+ index,err:=gameFiles.ReadFile("public/index.html")
+ if err!=nil{t.Fatal(err)}
+ served:=mobilePatchedIndex(string(index))
+ for _,required:=range []string{
+  "drawMarker(enemy,enemy.loadout?.[0]?.ch||'敵',true)",
+  "/cpu-battle-v78.js?v=128",
+ }{
+  if !strings.Contains(served,required){t.Fatalf("live game missed first enemy visual integration: %q",required)}
+ }
+}
