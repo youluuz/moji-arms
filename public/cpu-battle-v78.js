@@ -287,7 +287,7 @@ function boot(){
   if(match!==matchToken||!running&&!bots.length)return;
   const score=document.getElementById('cpuKillScore');
   if(score)score.textContent='⚔ キル '+playerKills;
-  window.MojiWeaponVisual?.syncSoloBattle(typeof slots==='undefined'?[]:slots);
+  window.MojiWeaponVisual?.syncSoloBattle(typeof slots==='undefined'?[]:slots,window.MojiCpuUltimateState?.powerState?.());
   const cx=ctx;cx.save();cx.textAlign='center';cx.textBaseline='middle';
   // The legacy game's player and first '敵' markers are suppressed server-side.
   // One drawing path gives EVERY fighter the same 44px avatar and 50x5 HP bar.
