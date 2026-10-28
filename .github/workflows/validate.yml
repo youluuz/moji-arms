@@ -45,6 +45,7 @@ jobs:
           node tests/input-safety.cjs
           node tests/public-pages.cjs
           node --check public/arena-expansion-v72.js
+          node --check public/cpu-battle-v78.js
           node tests/check-html-scripts.cjs
       - name: Build the Render binary
         run: CGO_ENABLED=0 go build -o /tmp/mojiarms .
@@ -94,6 +95,8 @@ jobs:
         run: node tests/browser-namepu-headline.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
+      - name: Verify matching CPU avatar designs and HP bars
+        run: node tests/browser-cpu-avatar-parity.cjs
       - name: Verify more vertical arena space on phones
         run: node tests/browser-mobile-battle-growth.cjs
       - name: Test embedded online match in mobile portrait and landscape
