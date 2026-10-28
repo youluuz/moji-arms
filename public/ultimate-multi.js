@@ -52,6 +52,7 @@ function boot(){
  }
  select(chosen);
  pick.picker.addEventListener('click',e=>{const b=e.target.closest('[data-ultimate]');if(b)select(b.dataset.ultimate)});
+ pick.random.addEventListener('click',()=>select(U.randomId(chosen)));
  battle.cast.addEventListener('click',e=>{
   e.preventDefault();
   const p=roomState?.players?.find(p=>p.id===myId);
