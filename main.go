@@ -339,27 +339,32 @@ func (r *Room) elapsed() float64 {
 }
 func (r *Room) combatants() int {if r.Phase!="lobby"&&r.StartedPlayers>=2{return r.StartedPlayers};return len(r.Players)}
 func (r *Room) dimensions() (float64,float64) { return mapDimensions(r.combatants()) }
-func (r *Room) zone() map[string]float64 {
- w,h:=r.dimensions()
- scale:=mapScale(r.combatants())
-	rad := 1350.0*scale
-	switch r.Shrink {
-	case "none":
-		rad = 1350*scale
-	case "instant":
-		rad = 180*scale
-	default:
-		seconds := 120.0
-		if r.Shrink == "slow" {
-			seconds = 180
-		} else if r.Shrink == "fast" {
-			seconds = 70
-		}
-		rad = math.Max(180*scale, (1350-1170*math.Min(1, r.elapsed()/1000/seconds))*scale)
-	}
-	return map[string]float64{"x": w / 2, "y": h / 2, "r": rad}
-}
-func (r *Room) broadcast() {
+
+ // The circle never parks at its old 180-unit minimum: after the regular
+ // phase it closes from 180 to zero. "none" remains a deliberate opt-out.
+ func zoneRadiusAt(shrink string, elapsedSeconds, scale float64) float64 {
+  switch shrink {
+  case "none":
+   return 1350*scale
+  case "instant":
+   return math.Max(0,180*(1-elapsedSeconds/24))*scale
+  default:
+   duration,finalDuration:=120.0,30.0
+   if shrink=="slow"{duration,finalDuration=180,45}
+   if shrink=="fast"{duration,finalDuration=70,18}
+   elapsedSeconds=math.Max(0,elapsedSeconds)
+   if elapsedSeconds<=duration {
+    return (1350-1170*math.Min(1,elapsedSeconds/duration))*scale
+   }
+   return math.Max(0,180*(1-(elapsedSeconds-duration)/finalDuration))*scale
+  }
+ }
+ func (r *Room) zone() map[string]float64 {
+  w,h:=r.dimensions()
+  rad:=zoneRadiusAt(r.Shrink,r.elapsed()/1000,mapScale(r.combatants()))
+  return map[string]float64{"x":w/2,"y":h/2,"r":rad}
+ }
+ func (r *Room) broadcast() {
 	data := r.state()
 	buf, e := json.Marshal(data)
 	if e != nil {
@@ -527,6 +532,9 @@ func newObstaclesSized(theme string, width,height float64, players int, shrink s
 		x := 105 + mathrand.Float64()*(width-wid-210)
 		y := 105 + mathrand.Float64()*(height-hei-210)
 		thickness := 43 + mathrand.Float64()*17
+        // U-shaped interiors must have a full walking lane. A fighter has a
+        // 20-unit collision radius, so leave at least 100 units clear.
+        if layout=="U" { thickness=math.Min(thickness,(math.Min(wid,hei)-100)/2) }
 		parts := obstacleParts(layout,x,y,wid,hei,thickness,mathrand.Intn(4))
 		blocked := false
 		for _, part := range parts {
@@ -543,8 +551,8 @@ func newObstaclesSized(theme string, width,height float64, players int, shrink s
 				if circleRect(px,py,55,part) { blocked = true }
 			}
 			for _, old := range out {
-				if part.X < old.X+old.W+65 && part.X+part.W > old.X-65 &&
-					part.Y < old.Y+old.H+65 && part.Y+part.H > old.Y-65 {
+				if part.X < old.X+old.W+96 && part.X+part.W > old.X-96 &&
+					part.Y < old.Y+old.H+96 && part.Y+part.H > old.Y-96 {
 					blocked = true
 					break
 				}
@@ -1095,7 +1103,7 @@ func (a *Arena) tick(dt float64) {
 			if !collide {
 				p.Y = ny
 			}
-			if now>=room.DanceUntil && dist(p.X, p.Y, worldW/2, worldH/2) > radius {
+			if now>=room.DanceUntil && (radius<=0 || dist(p.X, p.Y, worldW/2, worldH/2) > radius) {
 				hit(p, 32*dt, true, now)
 			}
 			// Keep a one-shot tap for the final 400ms of cooldown.
@@ -1604,6 +1612,10 @@ window.addEventListener('blur',cpuStickRelease);`, 1)
 	source = regexp.MustCompile(`\b1050\b`).ReplaceAllString(source, "1300")
 	// Permit solo CPU round dimensions to change with selected CPU count.
 	source = strings.Replace(source, "const WORLD_W=2300,WORLD_H=1300;", "let WORLD_W=2300,WORLD_H=1300;", 1)
+	// The original solo obstacle generator also needs full player-width lanes,
+    // otherwise the later L/T/U decorations can leave tiny impassable gaps.
+    source = strings.Replace(source, "o.x<p.x+p.w+65&&o.x+o.w>p.x-65&&o.y<p.y+p.h+65&&o.y+o.h>p.y-65",
+        "o.x<p.x+p.w+96&&o.x+o.w>p.x-96&&o.y<p.y+p.h+96&&o.y+o.h>p.y-96", 1)
 	// Match solo cover density to the variable-size world (9 walls at 2 fighters, 32 at 10).
 	source = strings.Replace(source, "while(result.length<14&&attempts++<1300)", "while(result.length<Math.max(9,Math.min(40,Math.round(14*(window.MojiBattleMap?.scale||1)**2)))&&attempts++<1900)", 1)
 	// Rendering and minimap must use the scaled world center, not the old fixed center.
