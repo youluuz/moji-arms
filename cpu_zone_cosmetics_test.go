@@ -63,7 +63,7 @@ func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil {t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"/cpu-battle-v78.js?v=131"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
+ if !strings.Contains(served,"/cpu-battle-v78.js?v=132"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
 }
 
 func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
@@ -71,11 +71,12 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
  if err!=nil{t.Fatal(err)}
  src:=string(b)
  for _,required:=range []string{
-  "drawHeroIcon(cx,x,y,bot.loadout?.[0]?.ch||'敵',true,now/1000)",
-  "for(const bot of bots)drawCpuHpBar(bot)",
-  "for(const bot of bots){",
+  "function drawFighter(fighter,own)",
+  "drawHeroIcon(cx,x,y,own?avatarChar:(fighter.loadout?.[0]?.ch||fighter.ch||'敵'),!own,now/1000)",
+  "if(!cpuSpectating)drawFighter(player,true)",
+  "for(const bot of bots)drawFighter(bot,false)",
   "cx.fillRect(x-25,y-38,50,5)",
-  "50*Math.max(0,Math.min(1,bot.hp/MAX_HP))",
+  "50*Math.max(0,Math.min(1,fighter.hp/MAX_HP))",
  }{
   if !strings.Contains(src,required){t.Fatalf("CPU avatar/HP parity missing: %q",required)}
  }
@@ -90,13 +91,13 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil{t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
-  if !strings.Contains(served,"drawMarker(player,avatarChar,false);") ||
+  if strings.Contains(served,"drawMarker(player,avatarChar,false);") ||
     strings.Contains(served,"drawMarker(enemy,enemy.loadout?.[0]?.ch||'敵',true)") {
   t.Fatal("first CPU remains in the legacy avatar renderer")
  }
  for _,required:=range []string{
-  "drawMarker(player,avatarChar,false);",
-  "/cpu-battle-v78.js?v=131",
+  "/* player and all CPUs rendered exactly once by cpu-battle-v78.js */",
+  "/cpu-battle-v78.js?v=132",
  }{
   if !strings.Contains(served,required){t.Fatalf("live game missed first enemy visual integration: %q",required)}
  }
