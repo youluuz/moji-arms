@@ -585,7 +585,7 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
      metric:document.querySelector('#cards .card[data-slot="0"] .weapon-output')?.textContent,
      n:activeSetup.slots[0].n
     }));
-    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力'+Math.round(updatedN*(7-.02*(updatedN-1)))||updatedCard.n!==updatedN)
+    if(updatedCard.glyph!=='イ'||updatedCard.metric!=='威力 '+Math.round(updatedN*(7-.02*(updatedN-1)))||updatedCard.n!==updatedN)
      throw Error(mode+': replay HUD did not reflect saved server equipment '+JSON.stringify(updatedCard));
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
     await host.waitForFunction(n=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge===n,updatedN,{timeout:15000});
