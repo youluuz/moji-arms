@@ -479,7 +479,7 @@ const { chromium } = require('playwright');
    if(await page.locator('#gameScreen.active .weapon').count()!==5)throw Error(mode+' CPU battle does not have five weapon slots');
    await page.waitForFunction(()=>document.querySelectorAll('#gameScreen .moji-battle-metric').length===5,{timeout:9500});
    const soloMetrics=await page.locator('#gameScreen .moji-battle-metric').allInnerTexts();
-   const expectedMetrics=await page.evaluate(()=>slots.map(s=>(window.MojiWeaponVisual.types[s.kind]?.marker||'')+' '+window.MojiWeaponVisual.metric(s.kind,s.n)));
+   const expectedMetrics=await page.evaluate(()=>slots.map(s=>(window.MojiWeaponVisual.types[s.kind]?.marker||'')+' '+window.MojiWeaponVisual.battleMetric(s.kind,s.n)));
    if(JSON.stringify(soloMetrics)!==JSON.stringify(expectedMetrics))
     throw Error(mode+' solo battle slot stats disagree with randomized actual equipment: '+JSON.stringify({soloMetrics,expectedMetrics}));
    await page.waitForFunction(()=>window.MojiCpuBots?.getBots().length===3,{timeout:12000});
