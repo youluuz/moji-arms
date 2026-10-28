@@ -133,6 +133,17 @@ const { chromium } = require('playwright');
    throw Error('Welcome gift must credit exactly three coins and clear unread state '+JSON.stringify({giftBefore,giftAfter}));
   await page.locator('#mojiNoticeClose').click();
   if(await page.locator('#mojiNoticeOverlay').isVisible())throw Error('Postbox announcements did not close');
+  // Simulate passage of 31 days after viewing every announcement.
+  await page.evaluate(()=>{
+   const key='moji_notice_viewed_at_v1',v=JSON.parse(localStorage.getItem(key)||'{}');
+   for(const id of Object.keys(v))v[id]=Date.now()-31*24*60*60*1000;
+   localStorage.setItem(key,JSON.stringify(v));
+  });
+  await page.locator('#mojiNoticeButton').click();
+  if(!(await page.locator('#mojiNoticeItems').innerText()).includes('現在表示するお知らせはありません')||
+     !(await page.locator('#mojiUnread').evaluate(el=>el.hidden)))
+   throw Error('Viewed notices must expire after 30 days');
+  await page.locator('#mojiNoticeClose').click();
 
   // The user requested LESS SCROLLING, not a redesign: the same avatar
   // controls must remain usable while the preview/setup use less vertical space.
