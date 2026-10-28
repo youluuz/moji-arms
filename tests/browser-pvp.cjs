@@ -311,6 +311,11 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
       await viewer.locator('#onlineWatchPrev').click();
     }finally{await viewerContext.close()}
     await host.waitForFunction(()=>roomState?.spectators===0,{timeout:10000});
+    // Check both players begin with zero ultimate charge BEFORE testing
+    // physical attack taps (which intentionally earn legitimate charge).
+    const startUlt=await host.evaluate(()=>roomState.players.map(p=>({ultimate:p.ultimate,charge:p.ultimateCharge})));
+    if(!startUlt.every(p=>p.ultimate==='roman'&&p.charge===0))
+     throw Error(mode+': initial ultimate charge mismatch '+JSON.stringify(startUlt));
     for(let i=0;i<2;i++){
      const page=pages[i];
      if(await page.locator('#cards .card').count()!==5)throw Error(mode+': missing online weapons for player '+i);
@@ -474,8 +479,6 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
         hardenedControls.pierce||hardenedControls.homing||hardenedControls.locked||
         !hardenedControls.selectGuard||!hardenedControls.selectHeal)
       throw Error(mode+': Hardened mobile/desktop controls must keep heal and defense usable: '+JSON.stringify(hardenedControls));
-     const st=await page.evaluate(()=>({id:myId,all:roomState.players.map(p=>({id:p.id,ultimate:p.ultimate,charge:p.ultimateCharge}))}));
-     if(!st.all.every(p=>p.ultimate==='roman'&&p.charge===0))throw Error(mode+': ultimate state mismatch '+JSON.stringify(st));
     }
     const terrain=await host.evaluate(()=>{
       const groups=new Map();
