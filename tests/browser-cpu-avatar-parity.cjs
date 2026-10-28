@@ -18,9 +18,15 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
    await page.locator('[data-mode-tile="'+mode+'"]').click();
    await page.locator('#cpuBotCount').selectOption('3');
    await page.locator('#shuffleLoadout').click();
+   // A completed previous match leaves its 3 CPU objects in memory until the
+   // next animation frame initializes the new round. Never audit stale bots.
+   const previousRound=await page.evaluate(()=>window.MojiCpuBots?.rounds||0);
    await page.locator('#start').click();
    await page.waitForSelector('#gameScreen.active .weapon',{timeout:16000});
-   await page.waitForFunction(()=>window.MojiCpuBots?.getBots()?.length===3&&typeof window.drawHeroIcon==='function'&&document.body.classList.contains('in-match'),{timeout:12000});
+   await page.waitForFunction(previous=>window.MojiCpuBots?.rounds>previous &&
+     window.MojiCpuBots.getBots().length===3 &&
+     typeof window.drawHeroIcon==='function'&&document.body.classList.contains('in-match'),
+     previousRound,{timeout:15000});
    const result=await page.evaluate(()=>{
     const bots=window.MojiCpuBots.getBots();
     const expected=['炎','雷','氷'];
