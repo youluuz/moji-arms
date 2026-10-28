@@ -577,7 +577,7 @@ func chooseUltimate(id string) string { if ultimateCost(id)>0 {return id}; retur
 func normalPowerMultiplier(p *Player) float64 {
  if p==nil{return 1}
  if p.NamepuUsed{return .8}
- if p.DanceBoost{return 1.1}
+ if p.DanceBoost{return 1.2}
  return 1
 }
 func ultimateLaunch(room *Room,p *Player,now float64) {
