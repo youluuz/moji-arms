@@ -494,11 +494,15 @@ const base=process.env.BASE_URL||'http://127.0.0.1:8083';
        terrain.counts[1]!==5||terrain.counts[2]!==4||terrain.counts[3]!==1||
        terrain.center.x!==920||terrain.center.y!==520||terrain.center.r<950)
       throw Error(mode+': arena/L-T-U-cover mismatch '+JSON.stringify(terrain));
-    // A real tap-cast must accrue automatic stroke units on the server.
+    // Real touchscreen tests above already earn legitimate charge.
+    // Verify the increment from this specific attack, not an absolute total.
+    const beforeCharge=await host.evaluate(()=>roomState.players.find(p=>p.id===myId).ultimateCharge);
     await host.evaluate(()=>send({type:'cast',selected:0,aim:0}));
-    await host.waitForFunction(()=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge>0,{timeout:15000});
+    await host.waitForFunction(before=>roomState?.players.find(p=>p.id===myId)?.ultimateCharge>before,beforeCharge,{timeout:15000});
     const charge=await host.evaluate(()=>roomState.players.find(p=>p.id===myId).ultimateCharge);
-    if(charge!== (mode==='custom'?12:4))throw Error(mode+': expected charge mismatch '+charge);
+    const earned=charge-beforeCharge;
+    if(earned!==(mode==='custom'?12:4))
+     throw Error(mode+': expected charge increment mismatch '+JSON.stringify({beforeCharge,charge,earned}));
     // Guest disconnects: host wins, then returns to the SAME room without reconnecting.
     await guest.evaluate(()=>sock.close());
     await host.waitForFunction(()=>roomState?.phase==='ended',{timeout:15000});
