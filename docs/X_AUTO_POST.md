@@ -1,0 +1,15 @@
+# 文字武装・毎朝8時のX投稿（Buffer）
+- Workflow: `.github/workflows/daily-x-quiz.yml`
+- Python: `scripts/daily_x_quiz.py`
+- Schedule: every day at 08:00 Asia/Tokyo (GitHub Actions can run late).
+- First scheduled quiz: 2026-10-29, numbered #2. First day has no automatic answer post.
+- Later runs: first publish the previous day's answer **only if Buffer confirms that the previous question was sent**; then publish the new question. The answer and question are separate X posts.
+- Avoid duplicate posts on rerun by querying the X channel's existing Buffer posts.
+- Quiz bank consists of manually checked readings and hints; all characters are different. Extend the question bank before it is exhausted. The script deliberately stops when exhausted rather than recycling.
+- Link points to the GitHub Pages information site. Verify the real Render public game URL before changing it.
+- No API key is committed. Configure a **repository Actions secret** `BUFFER_API_KEY` with the Buffer personal API key. If multiple X channels are connected, set the **repository Actions variable** `BUFFER_CHANNEL_ID` to the desired X channel ID.
+- To test safely: Actions → Publish daily Moji Arms X quiz → Run workflow → `dry-run`. No X post is created.
+- To test one actual publication: `publish` (requires API key). This action sends immediately and will not publish a second copy if rerun.
+- Publishing uses Buffer GraphQL `createPost` mode `shareNow` and `schedulingType: automatic`. API acceptance is not proof of final X delivery: confirm the first day's outcome in Buffer's Sent view.
+- A missing key, ambiguous channel, unavailable Buffer API, or expired question bank stops the job with an error. Do not copy API keys to GitHub files, workflow logs, issues, or chat.
+- GitHub Actions scheduled triggers can be late or skipped; exactly 08:00 publication is not guaranteed.
