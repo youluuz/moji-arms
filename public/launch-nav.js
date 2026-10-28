@@ -3,7 +3,7 @@
    No accounts, databases, server push, or personal analytics are required. */
 (function(){
  'use strict';
- const fallback=[{id:'2026-10-28-dance-120-slot-stats-v141',date:'2026-10-28',category:'アップデート',title:'🆕 ダンス1.2倍と試合中の武装性能表示',body:'スマホ縦画面を軽量化。Let\'s DANCE後は使用者の通常武装が試合終了まで1.2倍！武装スロットに画数と強化後・弱体化後の効果値を表示。必殺技ランダムと図鑑ソートも追加。お知らせは閲覧後30日で消えます。'},{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
+ const fallback=[{id:'2026-10-28-phone-controls-v142',date:'2026-10-28',category:'操作改善',title:'📱 スマホ版：移動ボタン拡大・操作切替を改善',body:'移動スティックを縦100px・横約96pxへ拡大。移動しながらスキル・武装・攻撃を切り替えても操作が途切れにくいよう改善しました。'},{id:'2026-10-28-dance-120-slot-stats-v141',date:'2026-10-28',category:'アップデート',title:'🆕 ダンス1.2倍と試合中の武装性能表示',body:'スマホ縦画面を軽量化。Let\'s DANCE後は使用者の通常武装が試合終了まで1.2倍！武装スロットに画数と強化後・弱体化後の効果値を表示。必殺技ランダムと図鑑ソートも追加。お知らせは閲覧後30日で消えます。'},{id:'2026-10-28-public-beta-open',date:'2026-10-28',category:'重要・ベータテスト',title:'📢 文字武装の公開ベータテストを実施中！',body:'どなたでも無料で参加できます。CPU・オンライン対戦をお楽しみください。開発途中のため不具合が起こることがあります。ご意見や不具合は紹介ページからお知らせください。'},{id:'2026-10-27-welcome-gift',date:'2026-10-27',category:'初プレイ報酬',title:'🎁 ようこそ文字武装へ！3コインプレゼント',body:'初回報酬を受取ボタンから一度だけ受け取れます。',rewardCoins:3}];
  let announcements=fallback;
  const $=id=>document.getElementById(id);
  function init(){
