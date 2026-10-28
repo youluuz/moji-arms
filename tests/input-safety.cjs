@@ -30,6 +30,7 @@ function game(mode) {
   navigator:{userAgent:'unit test',maxTouchPoints:0},
   screen:{width:1200,height:900},
   matchMedia:()=>({matches:false}),queueMicrotask,console,
+  performance:{now:()=>1000},
   setInterval:()=>0, // timers are tested separately in a browser, never run in the VM fixture
   MutationObserver:class { observe(){} disconnect(){} },
   releaseStick:()=>{sandbox.releases++},releases:0
