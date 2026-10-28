@@ -63,7 +63,7 @@ func TestCpuSlightDifficultyReductionKeepsSurvivalTactics(t *testing.T) {
  index,err:=gameFiles.ReadFile("public/index.html")
  if err!=nil {t.Fatal(err)}
  served:=mobilePatchedIndex(string(index))
- if !strings.Contains(served,"/cpu-battle-v78.js?v=127"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
+ if !strings.Contains(served,"/cpu-battle-v78.js?v=128"){t.Fatal("new CPU tuning must be cache-busted in the live game")}
 }
 
 func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
