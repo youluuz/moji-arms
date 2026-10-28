@@ -1554,6 +1554,23 @@ window.MojiStrokeReady=Promise.all([
 	source = strings.Replace(source,
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode').value.trim());",
 		"openEmbeddedMultiplayer(pendingMultiAction,document.getElementById('joinRoomCode')?.value.trim()||'');", 1)
+	// Keep a touchscreen held on the CPU battlefield firing at the normal
+	// cooldown, just like mouse hold. The shared safety module always releases
+	// the latch on pointerup/cancel, lost capture, blur and mode transitions.
+	// Capture happens only after ultimate-cpu's capture-phase aiming handler.
+	source = strings.Replace(source, ` requestCast(performance.now());
+});
+window.addEventListener('blur',cpuStickRelease);`, ` requestCast(performance.now());
+ if(e.pointerType==='touch'||e.pointerType==='pen'){
+  down=true;
+  try{c.setPointerCapture(e.pointerId)}catch(_){}
+ }
+});
+c.addEventListener('pointermove',e=>{
+ if(e.pointerType==='mouse'||!down)return;
+ const p=point(e);mouse={x:p.x+cam.x,y:p.y+cam.y};
+});
+window.addEventListener('blur',cpuStickRelease);`, 1)
 	// The legacy 1v1 CPU shooter uses this shared lifetime for homing only.
 	source = strings.Replace(source, "if(b.homing){b.life=4.8;b.turnSide=0;}", "if(b.homing){b.life=3.8;b.turnSide=0;}", 1)
 	// Both CPU modes use the exact same cooldown curve as the server.
