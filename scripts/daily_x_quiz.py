@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Post one Japanese-character quiz daily to the single Buffer-connected X account.
+"""Post one single-character quiz daily to the single Buffer-connected X account.
 
 No paid AI API is used. Buffer API key is read only from GitHub Actions Secrets.
 For safety, an ambiguous X account, a missing key, or an API failure stops posting.
@@ -218,7 +218,7 @@ def posts_for(day):
                 f"本日の文字は「{char}」！\nこの文字は何と読む？🤔\n"
                 f"💡ヒント：{hint}\n\n"
                 f"⚔ 文字が武器になるゲーム『文字武装』\n{GAME_URL}\n"
-                f"#文字武装 #今日の文字 #ブラウザゲーム")
+                f"#文字武装 #今日の文字 #ブラウザゲーム #個人開発者と繋がりたい #個人開発 #クイズ")
     if len(question) > 240:
         raise RuntimeError("Quiz text too long for a safe X post.")
     answer = (f"✅【昨日の文字 #{number} 正解】\n\n"
