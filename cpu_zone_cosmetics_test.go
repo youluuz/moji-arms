@@ -95,7 +95,7 @@ func TestCpuAvatarsAndEnemyBarsShareOneVisualContract(t *testing.T) {
   t.Fatal("first CPU remains in the legacy avatar renderer")
  }
  for _,required:=range []string{
-  "drawMarker(player,avatarChar,false);",,
+  "drawMarker(player,avatarChar,false);",
   "/cpu-battle-v78.js?v=131",
  }{
   if !strings.Contains(served,required){t.Fatalf("live game missed first enemy visual integration: %q",required)}
