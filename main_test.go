@@ -896,7 +896,7 @@ func TestSoloAvatarAndInputReleaseRegression(t *testing.T) {
   t.Fatal("solo fighter drawing replacement is missing")
  }
  if !strings.Contains(served, "/mobile-input-v70.js?v=142") ||
-    !strings.Contains(served, "/cpu-battle-v78.js?v=141") {
+    !strings.Contains(served, "/cpu-battle-v78.js?v=143") {
   t.Fatal("busted cache versions would retain stale CPU icon or input behavior")
  }
  cpu, err := gameFiles.ReadFile("public/cpu-battle-v78.js")
@@ -937,7 +937,7 @@ func TestNamepuVictoryResultPanelStaysFullWidth(t *testing.T) {
  for _,marker:=range []string{"#result.moji-namepu-deluxe .result-inner","max-height:calc(100dvh - 24px)","overflow-y:auto!important","width:100%!important;","grid-column:1 / -1!important","display:flex!important;flex-direction:column!important;align-items:stretch!important","width:min(820px,calc(100vw - 32px))!important","grid-template-columns:none!important"}{
   if !strings.Contains(string(css),marker){t.Errorf("Namepu scrolling/full-width layout missing: %s",marker)}
  }
- for _,s:=range []string{"/namepu-victory-v123.css?v=136","/namepu-victory-v123.js?v=136","/cpu-battle-v78.js?v=141"}{
+ for _,s:=range []string{"/namepu-victory-v123.css?v=136","/namepu-victory-v123.js?v=136","/cpu-battle-v78.js?v=143"}{
   if !strings.Contains(served,s){t.Errorf("solo browser may keep cached Namepu bug: %s",s)}
  }
  for _,s:=range []string{"namepu-victory-v123.css?v=136","namepu-victory-v123.js?v=136"}{
