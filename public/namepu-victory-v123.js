@@ -50,10 +50,30 @@ function fanfare(){
  }catch(_){}
 }
 function chooseHeadline(){return window.MojiUlt?.victoryPhrase?.()||'真顔のまま、天下統一！'}
+// Reparent the medal into the full result card even if an earlier render
+// put it inside the narrow .result-message grid column. This also repairs
+// an already open result rather than keeping the faulty early-return layout.
+function ensureFullWidthPanel(box,mode){
+ const panel=box.querySelector('.namepu-champion');
+ if(!panel)return;
+ const anchor=mode==='solo'
+  ?box.querySelector(':scope > .result-stats')
+  :box.querySelector(':scope > .online-meta');
+ if(panel.parentElement!==box || (anchor && panel.nextElementSibling!==anchor))
+  box.insertBefore(panel,anchor||null);
+ if(mode==='solo'){
+  const kills=box.querySelector('#cpuResultKills');
+  // A nested kill counter must not stretch or compress the hero columns.
+  if(kills && kills.parentElement!==box) box.insertBefore(kills,anchor||null);
+ }
+}
 function show(overlay,box,info,mode){
  if(!overlay||!box)return false;
- // Repainting the same result must not reroll its slogan or restart the song.
- if(overlay.classList.contains('moji-namepu-deluxe')&&box.querySelector('.namepu-champion'))return true;
+ // A repeated win notification should repair layout, not replay the fanfare.
+ if(overlay.classList.contains('moji-namepu-deluxe')&&box.querySelector('.namepu-champion')){
+  ensureFullWidthPanel(box,mode);
+  return true;
+ }
  overlay.classList.add('moji-namepu-deluxe');
  box.querySelector('.namepu-champion')?.remove();
  const panel=el('section','namepu-champion','');panel.setAttribute('aria-label','ナメプ勝利プレイヤー情報');
@@ -72,8 +92,10 @@ function show(overlay,box,info,mode){
  const target=mode==='solo'
   ?box.querySelector(':scope > .result-stats')
   :box.querySelector(':scope > .online-meta');
- if(target)target.insertAdjacentElement('beforebegin',panel);
- else box.append(panel);
+ // Always insert via the card, never via a child element's parent.
+ // If no familiar stats anchor exists, append directly to the card.
+ box.insertBefore(panel,target||null);
+ ensureFullWidthPanel(box,mode);
  const sound=document.getElementById('musicEnabled');
  if(!sound||sound.checked)fanfare()
  return true;
