@@ -137,3 +137,66 @@ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveThumb{
   width:60px!important;height:60px!important;max-width:60px!important;
  }
 }
+
+/* v14.2: actual thumb-sized, independent joystick targets.
+   Portrait was only 68px: use a 100px pad and 112px rail.
+   Landscape uses a 98px pad while keeping the playing map visible.
+   The whole ring is the touch target; the graphic never steals taps. */
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock,
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock{
+ flex:0 0 112px!important;width:112px!important;max-width:112px!important;
+ padding:0 0 5px!important;align-items:flex-end!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMoveZone,
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #touchControls,
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveZone{
+ width:100px!important;height:100px!important;flex-basis:100px!important;
+ min-width:100px!important;max-width:100px!important;
+}
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #touchControls{
+ --moji-zone-size:100px!important;--moji-pad-size:80px!important;
+}
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #movePad{
+ width:80px!important;height:80px!important;top:10px!important;left:10px!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumb{
+ width:78px!important;height:78px!important;max-width:78px!important;
+}
+body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumbDot,
+body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveThumb{
+ width:38px!important;height:38px!important;max-width:38px!important;
+}
+@media (orientation:portrait) and (max-width:800px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock{
+  width:100%!important;max-width:none!important;flex:0 0 112px!important;
+  min-height:112px!important;height:112px!important;
+  padding:0 0 0 8px!important;align-items:center!important;justify-content:flex-start!important;
+ }
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock:before,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock:before{
+  left:117px!important;font-size:11px!important;
+ }
+}
+@media (orientation:landscape) and (max-height:470px){
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock{
+  flex:0 0 104px!important;width:104px!important;max-width:104px!important;
+  padding-bottom:3px!important;
+ }
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuMoveZone,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #touchControls,
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #moveZone{
+  width:96px!important;height:96px!important;min-width:96px!important;
+  max-width:96px!important;flex-basis:96px!important;
+ }
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #touchControls{
+  --moji-zone-size:96px!important;--moji-pad-size:76px!important;
+ }
+ body.mobile-touch-input.online-battle #gameArea .moji-stick-dock #movePad{
+  width:76px!important;height:76px!important;top:10px!important;left:10px!important;
+ }
+ body.mobile-touch-input.in-match #gameScreen .moji-stick-dock #cpuThumb{
+  width:74px!important;height:74px!important;max-width:74px!important;
+ }
+}
