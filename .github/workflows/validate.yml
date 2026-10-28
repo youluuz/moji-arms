@@ -77,6 +77,8 @@ jobs:
           done
           cat /tmp/mojiarms.log
           exit 1
+      - name: Verify Namepu winner layout in actual solo game and mobile screens
+        run: node tests/browser-namepu-headline.cjs
       - name: Verify matching CPU avatar designs and HP bars
         run: node tests/browser-cpu-avatar-parity.cjs
       - name: Verify held fire and keyboard release in real Chrome
@@ -95,8 +97,6 @@ jobs:
         run: node tests/browser-custom-rules.cjs
       - name: Verify missing glyph fallback and safe random glyphs
         run: node tests/browser-glyph-display.cjs
-      - name: Test randomized Namepu headlines in Chromium
-        run: node tests/browser-namepu-headline.cjs
       - name: Test five-slot emoji-only random in normal and custom CPU lobbies
         run: node tests/browser-emoji-shuffle.cjs
       - name: Verify more vertical arena space on phones
