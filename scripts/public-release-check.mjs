@@ -61,12 +61,13 @@ const privacy=await check('/privacy.html','④ 個人情報・ベータ注意事
 const multi=await check('/multiplayer.html','⑤ オンライン対戦ロビー',s=>s.includes('roomCode')&&s.includes('WebSocket')||s.includes('roomCode')&&s.includes('sock'));
 const roman=await check('/roman-effects-v97.js','⑥ ロマン砲の最新版エフェクト',s=>s.includes('drawImpact')&&s.includes('drawShot')&&!s.includes("fillText('撃破"));
 const icon=await check('/mojibusou-icon.png','⑦ ゲームのアイコン画像',(_,res)=>res.headers.get('content-type')?.includes('image/')===true,{method:'HEAD'});
-const notices=await check('/notices.json','⑦a 初プレイ報酬のお知らせ（過去の告知は全削除）',s=>{
+const notices=await check('/notices.json','⑦a 公開ベータ案内と初プレイ報酬',s=>{
  try{
   const list=JSON.parse(s).notices;
-  return Array.isArray(list)&&list.length===1&&
-   list[0].id==='2026-10-27-welcome-gift'&&list[0].rewardCoins===3&&
-   list[0].title.includes('3コイン')&&list[0].body.length>0;
+  return Array.isArray(list)&&list.length>=2&&
+   list[0].id==='2026-10-28-public-beta-open'&&
+   list[0].title.includes('公開ベータテスト')&&list[0].body.length>0&&
+   list.some(n=>n.id==='2026-10-27-welcome-gift'&&n.rewardCoins===3&&n.title.includes('3コイン'));
  }catch{return false}
 });
 const dock=await check('/mobile-stick-dock-v100.js','⑦b モバイル操作欄',s=>s.includes('moji-map-with-stick')&&s.includes('cpuMoveZone')&&s.includes('touchControls'));
