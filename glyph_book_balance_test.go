@@ -29,7 +29,7 @@ func TestGlyphBookAndSecretFXAreAvailableInRealGame(t *testing.T){
  b,e:=gameFiles.ReadFile("public/index.html");if e!=nil {t.Fatal(e)}
  html:=mobilePatchedIndex(string(b))
  for _,part:=range []string{
-  "glyph-book-v114.js?v=114","glyph-book-v114.css?v=114",
+  "glyph-book-v114.js?v=140","glyph-book-v114.css?v=140",
   "owner-cyber-v114.js?v=119","owner-cyber-v114.css?v=117",
   "custom-match-v120.js?v=120","custom-match-v120.css?v=120",
   "window.MojiGlyphBook?.record(s.ch,s.kind,s.n)",
