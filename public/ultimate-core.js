@@ -5,7 +5,7 @@ const defs=[
  {id:'roman',name:'ロマン砲',cost:320,icon:'砲',color:'#ffc36d',tip:'構えてから狙った位置へ発射',target:true},
  {id:'slow',name:'硬化弾',cost:275,icon:'硬',color:'#85eaff',tip:'命中した相手を3秒間硬直',target:true},
  {id:'invincible',name:'無敵',cost:280,icon:'無敵',color:'#f7efbb',tip:'エリア外も含む完全防御',target:false},
- {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員停止・使用後は自分の武装威力1.1倍',target:false},
+ {id:'dance',name:"Let's DANCE",cost:280,icon:'♪',color:'#ff9aca',tip:'全員停止・使用後は自分の武装威力1.2倍',target:false},
  {id:'invisible',name:'透明化',cost:240,icon:'透',color:'#8beaf7',tip:'姿を隠して逃走',target:false},
  {id:'namepu',name:'ナメプ',cost:160,icon:'😐',color:'#e9ff85',tip:'5秒間踊る・その後は武装効果80%',target:false}
 ];
@@ -32,10 +32,10 @@ const guides={
   caution:'無敵中は通常武装を使えない。短時間の緊急回避やエリア脱出に使おう。'
  },
  dance:{
-  role:'全体妨害・永続強化',short:'全員停止＋1.1倍',
-  summary:'マップ内の全員が2秒間踊る。使用後は発動者だけ通常攻撃・貫通・ホーミング・防御・回復の威力／効果量が、その試合中ずっと1.1倍になる。',
+  role:'全体妨害・永続強化',short:'全員停止＋1.2倍',
+  summary:'マップ内の全員が2秒間踊る。使用後は発動者だけ通常攻撃・貫通・ホーミング・防御・回復の威力／効果量が、その試合中ずっと1.2倍になる。',
   usage:'必殺技ボタンを1回タップ／クリックすると即発動。現在の効果時間は約2秒。',
-  caution:'自分も2秒間移動・攻撃できない。ダンス中は全員のダメージが一時停止。1.1倍の効果は使用者のみで、試合を終了すると消える。'
+  caution:'自分も2秒間移動・攻撃できない。ダンス中は全員のダメージが一時停止。1.2倍の効果は使用者のみで、試合を終了すると消える。'
  },
  invisible:{
   role:'かく乱・即時発動',short:'隠密',
