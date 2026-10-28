@@ -37,6 +37,8 @@
   const arrowMap = {ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
   const arrows = {w:'ArrowUp',a:'ArrowLeft',s:'ArrowDown',d:'ArrowRight'};
   const moveKeys = ['w','a','s','d'];
+  const keyLastSeen = new Map();
+  let spaceLastSeen = 0;
   const playing = () => document.body.classList.contains('in-match') ||
                         document.body.classList.contains('online-battle');
   const movementKey = e => arrowMap[e.key] || (moveKeys.includes(e.key.toLowerCase()) ? e.key.toLowerCase() : null);
@@ -52,17 +54,18 @@
     }
   }
   function stopFiring(force=false) {
-    if(force){firingPointers.clear();heldSpace=false;}
+    if(force){firingPointers.clear();heldSpace=false;spaceLastSeen=0;}
     if(typeof down !== 'undefined')
       down = !force && (firingPointers.size>0 || heldSpace);
   }
   function releaseMovement(preserveKeyboard=false) {
     movePointers.clear();
-    if (!preserveKeyboard) heldDirections.clear();
+    if (!preserveKeyboard){heldDirections.clear();keyLastSeen.clear();}
     // This is the CPU joystick's movement vector. A missed pointerup in the
     // old handler otherwise leaves it non-null for every subsequent frame.
     if (typeof touch !== 'undefined') touch = null;
     // PvP's original joystick keeps a pointer ID and its own thumb position.
+    if (typeof cpuStickRelease === 'function') cpuStickRelease();
     if (typeof releaseStick === 'function') releaseStick();
     syncDirections(preserveKeyboard);
     if (!preserveKeyboard && typeof down !== 'undefined') down = false;
@@ -75,6 +78,9 @@
     const canvas=e.target.closest('#field,#arena');
     if(!canvas || (e.pointerType==='mouse' && e.button!==0))return;
     firingPointers.add(e.pointerId);
+    // Preserve hold-to-fire in solo mode, including touch, until release/cancel.
+    // Online touch stays one server cast per tap.
+    if(canvas.id==='field'&&typeof down!=='undefined')down=true;
     try{canvas.setPointerCapture(e.pointerId)}catch(_){}
   }, true);
   function finishFirePointer(e){
@@ -110,9 +116,9 @@
     if (!playing() || e.pointerType === 'mouse' || !(e.target instanceof Element)) return;
     if (e.target.closest('#cpuMoveZone,#moveZone')) movePointers.add(e.pointerId);
   }, true);
-  document.addEventListener('pointerup', releaseFinishedPointer, true);
-  document.addEventListener('pointercancel', releaseFinishedPointer, true);
-  document.addEventListener('lostpointercapture', releaseFinishedPointer, true);
+  window.addEventListener('pointerup', releaseFinishedPointer, true);
+  window.addEventListener('pointercancel', releaseFinishedPointer, true);
+  window.addEventListener('lostpointercapture', releaseFinishedPointer, true);
   // Older mobile WebViews sometimes deliver touchend without pointerup.
   for (const type of ['touchend','touchcancel']) {
     document.addEventListener(type, e => {
@@ -133,22 +139,38 @@
       if(movementKey(e) || e.key===' ')e.stopPropagation();
       return;
     }
-    if(e.key===' ')heldSpace=true;
+    if(e.key===' '){heldSpace=true;spaceLastSeen=performance.now();}
     const key = movementKey(e);
-    if (key) heldDirections.add(key);
+    if(key){heldDirections.add(key);keyLastSeen.set(key,performance.now());}
   }, true);
   document.addEventListener('keyup', e => {
     if(e.key===' '){
-      heldSpace=false;
+      heldSpace=false;spaceLastSeen=0;
       // In mixed keyboard+mouse input, mouse hold may still be active.
       queueMicrotask(()=>stopFiring());
     }
     const key = movementKey(e);
     if (!key) return;
-    heldDirections.delete(key);
+    heldDirections.delete(key);keyLastSeen.delete(key);
     // If the original keyup was ignored because focus moved, repair it.
     queueMicrotask(() => { if (playing() && !movePointers.size) syncDirections(true); });
   }, true);
+  // Safety net for browsers that swallow keyup while a held fire pointer is
+  // captured. Real held keys produce repeat keydown events; abandoned keys don't.
+  setInterval(()=>{
+    if(!playing())return;
+    const now=performance.now();
+    let changed=false;
+    for(const key of heldDirections){
+      if(now-(keyLastSeen.get(key)||now)>4500){
+        heldDirections.delete(key);keyLastSeen.delete(key);changed=true;
+      }
+    }
+    if(changed&&!movePointers.size)syncDirections(true);
+    if(heldSpace&&now-spaceLastSeen>4500){
+      heldSpace=false;spaceLastSeen=0;stopFiring();
+    }
+  },750);
   document.addEventListener('focusin', e => {
     if (playing() && editable(e.target)) {
       stopFiring(true);
