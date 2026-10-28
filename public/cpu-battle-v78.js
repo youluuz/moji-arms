@@ -62,7 +62,18 @@ function equip(bot,i){
  bot.aggression=.65+Math.random()*.7;bot.dodgeUntil=0;
  bot.ready=0;bot.guardReady=0;bot.targetId=null;bot.hardenUntil=0;
 }
-function spawnPosition(index,total,now,ignorePlayer=false){
+
+ // Keep the original first shrinking phase, then close the remaining 180
+ // units completely instead of creating an everlasting 180-unit safe pocket.
+ function shrinkingZoneRadius(mode,elapsed,scale){
+  if(mode==='none')return 1350*scale;
+  if(mode==='instant')return Math.max(0,180*(1-elapsed/24))*scale;
+  const duration=({slow:180,fast:70,normal:120})[mode]||120;
+  const final=({slow:45,fast:18,normal:30})[mode]||30;
+  if(elapsed<=duration)return (1350-1170*Math.min(1,Math.max(0,elapsed)/duration))*scale;
+  return Math.max(0,180*(1-(elapsed-duration)/final))*scale;
+ }
+ function spawnPosition(index,total,now,ignorePlayer=false){
  // Wider, collision-checked positions. Prior code only required 135px
  // between CPU fighters, so a crowded match could still spawn two almost
  // together after a wall displaced their assigned points.
@@ -476,8 +487,7 @@ function boot(){
    if(!cpuSpectating)moveActor(player,vx/mag*player.speed*dt,vy/mag*player.speed*dt,now);
    // Evaluate the NEW shrinking radius before CPU navigation, not after.
    const elapsed=(now-startTime)/1000;
-   zoneRadius=zoneSetting==='none'?1350*mapFactor:zoneSetting==='instant'?180*mapFactor:
-    Math.max(180*mapFactor,(1350-1170*Math.min(1,elapsed/({slow:180,normal:120,fast:70}[zoneSetting]||120)))*mapFactor);
+   zoneRadius=shrinkingZoneRadius(zoneSetting,elapsed,mapFactor);
    const center={x:WORLD_W/2,y:WORLD_H/2};
    for(const bot of alive()){
     const hardened=now<bot.hardenUntil;
@@ -512,10 +522,10 @@ function boot(){
      bot.nextDecision=now+pace[0]+roll(pace[1]);
     }
    }
-   const outside=Math.hypot(player.x-center.x,player.y-center.y)>zoneRadius;
+   const outside=zoneRadius<=0||Math.hypot(player.x-center.x,player.y-center.y)>zoneRadius;
    zoneWarningUpdate(outside,now);
    for(const actor of [...(cpuSpectating?[]:[player]),...alive()]){
-    if(Math.hypot(actor.x-center.x,actor.y-center.y)>zoneRadius)damage(actor,32*dt,now,true);
+    if(zoneRadius<=0||Math.hypot(actor.x-center.x,actor.y-center.y)>zoneRadius)damage(actor,32*dt,now,true);
     if(!running)break;
    }
    if(queuedCast){
@@ -554,7 +564,7 @@ function boot(){
     }
    }
   }
-  document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneSetting==='instant'?'安全エリア：最小から開始':'安全エリア半径：'+Math.round(zoneRadius)+' / '+Math.round(1350*mapFactor);
+  document.getElementById('zoneInfo').textContent=zoneSetting==='none'?'安全エリア：収縮なし':zoneRadius<=0?'⚠ 安全エリア消滅': '安全エリア半径：'+Math.round(zoneRadius)+' / '+Math.round(1350*mapFactor);
   draw(now);
   if(running)requestAnimationFrame(t=>loop(t,token));
  };
