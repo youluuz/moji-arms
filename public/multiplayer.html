@@ -622,7 +622,7 @@ $('cards').addEventListener('click',e=>{
  const card=e.target.closest('button[data-slot]');
  if(card){e.preventDefault();chooseOnlineSlot(card);}
 });
-// Mouse keeps hold-to-fire; phones use one reliable server cast per battlefield tap.
+// Both mouse and touch hold to fire, while a quick tap still casts exactly once.
 function setAimFromPointer(e){
  const r=cv.getBoundingClientRect(),me=roomState?.players.find(p=>p.id===myId);
  if(!me||!r.width||!r.height)return false;
@@ -637,7 +637,8 @@ function showTapReticle(e){
  tapReticle.style.left=e.clientX-shell.left+'px';tapReticle.style.top=e.clientY-shell.top+'px';
  tapReticle.classList.remove('active');void tapReticle.offsetWidth;tapReticle.classList.add('active');
 }
-cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')setAimFromPointer(e)});
+let fieldHoldPointer=null; // Touch/pen pointer that owns the continuous fire latch.
+cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.pointerId===fieldHoldPointer)setAimFromPointer(e)});
 cv.addEventListener('pointerdown',e=>{
  if(window.MojiUltMulti?.onFieldPointer(e))return;
  if(e.pointerType==='mouse'){
@@ -649,12 +650,20 @@ cv.addEventListener('pointerdown',e=>{
  e.preventDefault();
  if(setAimFromPointer(e)){
   showTapReticle(e);
+  fieldHoldPointer=e.pointerId;
+  down=true; // Existing 50ms input sender continues at the server-enforced cooldown.
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
   send({type:'cast',aim,selected});
  }
 });
-const cancelFire=()=>{down=false};
-cv.addEventListener('pointerup',cancelFire);cv.addEventListener('pointercancel',cancelFire);
-window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')cancelFire()});
+const cancelFire=e=>{
+ if(e&&fieldHoldPointer!==null&&e.pointerId!==fieldHoldPointer)return;
+ fieldHoldPointer=null;down=false;
+};
+for(const type of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(type,cancelFire);
+window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'||e.pointerId===fieldHoldPointer)cancelFire(e)});
+window.addEventListener('pointercancel',cancelFire);
+window.addEventListener('blur',()=>cancelFire());
 // A floating thumb stick starts anywhere on the left 35% of the arena.
 const moveZone=$('moveZone'),movePad=$('movePad'),moveThumb=$('moveThumb');
 let padPointer=null,padOriginX=0,padOriginY=0;
