@@ -78,9 +78,9 @@
     const canvas=e.target.closest('#field,#arena');
     if(!canvas || (e.pointerType==='mouse' && e.button!==0))return;
     firingPointers.set(e.pointerId,e.pointerType);
-    // Preserve hold-to-fire in solo mode, including touch, until release/cancel.
-    // Online touch stays one server cast per tap.
-    if(canvas.id==='field'&&typeof down!=='undefined')down=true;
+    // Do not set 'down' in the capture phase. CPU aimed ultimates intercept
+    // the same pointer at target capture; only the game's ordinary field
+    // handler may activate continuous firing after that interception.
     try{canvas.setPointerCapture(e.pointerId)}catch(_){}
   }, true);
   function finishFirePointer(e){
@@ -187,6 +187,10 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) releaseAll();
   });
+  // A lobby/replay transition may swallow keyup and pointerup without blurring
+  // the browser. Never carry any held input into the next round.
+  new MutationObserver(() => {if(!playing())releaseAll();})
+    .observe(document.body,{attributes:true,attributeFilter:['class']});
   // Test hook and an emergency reset for users switching modes.
   window.MojiInputSafety = {
     releaseAll,
