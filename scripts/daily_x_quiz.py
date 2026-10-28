@@ -251,17 +251,20 @@ def find_channel():
     orgs = gql("query { account { organizations { id name } } }")["account"]["organizations"]
     matches = []
     for org in orgs:
-        q = "query { channels(input: {organizationId:" + literal(org["id"]) + "}) {id name service} }"
+        q = "query { channels(input: {organizationId:" + literal(org["id"]) + "}) {id name service isDisconnected isLocked} }"
         for channel in gql(q)["channels"]:
             if channel["service"] == "twitter":
-                matches.append((org["id"], channel["id"], channel["name"]))
+                matches.append((org["id"], channel["id"], channel["name"], channel["isDisconnected"], channel["isLocked"]))
     requested_id = os.environ.get("BUFFER_CHANNEL_ID", "").strip()
     if requested_id:
         matches = [item for item in matches if item[1] == requested_id]
     if len(matches) != 1:
         raise RuntimeError(f"Exactly one connected X channel must be selected (found {len(matches)})."
                            " Set repository variable BUFFER_CHANNEL_ID if necessary.")
-    return matches[0]
+    org_id, channel_id, name, disconnected, locked = matches[0]
+    if disconnected or locked:
+        raise RuntimeError("Buffer X channel is disconnected or locked; no posts were created.")
+    return org_id, channel_id, name
 
 def fetch_posts(org_id, channel_id):
     all_posts = []
@@ -295,7 +298,9 @@ def publish(text):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--publish", action="store_true", help="Actually post to X through Buffer")
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument("--publish", action="store_true", help="Actually post to X through Buffer")
+    actions.add_argument("--check-connection", action="store_true", help="Validate Buffer API access without posting")
     args = parser.parse_args()
     now = datetime.now(TZ)
     today = now.date()
@@ -311,13 +316,16 @@ def main():
     print(f"Quiz preview for {today.isoformat()} JST:\n{question}\n")
     if previous_answer:
         print("Previous-answer preview:\n" + previous_answer + "\n")
-    if not args.publish:
+    if not args.publish and not args.check_connection:
         print(f"Dry run only; {len(questions())} unique characters in this bank. Nothing posted.")
         return
     org_id, channel_id, channel_name = find_channel()
     print("Target Buffer X channel:", channel_name)
     os.environ["TARGET_CHANNEL"] = channel_id
     existing = fetch_posts(org_id, channel_id)
+    if args.check_connection:
+        print("Buffer API connection and X channel lookup OK; nothing posted.")
+        return
     present = [p.get("text", "") for p in existing]
     # A different run may have created the same post already; never duplicate.
     if previous_answer:
