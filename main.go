@@ -585,7 +585,8 @@ func normalShotDamage(n int) float64 {
 func slotCooldown(kind string, n int) float64 {
 	switch kind {
 	case "attack":
-		x := math.Max(0, math.Min(83, float64(n-1)))
+		if n >= 84 { return 20 }
+		x := math.Max(0, float64(n-1))
 		return 0.8 + 19.2*(0.14*x+0.003*x*x)/32.287
 	case "defense":
 		return (9 + float64(n)*.4) * 1.4
