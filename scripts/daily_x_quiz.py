@@ -291,7 +291,7 @@ def fetch_posts(org_id, channel_id):
 
 def publish(text):
     mutation = ("mutation { createPost(input: {text:" + literal(text) +
-                ", channelId:" + literal(os.environ["TARGET_CHANNEL"]) +
+                ", assets:[], needsApproval:false, saveToDraft:false, channelId:" + literal(os.environ["TARGET_CHANNEL"]) +
                 ", schedulingType:automatic, mode:shareNow}) {"
                 " ... on PostActionSuccess {post{id status text}}"
                 " ... on MutationError {message} } }")
