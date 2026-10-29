@@ -18,8 +18,8 @@ API = "https://api.buffer.com"
 TZ = ZoneInfo("Asia/Tokyo")
 FIRST_DAY = date(2026, 10, 29)
 FIRST_NUMBER = 2
-# Use the game information page until the live Render URL is verified.
-GAME_URL = "https://youluuz.github.io/moji-arms/"
+# Use the official game URL specified for the daily quiz.
+GAME_URL = "https://moji-arms-online.onrender.com/"
 # char | reading (as clued) | quiz hint | answer explanation
 DATA = """
 暁|あかつき|夜明けごろを表す、少し古風な言葉。|夜が明けるころのこと。
