@@ -247,6 +247,38 @@ const { chromium } = require('playwright');
   await page.setViewportSize({width:390,height:844});
 
   await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
+  // When typing a glyph and choosing a weapon type, the ordinary-ability
+  // guide must stay closed until the player explicitly opens its arrow.
+  const ordinaryGuide=page.locator('#abilityGuide');
+  const ordinarySummary=ordinaryGuide.locator('summary');
+  const initialDisclosure=await page.evaluate(()=>{
+   const guide=document.getElementById('abilityGuide'),arrow=guide?.querySelector('.ability-guide-chevron');
+   const summary=guide?.querySelector('summary'),sr=summary?.getBoundingClientRect(),ar=arrow?.getBoundingClientRect();
+   return {open:guide?.open,summary:summary?.textContent?.trim(),
+    arrow:arrow?.textContent?.trim(),arrowVisible:!!ar&&ar.width>=30&&ar.height>=30&&getComputedStyle(arrow).display!=='none',
+    touchHeight:sr?.height||0};
+  });
+  if(initialDisclosure.open||initialDisclosure.arrow!=='▼'||!initialDisclosure.arrowVisible||
+     initialDisclosure.touchHeight<44||initialDisclosure.summary?.includes('初心者'))
+   throw Error('Lobby ability guide must start collapsed with a visible arrow '+JSON.stringify(initialDisclosure));
+  await page.locator('#setup .slot').first().locator('.kanji').fill('炎');
+  await page.locator('#setup .slot').first().locator('.kind').selectOption('defense');
+  if(await ordinaryGuide.evaluate(el=>el.open))
+   throw Error('Typing a glyph or selecting a weapon type unexpectedly opened the ability guide');
+  await ordinarySummary.click();
+  if(!(await ordinaryGuide.evaluate(el=>el.open))||!(await ordinaryGuide.locator('.ability-grid article').count()))
+   throw Error('Player cannot expand ability guide using arrow');
+  await page.locator('#setup .slot').first().locator('.kanji').fill('氷');
+  await page.locator('#setup .slot').first().locator('.kind').selectOption('heal');
+  if(!(await ordinaryGuide.evaluate(el=>el.open)))
+   throw Error('Editing glyph/weapon must not close an intentionally opened guide');
+  await ordinarySummary.click();
+  if(await ordinaryGuide.evaluate(el=>el.open))throw Error('Arrow could not close the ability guide');
+  await ordinarySummary.focus();
+  await page.keyboard.press('Enter');
+  if(!(await ordinaryGuide.evaluate(el=>el.open)))throw Error('Keyboard cannot expand ability guide');
+  await page.keyboard.press('Enter');
+  if(await ordinaryGuide.evaluate(el=>el.open))throw Error('Keyboard cannot collapse ability guide');
   // Contrast regression: inputs must visibly stand apart from the old dim
   // lobby, and the five cards must remain inside the phone viewport.
   const readableLoadout=await page.evaluate(()=>{
