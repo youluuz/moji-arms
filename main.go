@@ -1531,6 +1531,13 @@ func mobilePatchedIndex(source string) string {
 	source = strings.Replace(source,
 		"drawMarker(player,avatarChar,false);drawMarker(enemy,'敵',true);",
 		"/* player and all CPUs rendered exactly once by cpu-battle-v78.js */", 1)
+	// The first CPU's minimap dot used the old miniIcon() helper, which
+	// stroked a white circle; all additional CPUs in cpu-battle-v78.js use
+	// clean pink 3.2px dots. Keep the player's distinct outlined blue dot,
+	// but paint the first CPU with precisely the same marker as its peers.
+	source = strings.Replace(source,
+		"miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');",
+		"miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');if(enemy.hp>0){ctx.save();ctx.fillStyle='#ff9cad';ctx.beginPath();ctx.arc(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,3.2,0,Math.PI*2);ctx.fill();ctx.restore();}", 1)
 	// Draw the optional compact goggles and mech wings on the player's avatar.
 	source = strings.Replace(source,
 		"g.fillText(ch,0,1,36);\n g.restore();",
