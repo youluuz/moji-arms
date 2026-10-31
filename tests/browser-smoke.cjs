@@ -247,6 +247,27 @@ const { chromium } = require('playwright');
   await page.setViewportSize({width:390,height:844});
 
   await page.waitForSelector('#lobbyScreen .kanji',{state:'attached',timeout:15000});
+  // Contrast regression: inputs must visibly stand apart from the old dim
+  // lobby, and the five cards must remain inside the phone viewport.
+  const readableLoadout=await page.evaluate(()=>{
+    const selector='#lobbyScreen #setup .slot';
+    const cards=[...document.querySelectorAll(selector)];
+    const entries=cards.map(card=>{
+      const input=card.querySelector('.kanji');
+      if(!input)return null;
+      const s=getComputedStyle(input),cs=getComputedStyle(card);
+      const b=input.getBoundingClientRect();
+      return {bg:s.backgroundColor,text:s.color,border:s.borderTopColor,
+       font:parseFloat(s.fontSize),height:b.height,width:b.width,
+       cardBorder:cs.borderTopColor,visible:b.width>60&&b.left>=0&&b.right<=innerWidth+2};
+    });
+    return {count:cards.length,css:[...document.styleSheets].some(s=>s.href?.includes('loadout-contrast-v101.css')),
+      input:entries,grid:getComputedStyle(document.getElementById('setup')).gridTemplateColumns};
+  });
+  if(!readableLoadout.css||readableLoadout.count!==5||
+     readableLoadout.input.some(x=>!x||!x.visible||x.height<50||x.font<25||
+       x.bg!=='rgb(9, 21, 37)'||x.border!=='rgb(193, 219, 244)'))
+    throw Error('CPU high-contrast glyph cards not visible on phone '+JSON.stringify(readableLoadout));
   // When typing a glyph and choosing a weapon type, the ordinary-ability
   // guide must stay closed until the player explicitly opens its arrow.
   const ordinaryGuide=page.locator('#abilityGuide');
@@ -279,27 +300,7 @@ const { chromium } = require('playwright');
   if(!(await ordinaryGuide.evaluate(el=>el.open)))throw Error('Keyboard cannot expand ability guide');
   await page.keyboard.press('Enter');
   if(await ordinaryGuide.evaluate(el=>el.open))throw Error('Keyboard cannot collapse ability guide');
-  // Contrast regression: inputs must visibly stand apart from the old dim
-  // lobby, and the five cards must remain inside the phone viewport.
-  const readableLoadout=await page.evaluate(()=>{
-    const selector='#lobbyScreen #setup .slot';
-    const cards=[...document.querySelectorAll(selector)];
-    const entries=cards.map(card=>{
-      const input=card.querySelector('.kanji');
-      if(!input)return null;
-      const s=getComputedStyle(input),cs=getComputedStyle(card);
-      const b=input.getBoundingClientRect();
-      return {bg:s.backgroundColor,text:s.color,border:s.borderTopColor,
-       font:parseFloat(s.fontSize),height:b.height,width:b.width,
-       cardBorder:cs.borderTopColor,visible:b.width>60&&b.left>=0&&b.right<=innerWidth+2};
-    });
-    return {count:cards.length,css:[...document.styleSheets].some(s=>s.href?.includes('loadout-contrast-v101.css')),
-      input:entries,grid:getComputedStyle(document.getElementById('setup')).gridTemplateColumns};
-  });
-  if(!readableLoadout.css||readableLoadout.count!==5||
-     readableLoadout.input.some(x=>!x||!x.visible||x.height<50||x.font<25||
-       x.bg!=='rgb(9, 21, 37)'||x.border!=='rgb(193, 219, 244)'))
-    throw Error('CPU high-contrast glyph cards not visible on phone '+JSON.stringify(readableLoadout));
+
   const cpuGlyph=await page.evaluate(()=>{
     const field=document.querySelector('#lobbyScreen .kanji');
     const stat=field.closest('.slot').querySelector('.slot-stat');
