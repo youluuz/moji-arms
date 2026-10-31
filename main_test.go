@@ -760,6 +760,33 @@ func TestUltimateAssetsSharedAcrossModes(t *testing.T){
  }
 }
 
+// The loadout's ordinary-ability guide must not expand when a player types
+// a glyph or switches attack/defense/heal, but must remain operable via the
+// native disclosure button (including keyboard and narrow screens).
+func TestManualLoadoutAbilityGuideDisclosure(t *testing.T) {
+ html, err := gameFiles.ReadFile("public/index.html")
+ if err != nil {t.Fatal(err)}
+ patched := mobilePatchedIndex(string(html))
+ if strings.Contains(patched,"<span>初心者向けガイド</span>") {
+  t.Fatal("deprecated beginner-guide text was not replaced")
+ }
+ if !strings.Contains(patched,`<span class="ability-guide-chevron" aria-hidden="true">▼</span>`) {
+  t.Fatal("arrow-only guide disclosure missing")
+ }
+ if strings.Contains(patched,`guide.open=true;}});`) {
+  t.Fatal("changing a loadout ability still opens help automatically")
+ }
+ if !strings.Contains(patched,"#abilityGuide>summary .ability-guide-chevron{display:inline-flex!important") {
+  t.Fatal("mobile arrow disclosure styling is missing")
+ }
+ if !strings.Contains(patched,"#abilityGuide>summary{list-style:none;min-height:48px") {
+  t.Fatal("mobile/keyboard disclosure hit target must be at least 48px")
+ }
+ if !strings.Contains(patched,`<details class="ability-guide" id="abilityGuide">`) {
+  t.Fatal("native details summary should retain accessible user-open/close behavior")
+ }
+}
+
 func TestEveryUltimateInNormalAndCustomOnline(t *testing.T) {
  now:=float64(time.Now().UnixNano())/1e9
  for _,mode:=range []string{"normal","custom"} {
