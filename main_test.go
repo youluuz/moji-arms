@@ -763,6 +763,26 @@ func TestUltimateAssetsSharedAcrossModes(t *testing.T){
 // The loadout's ordinary-ability guide must not expand when a player types
 // a glyph or switches attack/defense/heal, but must remain operable via the
 // native disclosure button (including keyboard and narrow screens).
+// Every CPU on the solo minimap must use the same marker: the
+// first legacy enemy must not retain the old unique white outline.
+func TestUniformCpuMinimapEnemyDots(t *testing.T) {
+ html,err:=gameFiles.ReadFile("public/index.html");if err!=nil{t.Fatal(err)}
+ old:=string(html)
+ legacy:="miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff');miniIcon(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,'#ff8598');"
+ if !strings.Contains(old,legacy) {t.Fatal("baseline minimap no longer matches known first-CPU legacy drawing")}
+ patched:=mobilePatchedIndex(old)
+ if strings.Contains(patched,legacy){t.Fatal("first CPU still has the legacy white-outlined dot")}
+ const uniform="ctx.fillStyle='#ff9cad';ctx.beginPath();ctx.arc(mx+enemy.x/WORLD_W*mw,my+enemy.y/WORLD_H*mh,3.2,0,Math.PI*2);ctx.fill()"
+ if !strings.Contains(patched,uniform){t.Fatal("first CPU must match other CPU plain-pink 3.2px dot")}
+ if !strings.Contains(patched,"miniIcon(mx+player.x/WORLD_W*mw,my+player.y/WORLD_H*mh,'#78c2ff')") {
+  t.Fatal("player's distinct blue outlined marker must remain intact")
+ }
+ extras,e:=gameFiles.ReadFile("public/cpu-battle-v78.js");if e!=nil{t.Fatal(e)}
+ if !strings.Contains(string(extras),"cx.fillStyle='#ff9cad';cx.beginPath();cx.arc(") {
+  t.Fatal("additional CPU marker style is no longer consistent with first CPU")
+ }
+}
+
 func TestManualLoadoutAbilityGuideDisclosure(t *testing.T) {
  html, err := gameFiles.ReadFile("public/index.html")
  if err != nil {t.Fatal(err)}
