@@ -45,7 +45,30 @@ function mount(){
   if(custom){if(!hp.contains(hpLabel))hp.replaceChildren(hpLabel)}
   else hp.textContent='♥ 600 / 600';
  }
- document.getElementById('modeSelect')?.addEventListener('change',refresh);
+ // Scroll only after a player actively chooses a custom mode (not on page load).
+ // A frame allows the mode controls and the HP preview to finish updating.
+ let scrollQueued=false;
+ function scrollToCustomHp(){
+  if(scrollQueued)return;
+  scrollQueued=true;
+  requestAnimationFrame(()=>{
+   scrollQueued=false;
+   if(!isCustom(mode())||!hp.isConnected)return;
+   refresh();
+   const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+   hp.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center',inline:'nearest'});
+  });
+ }
+ document.getElementById('modeSelect')?.addEventListener('change',()=>{
+  refresh();
+  if(isCustom(mode()))scrollToCustomHp();
+ });
+ // Mode tiles can be clicked directly; support them even if they do not
+ // dispatch a native change event on the hidden select.
+ document.getElementById('modeTiles')?.addEventListener('click',event=>{
+  const tile=event.target.closest('[data-mode-tile]');
+  if(tile&&isCustom(tile.dataset.modeTile))scrollToCustomHp();
+ });
  refresh();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
