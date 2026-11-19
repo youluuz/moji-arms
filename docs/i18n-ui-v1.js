@@ -378,7 +378,7 @@
     if(document.getElementById("mojiLanguageStyle"))return;
     const style=document.createElement("style");
     style.id="mojiLanguageStyle";
-    style.textContent=".moji-language-toggle{position:fixed;top:max(9px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));z-index:1200;display:flex;gap:3px;padding:4px;border:1px solid #6d91b1;border-radius:12px;background:#0b1930ed;box-shadow:0 3px 12px #0009}.moji-language-toggle button{font:700 12px/1.2 system-ui,sans-serif;min-height:32px;min-width:46px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:#d2e5fa;cursor:pointer}.moji-language-toggle button.selected{background:#eed18f;color:#101a2a}.moji-language-toggle button:focus-visible{outline:2px solid #fff;outline-offset:2px}body.online-battle>.moji-language-toggle{display:none!important}@media(max-width:700px){.moji-language-toggle{top:max(6px,env(safe-area-inset-top));right:max(6px,env(safe-area-inset-right))}.moji-language-toggle button{font-size:11px;min-width:39px;padding:5px 7px}}";
+    style.textContent=".moji-language-toggle{position:fixed;top:max(9px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));z-index:1200;display:flex;gap:3px;padding:4px;border:1px solid #6d91b1;border-radius:12px;background:#0b1930ed;box-shadow:0 3px 12px #0009}.moji-language-toggle button{font:700 12px/1.2 system-ui,sans-serif;min-height:32px;min-width:46px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:#d2e5fa;cursor:pointer}.moji-language-toggle button.selected{background:#eed18f;color:#101a2a}.moji-language-toggle button:focus-visible{outline:2px solid #fff;outline-offset:2px}#lobbyScreen .moji-language-toggle{position:relative;top:auto;right:auto;float:right;margin:8px 12px 8px 0;z-index:40}body.online-battle>.moji-language-toggle{display:none!important}@media(max-width:700px){.moji-language-toggle{top:max(6px,env(safe-area-inset-top));right:max(6px,env(safe-area-inset-right))}.moji-language-toggle button{font-size:11px;min-width:39px;padding:5px 7px}}";
     document.head.append(style);
     if(window.top !== window.self){
       // Embedded arena inherits the parent's selection, without an intrusive overlay.
@@ -388,7 +388,7 @@
       const lobby=document.getElementById("lobbyScreen");
       if(login || lobby){
         if(login)makeToolbar(login);
-        if(lobby)makeToolbar(lobby);
+        if(lobby)makeToolbar(document.getElementById("mojiModeChoiceCard")||lobby);
       }else makeToolbar(document.body);
       setLanguage(language,false);
     }
