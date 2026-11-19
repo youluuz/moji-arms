@@ -7,7 +7,10 @@
   const KEY = "moji_ui_language_v1";
   const query = new URLSearchParams(location.search).get("lang");
   let language = query === "en" || query === "ja" ? query : "ja";
-  try { if (query !== "en" && query !== "ja") language = localStorage.getItem(KEY) === "en" ? "en" : "ja"; } catch (_) {}
+  try {
+    if (query === "en" || query === "ja") localStorage.setItem(KEY,language);
+    else language = localStorage.getItem(KEY) === "en" ? "en" : "ja";
+  } catch (_) {}
   const pairs = [
     ["その一文字が、最強の武器。","One character. The ultimate weapon."],
     ["文字が、武器になる。","Turn characters into weapons."],
