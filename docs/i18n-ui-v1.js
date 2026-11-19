@@ -339,8 +339,15 @@
       } else doc.defaultView.MojiI18n.setLanguage(language,false);
     }catch(_){}
   }
-  function syncFrames(){
-    for(const frame of document.querySelectorAll("iframe"))visitFrame(frame);
+  // Dynamic HUD updates can occur every frame; visit an iframe only once
+  // per document load, or when the player actually changes languages.
+  const localizedFrames = new WeakSet();
+  function syncFrames(force=false){
+    for(const frame of document.querySelectorAll("iframe")){
+      if(!force && localizedFrames.has(frame))continue;
+      visitFrame(frame);
+      localizedFrames.add(frame);
+    }
   }
   function setLanguage(next,persist=true){
     language=next==="en"?"en":"ja";
@@ -349,7 +356,7 @@
     translateSubtree(document.body);
     syncButtons();
     updateLinks();
-    syncFrames();
+    syncFrames(true);
   }
   function makeToolbar(parent){
     if(!parent || parent.querySelector(".moji-language-toggle"))return;
